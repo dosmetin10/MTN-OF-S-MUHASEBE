@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTN Muhasebe</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand__title">MTN MUHASEBE</span>
+          <span class="brand__subtitle">Kurumsal Yönetim</span>
+        </div>
+        <nav class="menu">
+          <button class="menu__item menu__item--active">Ana Panel</button>
+          <button class="menu__item">Cari Yönetimi</button>
+          <button class="menu__item">Stok & Depo</button>
+          <button class="menu__item">Teklif & Sipariş</button>
+          <button class="menu__item">Kasa & Banka</button>
+          <button class="menu__item">Raporlar</button>
+          <button class="menu__item">Ayarlar</button>
+        </nav>
+        <div class="sidebar__footer">
+          <p>Offline mod: <strong class="status status--online">Hazır</strong></p>
+          <p>Versiyon: <span id="app-version">0.1.0</span></p>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <h1>Ana Panel</h1>
+            <p>Hoş geldin Metin, bugün tüm operasyonlar kontrol altında.</p>
+          </div>
+          <div class="topbar__actions">
+            <input class="search" placeholder="Cari, stok, teklif ara..." />
+            <button class="primary">+ Yeni İşlem</button>
+          </div>
+        </header>
+
+        <section class="quick-actions">
+          <button>➕ Yeni Cari</button>
+          <button>📦 Stok Girişi</button>
+          <button>💰 Tahsilat Yap</button>
+          <button>🧾 Yeni Teklif</button>
+          <button>📊 Raporlar</button>
+        </section>
+
+        <section class="cards">
+          <article class="card">
+            <h3>Günlük Durum</h3>
+            <p>Toplam tahsilat: <strong>₺32.450</strong></p>
+            <p>Kasa bakiyesi: <strong>₺128.600</strong></p>
+            <p>Bekleyen borç: <strong>₺14.900</strong></p>
+          </article>
+          <article class="card">
+            <h3>Hatırlatıcılar</h3>
+            <ul>
+              <li>07.01.2026 - Erdal Yapı - ₺3.500 tahsilat</li>
+              <li>08.01.2026 - Elektrik faturası ödemesi</li>
+              <li>Kritik stok: PEX 20mm (5 adet)</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Yedekleme</h3>
+            <p>Son yerel yedek: <strong>Dün 22:10</strong></p>
+            <p>Bulut senkron: <strong>Aktif</strong></p>
+            <button class="ghost">Flash'a Yedekle</button>
+          </article>
+        </section>
+
+        <section class="offer">
+          <div class="offer__header">
+            <h2>Teklif Kalemleri (Enter ile yeni satır)</h2>
+            <button id="add-row">+ Satır Ekle</button>
+          </div>
+          <table class="offer__table">
+            <thead>
+              <tr>
+                <th>Malzeme</th>
+                <th>Miktar</th>
+                <th>Birim</th>
+                <th>Birim Fiyat</th>
+                <th>Tutar</th>
+              </tr>
+            </thead>
+            <tbody id="offer-body"></tbody>
+          </table>
+          <div class="offer__summary">
+            <span>Genel Toplam</span>
+            <strong id="offer-total">₺0,00</strong>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
