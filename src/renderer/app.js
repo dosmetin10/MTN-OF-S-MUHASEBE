@@ -2,6 +2,9 @@ const offerBody = document.getElementById("offer-body");
 const addRowButton = document.getElementById("add-row");
 const totalEl = document.getElementById("offer-total");
 const versionEl = document.getElementById("app-version");
+const backupButton = document.getElementById("backup-now");
+const lastBackupEl = document.getElementById("last-backup");
+const backupPathEl = document.getElementById("backup-path");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -58,4 +61,40 @@ calculateTotal();
 
 if (window.mtnApp) {
   versionEl.textContent = window.mtnApp.version;
+}
+
+const buildBackupPayload = () => {
+  const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
+    const getValue = (field) =>
+      row.querySelector(`[data-field='${field}']`)?.value || "";
+    return {
+      name: getValue("name"),
+      quantity: getValue("quantity"),
+      unit: getValue("unit"),
+      price: getValue("price"),
+      total: getValue("total")
+    };
+  });
+
+  return {
+    meta: {
+      appVersion: window.mtnApp?.version || "0.1.0",
+      module: "teklif"
+    },
+    teklif: rows,
+    toplam: totalEl.textContent
+  };
+};
+
+if (backupButton) {
+  backupButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.createBackup) {
+      backupPathEl.textContent = "Yedekleme servisi hazır değil.";
+      return;
+    }
+
+    const result = await window.mtnApp.createBackup(buildBackupPayload());
+    lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
+    backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
+  });
 }
