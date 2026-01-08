@@ -131,6 +131,11 @@ body {
   background: rgba(59, 130, 246, 0.3);
 }
 
+.menu-item.active {
+  background: rgba(59, 130, 246, 0.4);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.6);
+}
+
 .main-panel {
   display: flex;
   flex-direction: column;
@@ -193,6 +198,56 @@ body {
   margin: 8px 0 0;
 }
 
+.exit-button {
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(37, 99, 235, 0.9);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.exit-prompt {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 24px;
+  border-radius: 20px;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.exit-prompt h3 {
+  margin: 0 0 6px;
+}
+
+.exit-prompt p {
+  margin: 0;
+  color: #cbd5f5;
+}
+
+.exit-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.exit-actions button {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(37, 99, 235, 0.9);
+  color: #f8fafc;
+  cursor: pointer;
+}
+
+.exit-actions button:last-child {
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}
+
 .quick-actions {
   padding: 20px 24px;
   border-radius: 20px;
@@ -219,6 +274,11 @@ body {
 .action-card:hover {
   transform: translateY(-3px);
   border-color: rgba(59, 130, 246, 0.6);
+}
+
+.action-card.active {
+  border-color: rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
 }
 
 .login-card {
@@ -353,6 +413,81 @@ body {
   color: #94a3b8;
   text-align: center;
   line-height: 1.5;
+}
+
+.task-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  color: #cbd5f5;
+  line-height: 1.5;
+}
+
+.detail-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.detail-column h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+.detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-item {
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e2e8f0;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+}
+
+.detail-item span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.detail-item.active {
+  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(37, 99, 235, 0.25);
+}
+
+.detail-card {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.detail-card h4 {
+  margin: 0 0 8px;
+}
+
+.detail-card p {
+  margin: 0 0 10px;
+  color: #cbd5f5;
+}
+
+.detail-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #94a3b8;
 }
 
 .company-card {
