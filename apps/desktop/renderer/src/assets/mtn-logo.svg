@@ -1,18 +1,34 @@
-<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="420" height="200" viewBox="0 0 420 200" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="mtnGradient" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2563EB" />
-      <stop offset="1" stop-color="#F97316" />
+    <linearGradient id="mtnBlue" x1="0" y1="0" x2="420" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E3A8A" />
+      <stop offset="1" stop-color="#38BDF8" />
+    </linearGradient>
+    <linearGradient id="mtnOrange" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F97316" />
+      <stop offset="1" stop-color="#FDBA74" />
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#mtnGradient)" />
-  <rect x="4" y="4" width="120" height="120" rx="28" stroke="#0F172A" stroke-width="8" />
+  <rect width="420" height="200" rx="24" fill="#0F172A" />
+  <circle cx="74" cy="90" r="60" fill="url(#mtnOrange)" />
+  <circle cx="74" cy="90" r="44" fill="#0F172A" />
   <path
-    d="M32 82V46H44L58 68L72 46H84V82H72V62L58 82L44 62V82H32Z"
-    fill="#F8FAFC"
+    d="M58 118L72 96L86 118C88 121 86 124 82 124H62C58 124 56 121 58 118Z"
+    fill="#F97316"
   />
-  <path
-    d="M88 82V46H100L112 64V46H124V82H112L100 64V82H88Z"
-    fill="#F8FAFC"
-  />
+  <text x="50" y="90" font-size="36" font-family="Segoe UI, sans-serif" font-weight="700" fill="#E2E8F0">
+    MTN
+  </text>
+  <text x="145" y="88" font-size="48" font-family="Segoe UI, sans-serif" font-weight="800" fill="url(#mtnBlue)">
+    MTN
+  </text>
+  <text x="145" y="132" font-size="38" font-family="Segoe UI, sans-serif" font-weight="700" fill="#38BDF8">
+    ENERJİ
+  </text>
+  <text x="145" y="162" font-size="20" font-family="Segoe UI, sans-serif" fill="#CBD5F5">
+    Mühendislik - Doğalgaz
+  </text>
+  <text x="145" y="184" font-size="16" font-family="Segoe UI, sans-serif" fill="#94A3B8">
+    www.mtnenerji.com.tr
+  </text>
 </svg>

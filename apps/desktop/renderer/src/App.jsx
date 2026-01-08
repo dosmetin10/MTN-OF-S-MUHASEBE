@@ -56,6 +56,7 @@ const reminders = [
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [credentials, setCredentials] = useState({
     username: "",
     password: ""
@@ -64,6 +65,16 @@ export default function App() {
   const handleLoginSubmit = (event) => {
     event.preventDefault();
     if (!credentials.username || !credentials.password) return;
+    const normalizedUser = credentials.username.trim().toLowerCase();
+    if (!["mtn", "muhasebe"].includes(normalizedUser)) {
+      setLoginError("Kullanıcı adı bulunamadı.");
+      return;
+    }
+    if (credentials.password !== "1453") {
+      setLoginError("Şifre hatalı.");
+      return;
+    }
+    setLoginError("");
     setIsAuthenticating(true);
     setTimeout(() => {
       setIsAuthenticated(true);
@@ -76,56 +87,87 @@ export default function App() {
     return (
       <div className="login-screen">
         <div className="login-card login-full">
-          <div className="login-hero">
-            <div className="login-animation">
-              <img src={mtnLogo} alt="MTN Enerji Logo" />
-              <span className="pulse" />
-            </div>
-            <div>
-              <p className="login-label">Giriş Karşılama</p>
-              <h2>MTN Enerji Mühendislik</h2>
-              <p className="login-subtitle">
-                Kurumsal muhasebe ve stok takip sistemine güvenli giriş yapın.
-              </p>
-            </div>
-          </div>
-          <form className="login-form" onSubmit={handleLoginSubmit}>
-            <label>
-              Kullanıcı Adı
-              <input
-                value={credentials.username}
-                onChange={(event) =>
-                  setCredentials((prev) => ({
-                    ...prev,
-                    username: event.target.value
-                  }))
-                }
-                placeholder="mtn.muhasebe"
-              />
-            </label>
-            <label>
-              Şifre
-              <input
-                type="password"
-                value={credentials.password}
-                onChange={(event) =>
-                  setCredentials((prev) => ({
-                    ...prev,
-                    password: event.target.value
-                  }))
-                }
-                placeholder="••••••••"
-              />
-            </label>
-            <button type="submit" disabled={isAuthenticating}>
-              {isAuthenticating ? "Bağlanıyor..." : "Giriş Yap"}
+          <aside className="login-users">
+            <h3>Kullanıcı Menüsü</h3>
+            <button
+              type="button"
+              className="login-user-card"
+              onClick={() =>
+                setCredentials((prev) => ({ ...prev, username: "mtn" }))
+              }
+            >
+              <span>MTN</span>
+              <small>Şifre: 1453</small>
             </button>
-          </form>
-          <p className="login-note">
-            {isAuthenticating
-              ? "Yetkiler kontrol ediliyor, lütfen bekleyin..."
-              : "Giriş sonrası 3-4 saniye içinde ana panele yönlendirileceksiniz."}
-          </p>
+            <button
+              type="button"
+              className="login-user-card"
+              onClick={() =>
+                setCredentials((prev) => ({ ...prev, username: "muhasebe" }))
+              }
+            >
+              <span>Muhasebe</span>
+              <small>Şifre: 1453</small>
+            </button>
+          </aside>
+          <div className="login-main">
+            <div className="login-hero">
+              <div className="login-animation">
+                <img src={mtnLogo} alt="MTN Enerji Logo" />
+                <span className="pulse" />
+              </div>
+              <div>
+                <p className="login-label">Giriş Karşılama</p>
+                <h2>MTN Enerji Mühendislik</h2>
+                <p className="login-subtitle">
+                  Kurumsal muhasebe ve stok takip sistemine güvenli giriş yapın.
+                </p>
+              </div>
+            </div>
+            <form className="login-form" onSubmit={handleLoginSubmit}>
+              <label>
+                Kullanıcı Adı
+                <input
+                  value={credentials.username}
+                  onChange={(event) =>
+                    setCredentials((prev) => ({
+                      ...prev,
+                      username: event.target.value
+                    }))
+                  }
+                  placeholder="mtn veya muhasebe"
+                />
+              </label>
+              <label>
+                Şifre
+                <input
+                  type="password"
+                  value={credentials.password}
+                  onChange={(event) =>
+                    setCredentials((prev) => ({
+                      ...prev,
+                      password: event.target.value
+                    }))
+                  }
+                  placeholder="1453"
+                />
+              </label>
+              {loginError && <p className="login-error">{loginError}</p>}
+              <button type="submit" disabled={isAuthenticating}>
+                {isAuthenticating ? "Bağlanıyor..." : "Giriş Yap"}
+              </button>
+            </form>
+            <p className="login-note">
+              {isAuthenticating
+                ? "Yetkiler kontrol ediliyor, lütfen bekleyin..."
+                : "Giriş sonrası 3-4 saniye içinde ana panele yönlendirileceksiniz."}
+            </p>
+            <p className="login-footer">
+              BU PROGRAM MTN ENERJİ MÜHENDİSLİK / METİN DÖŞ TARAFINDAN
+              TASARLANIP KODLANMIŞ VE GELİŞTİRİLMİŞTİR. TÜM HAKLARI SAKLIDIR. ®
+              www.mtnenerji.com.tr
+            </p>
+          </div>
         </div>
       </div>
     );
