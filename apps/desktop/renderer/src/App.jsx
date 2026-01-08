@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import mtnLogo from "./assets/mtn-logo.svg";
 
 const accountingItems = [
@@ -250,6 +250,7 @@ const reminders = [
 ];
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -259,6 +260,13 @@ export default function App() {
     username: "",
     password: ""
   });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLoginSubmit = (event) => {
     event.preventDefault();
@@ -280,6 +288,26 @@ export default function App() {
       setCredentials({ username: "", password: "" });
     }, 3500);
   };
+
+  if (showSplash) {
+    return (
+      <div className="splash-screen">
+        <div className="splash-card">
+          <div className="splash-logo">
+            <img src={mtnLogo} alt="MTN Enerji Logo" />
+          </div>
+          <h1>MTN Muhasebe</h1>
+          <p>Kurumsal muhasebe ve stok takip sistemi başlatılıyor...</p>
+          <div className="splash-loader">
+            <span />
+            <span />
+            <span />
+          </div>
+          <p className="splash-note">MTN Enerji Mühendislik · Metin Döş</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
