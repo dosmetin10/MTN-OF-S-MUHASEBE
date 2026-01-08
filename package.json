@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently \"vite --config apps/desktop/vite.config.js\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build --config apps/desktop/vite.config.js",
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "vite build --config apps/desktop/vite.config.js && electron-builder"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -15,8 +16,32 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "concurrently": "^8.2.2",
+    "electron-builder": "^24.13.3",
     "electron": "^31.2.1",
     "vite": "^5.4.6",
     "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.mtn.enerji.muhasebe",
+    "productName": "MTN Muhasebe",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "apps/desktop/electron/**/*",
+      "apps/desktop/renderer/dist/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": "nsis",
+      "shortcutName": "MTN Muhasebe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
