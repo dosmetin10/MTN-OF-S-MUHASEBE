@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import mtnLogo from "./assets/mtn-logo.svg";
 
 const accountingItems = [
   "Gösterge Paneli",
@@ -53,11 +54,90 @@ const reminders = [
 ];
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [credentials, setCredentials] = useState({
+    username: "",
+    password: ""
+  });
+
+  const handleLoginSubmit = (event) => {
+    event.preventDefault();
+    if (!credentials.username || !credentials.password) return;
+    setIsAuthenticating(true);
+    setTimeout(() => {
+      setIsAuthenticated(true);
+      setIsAuthenticating(false);
+      setCredentials({ username: "", password: "" });
+    }, 3500);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-screen">
+        <div className="login-card login-full">
+          <div className="login-hero">
+            <div className="login-animation">
+              <img src={mtnLogo} alt="MTN Enerji Logo" />
+              <span className="pulse" />
+            </div>
+            <div>
+              <p className="login-label">Giriş Karşılama</p>
+              <h2>MTN Enerji Mühendislik</h2>
+              <p className="login-subtitle">
+                Kurumsal muhasebe ve stok takip sistemine güvenli giriş yapın.
+              </p>
+            </div>
+          </div>
+          <form className="login-form" onSubmit={handleLoginSubmit}>
+            <label>
+              Kullanıcı Adı
+              <input
+                value={credentials.username}
+                onChange={(event) =>
+                  setCredentials((prev) => ({
+                    ...prev,
+                    username: event.target.value
+                  }))
+                }
+                placeholder="mtn.muhasebe"
+              />
+            </label>
+            <label>
+              Şifre
+              <input
+                type="password"
+                value={credentials.password}
+                onChange={(event) =>
+                  setCredentials((prev) => ({
+                    ...prev,
+                    password: event.target.value
+                  }))
+                }
+                placeholder="••••••••"
+              />
+            </label>
+            <button type="submit" disabled={isAuthenticating}>
+              {isAuthenticating ? "Bağlanıyor..." : "Giriş Yap"}
+            </button>
+          </form>
+          <p className="login-note">
+            {isAuthenticating
+              ? "Yetkiler kontrol ediliyor, lütfen bekleyin..."
+              : "Giriş sonrası 3-4 saniye içinde ana panele yönlendirileceksiniz."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar sidebar-left">
         <div className="brand">
-          <div className="logo">MTN</div>
+          <div className="logo">
+            <img src={mtnLogo} alt="MTN Enerji Logo" />
+          </div>
           <div>
             <h1>MTN Muhasebe</h1>
             <p>Ön Muhasebe & Muhasebe</p>
@@ -80,8 +160,14 @@ export default function App() {
             <p className="subtitle">
               Tüm modüller aktif: cari, stok, kasa, teklif, raporlama ve yedekleme.
             </p>
+            <p className="ownership">
+              Bu program MTN ENERJİ tarafından geliştirilmiştir.
+            </p>
           </div>
           <div className="hero-card">
+            <div className="hero-logo">
+              <img src={mtnLogo} alt="MTN Enerji Logo" />
+            </div>
             <h3>Günlük Özet</h3>
             <ul>
               <li>Toplam Borç: 0 ₺</li>
@@ -92,13 +178,27 @@ export default function App() {
         </header>
 
         <section className="quick-actions">
-          <h3>Hızlı İşlemler</h3>
+          <div className="section-header">
+            <h3>Hızlı İşlemler</h3>
+            <span>Favori butonlar</span>
+          </div>
           <div className="actions-grid">
             {quickActions.map((action) => (
               <button className="action-card" key={action} type="button">
-                {action}
+                <span>{action}</span>
+                <small>Hızlı Aç</small>
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="panel-card">
+          <div className="panel-header">
+            <h3>Gösterge Paneli</h3>
+            <span>MTN Enerji kontrol merkezi</span>
+          </div>
+          <div className="panel-placeholder">
+            <p>Bu panel alanı, aktif modül akışları için hazır.</p>
           </div>
         </section>
 
