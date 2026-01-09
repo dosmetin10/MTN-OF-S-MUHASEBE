@@ -15,6 +15,10 @@ const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
 const reportCashButton = document.getElementById("report-cash");
 const reportPathEl = document.getElementById("report-path");
+const loginScreen = document.getElementById("login-screen");
+const loginForm = document.getElementById("login-form");
+const loginError = document.getElementById("login-error");
+const appShell = document.getElementById("app-shell");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -30,6 +34,27 @@ const escapeHtml = (value) =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+
+const users = [
+  { username: "mtn", password: "1453" },
+  { username: "muhasebe", password: "1453" }
+];
+
+const handleLogin = (event) => {
+  event.preventDefault();
+  const formData = new FormData(loginForm);
+  const { username, password } = Object.fromEntries(formData.entries());
+  const matched = users.some(
+    (user) => user.username === username && user.password === password
+  );
+
+  if (matched) {
+    loginScreen.style.display = "none";
+    appShell.classList.remove("app--hidden");
+  } else {
+    loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
+  }
+};
 
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
@@ -133,7 +158,7 @@ const loadInitialData = async () => {
   renderCash(data.cashTransactions || []);
 };
 
-const buildReportTable = (title, headers, rows) => {
+const buildReportTable = (title, headers, rows, options = {}) => {
   const headerCells = headers.map((header) => `<th>${header}</th>`).join("");
   const rowHtml = rows
     .map(
@@ -143,8 +168,24 @@ const buildReportTable = (title, headers, rows) => {
           .join("")}</tr>`
     )
     .join("");
+  const { includeWatermark = false } = options;
+  const companyHtml = `
+    <div class="report-header">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>MTN ENERJİ MÜHENDİSLİK (METİN DÖŞ)</p>
+        <p>Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / G.ANTEP</p>
+        <p>Tel: 0535 641 90 61 • Vergi Dairesi: ŞAHİNBEY • Vergi No: 14168163156</p>
+      </div>
+      <div class="report-logo">MTN</div>
+    </div>
+  `;
+  const watermark = includeWatermark
+    ? `<div class="report-watermark">MTN ENERJİ MÜHENDİSLİK</div>`
+    : "";
   return `
-    <h1>${escapeHtml(title)}</h1>
+    ${companyHtml}
+    ${watermark}
     <table>
       <thead><tr>${headerCells}</tr></thead>
       <tbody>${rowHtml}</tbody>
@@ -185,7 +226,7 @@ const generateReport = async (type) => {
   }
 
   if (type === "cash") {
-    title = "Kasa Raporu";
+    title = "Satış Raporu";
     headers = ["Tarih", "Tür", "Tutar", "Açıklama"];
     rows = (data.cashTransactions || []).map((item) => [
       new Date(item.createdAt).toLocaleDateString("tr-TR"),
@@ -195,7 +236,9 @@ const generateReport = async (type) => {
     ]);
   }
 
-  const html = buildReportTable(title, headers, rows);
+  const html = buildReportTable(title, headers, rows, {
+    includeWatermark: type === "customers" || type === "cash"
+  });
   const result = await window.mtnApp.generateReport({ title, html });
   reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
 };
@@ -292,6 +335,10 @@ if (reportStocksButton) {
 
 if (reportCashButton) {
   reportCashButton.addEventListener("click", () => generateReport("cash"));
+}
+
+if (loginForm) {
+  loginForm.addEventListener("submit", handleLogin);
 }
 
 loadInitialData();
