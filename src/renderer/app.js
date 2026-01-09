@@ -12,6 +12,10 @@ const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
 const lastBackupEl = document.getElementById("last-backup");
 const backupPathEl = document.getElementById("backup-path");
+const summaryCollectionsEl = document.getElementById("summary-collections");
+const summaryCashEl = document.getElementById("summary-cash");
+const summaryBalanceEl = document.getElementById("summary-balance");
+const summaryAlertsEl = document.getElementById("summary-alerts");
 const customerForm = document.getElementById("customer-form");
 const customerPaymentForm = document.getElementById("customer-payment-form");
 const paymentCustomerSelect = document.getElementById("payment-customer");
@@ -221,6 +225,59 @@ const renderSales = (items) => {
   });
 };
 
+const renderSummary = (data) => {
+  if (!summaryCollectionsEl || !summaryCashEl || !summaryBalanceEl) {
+    return;
+  }
+  const cashTransactions = data.cashTransactions || [];
+  const totalCollections = cashTransactions
+    .filter((item) => item.type === "gelir")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const cashBalance = cashTransactions.reduce((sum, item) => {
+    const amount = Number(item.amount || 0);
+    return item.type === "gider" ? sum - amount : sum + amount;
+  }, 0);
+  const totalBalance = (data.customers || []).reduce(
+    (sum, item) => sum + Number(item.balance || 0),
+    0
+  );
+
+  summaryCollectionsEl.textContent = formatCurrency(totalCollections);
+  summaryCashEl.textContent = formatCurrency(cashBalance);
+  summaryBalanceEl.textContent = formatCurrency(totalBalance);
+
+  if (summaryAlertsEl) {
+    summaryAlertsEl.innerHTML = "";
+    const lowStocks = (data.stocks || []).filter((item) => {
+      const threshold = Number(item.threshold || 0);
+      return threshold > 0 && Number(item.quantity || 0) <= threshold;
+    });
+    const pendingBalances = (data.customers || [])
+      .filter((item) => Number(item.balance || 0) > 0)
+      .slice(0, 3);
+
+    lowStocks.slice(0, 3).forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = `Kritik stok: ${item.name} (${item.quantity || 0})`;
+      summaryAlertsEl.appendChild(li);
+    });
+
+    pendingBalances.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = `Cari bakiye: ${item.name} ${formatCurrency(
+        Number(item.balance || 0)
+      )}`;
+      summaryAlertsEl.appendChild(li);
+    });
+
+    if (!summaryAlertsEl.children.length) {
+      const li = document.createElement("li");
+      li.textContent = "Yeni hatırlatıcı yok.";
+      summaryAlertsEl.appendChild(li);
+    }
+  }
+};
+
 const loadInitialData = async () => {
   if (!window.mtnApp?.getData) {
     return;
@@ -230,6 +287,7 @@ const loadInitialData = async () => {
   renderStocks(data.stocks || []);
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
+  renderSummary(data);
 };
 
 const buildReportTable = (title, headers, rows, options = {}) => {
@@ -398,6 +456,7 @@ if (customerPaymentForm) {
     });
     renderCustomers(result.customers || []);
     renderCash(result.cashTransactions || []);
+    renderSummary(result);
     reportPathEl.textContent = "Tahsilat kaydedildi.";
     customerPaymentForm.reset();
   });
@@ -540,6 +599,7 @@ if (offerSaveButton) {
     renderCash(result.cashTransactions || []);
     renderSales(result.sales || []);
     renderCustomers(result.customers || []);
+    renderSummary(result);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
   });
 }
