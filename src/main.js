@@ -78,7 +78,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle("customers:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.customers = createRecord(data.customers, payload);
+    data.customers = createRecord(data.customers, {
+      balance: 0,
+      ...payload
+    });
     await saveStorage(data);
     return data.customers;
   });
@@ -108,6 +111,18 @@ app.whenReady().then(() => {
       vatRate
     };
     data.sales = createRecord(data.sales, saleRecord);
+
+    if (customerId) {
+      data.customers = data.customers.map((customer) => {
+        if (customer.id !== customerId) {
+          return customer;
+        }
+        return {
+          ...customer,
+          balance: Number(customer.balance || 0) + Number(total || 0)
+        };
+      });
+    }
 
     const updatedStocks = data.stocks.map((stock) => {
       const item = items.find((entry) => entry.name === stock.name);

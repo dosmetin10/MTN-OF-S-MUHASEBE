@@ -18,6 +18,7 @@ const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
+const salesTable = document.getElementById("sales-table");
 const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
 const reportCashButton = document.getElementById("report-cash");
@@ -148,6 +149,7 @@ const renderCustomers = (items) => {
       <td>${item.phone || "-"}</td>
       <td>${item.taxNumber || "-"}</td>
       <td>${item.email || "-"}</td>
+      <td>${formatCurrency(Number(item.balance) || 0)}</td>
     `;
     customersTable.appendChild(row);
     if (offerCustomerSelect) {
@@ -187,6 +189,23 @@ const renderCash = (items) => {
   });
 };
 
+const renderSales = (items) => {
+  if (!salesTable) {
+    return;
+  }
+  salesTable.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${item.customerName || "Genel"}</td>
+      <td>${formatCurrency(Number(item.total) || 0)}</td>
+      <td>${Number(item.vatRate || 0)}</td>
+    `;
+    salesTable.appendChild(row);
+  });
+};
+
 const loadInitialData = async () => {
   if (!window.mtnApp?.getData) {
     return;
@@ -195,6 +214,7 @@ const loadInitialData = async () => {
   renderCustomers(data.customers || []);
   renderStocks(data.stocks || []);
   renderCash(data.cashTransactions || []);
+  renderSales(data.sales || []);
 };
 
 const buildReportTable = (title, headers, rows, options = {}) => {
@@ -291,13 +311,14 @@ const generateReport = async (type) => {
   let rows = [];
 
   if (type === "customers") {
-    title = "Cari Raporu";
-    headers = ["Ünvan", "Telefon", "Vergi No", "E-posta"];
+    title = "Cari Ekstre";
+    headers = ["Ünvan", "Telefon", "Vergi No", "E-posta", "Bakiye"];
     rows = (data.customers || []).map((item) => [
       item.name || "-",
       item.phone || "-",
       item.taxNumber || "-",
-      item.email || "-"
+      item.email || "-",
+      formatCurrency(Number(item.balance) || 0)
     ]);
   }
 
@@ -314,12 +335,12 @@ const generateReport = async (type) => {
 
   if (type === "cash") {
     title = "Satış Raporu";
-    headers = ["Tarih", "Tür", "Tutar", "Açıklama"];
-    rows = (data.cashTransactions || []).map((item) => [
+    headers = ["Tarih", "Cari", "Tutar", "KDV (%)"];
+    rows = (data.sales || []).map((item) => [
       new Date(item.createdAt).toLocaleDateString("tr-TR"),
-      item.type || "-",
-      formatCurrency(Number(item.amount) || 0),
-      item.note || "-"
+      item.customerName || "Genel",
+      formatCurrency(Number(item.total) || 0),
+      Number(item.vatRate || 0)
     ]);
   }
 
@@ -476,6 +497,8 @@ if (offerSaveButton) {
     });
     renderStocks(result.stocks || []);
     renderCash(result.cashTransactions || []);
+    renderSales(result.sales || []);
+    renderCustomers(result.customers || []);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
   });
 }
