@@ -7,7 +7,25 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app">
+    <div class="login" id="login-screen">
+      <div class="login__card">
+        <h1>MTN Muhasebe</h1>
+        <p>Lütfen kullanıcı adınızla giriş yapın.</p>
+        <form id="login-form">
+          <label>
+            Kullanıcı Adı
+            <input name="username" required placeholder="kullanıcı adı" />
+          </label>
+          <label>
+            Şifre
+            <input name="password" type="password" required placeholder="****" />
+          </label>
+          <button class="primary" type="submit">Giriş Yap</button>
+          <span class="login__error" id="login-error"></span>
+        </form>
+      </div>
+    </div>
+    <div class="app app--hidden" id="app-shell">
       <aside class="sidebar">
         <div class="brand">
           <span class="brand__title">MTN MUHASEBE</span>
@@ -201,9 +219,9 @@
             <p>PDF raporlarını tek tıkla oluşturun.</p>
           </div>
           <div class="report-actions">
-            <button class="primary" id="report-customers">Cari Raporu (PDF)</button>
+            <button class="primary" id="report-customers">Cari Ekstre (PDF)</button>
             <button class="primary" id="report-stocks">Stok Raporu (PDF)</button>
-            <button class="primary" id="report-cash">Kasa Raporu (PDF)</button>
+            <button class="primary" id="report-cash">Satış Raporu (PDF)</button>
           </div>
           <p class="report-path" id="report-path"></p>
         </section>
