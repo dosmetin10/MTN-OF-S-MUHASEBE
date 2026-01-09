@@ -72,6 +72,129 @@
           </article>
         </section>
 
+        <section class="module" id="customers-module">
+          <div class="module__header">
+            <h2>Cari Yönetimi</h2>
+            <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
+          </div>
+          <form class="form-grid" id="customer-form">
+            <label>
+              Ünvan / Ad Soyad
+              <input name="name" required placeholder="Müşteri adı" />
+            </label>
+            <label>
+              Telefon
+              <input name="phone" placeholder="05xx xxx xx xx" />
+            </label>
+            <label>
+              Vergi No
+              <input name="taxNumber" placeholder="Vergi numarası" />
+            </label>
+            <label>
+              E-posta
+              <input name="email" type="email" placeholder="mail@firma.com" />
+            </label>
+            <label class="full-width">
+              Adres
+              <input name="address" placeholder="Firma adresi" />
+            </label>
+            <button class="primary" type="submit">Cari Kaydet</button>
+          </form>
+          <div class="table-card">
+            <h3>Mevcut Cariler</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Ünvan</th>
+                  <th>Telefon</th>
+                  <th>Vergi No</th>
+                  <th>E-posta</th>
+                </tr>
+              </thead>
+              <tbody id="customers-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="module" id="stocks-module">
+          <div class="module__header">
+            <h2>Stok & Depo</h2>
+            <p>Malzeme kartları oluşturun ve stok seviyelerini izleyin.</p>
+          </div>
+          <form class="form-grid" id="stock-form">
+            <label>
+              Malzeme Adı
+              <input name="name" required placeholder="PEX 20mm Boru" />
+            </label>
+            <label>
+              Birim
+              <input name="unit" placeholder="m / adet" />
+            </label>
+            <label>
+              Mevcut Stok
+              <input name="quantity" type="number" min="0" step="1" />
+            </label>
+            <label>
+              Kritik Seviye
+              <input name="threshold" type="number" min="0" step="1" />
+            </label>
+            <button class="primary" type="submit">Stok Kaydet</button>
+          </form>
+          <div class="table-card">
+            <h3>Stok Listesi</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Malzeme</th>
+                  <th>Birim</th>
+                  <th>Stok</th>
+                  <th>Kritik Seviye</th>
+                </tr>
+              </thead>
+              <tbody id="stocks-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="module" id="cash-module">
+          <div class="module__header">
+            <h2>Kasa & Banka</h2>
+            <p>Gelir ve gider işlemlerini takip edin.</p>
+          </div>
+          <form class="form-grid" id="cash-form">
+            <label>
+              İşlem Türü
+              <select name="type">
+                <option value="gelir">Gelir</option>
+                <option value="gider">Gider</option>
+              </select>
+            </label>
+            <label>
+              Tutar
+              <input name="amount" type="number" min="0" step="0.01" />
+            </label>
+            <label class="full-width">
+              Açıklama
+              <input name="note" placeholder="İşlem açıklaması" />
+            </label>
+            <button class="primary" type="submit">Kasa Kaydet</button>
+          </form>
+          <div class="table-card">
+            <h3>Son Kasa Hareketleri</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Tür</th>
+                  <th>Tutar</th>
+                  <th>Açıklama</th>
+                </tr>
+              </thead>
+              <tbody id="cash-table"></tbody>
+            </table>
+          </div>
+        </section>
+
         <section class="offer">
           <div class="offer__header">
             <h2>Teklif Kalemleri (Enter ile yeni satır)</h2>
