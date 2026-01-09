@@ -191,6 +191,24 @@
             <h2>Kasa & Banka</h2>
             <p>Gelir ve gider işlemlerini takip edin.</p>
           </div>
+          <div class="filter-bar">
+            <label>
+              Başlangıç
+              <input type="date" id="cash-start" />
+            </label>
+            <label>
+              Bitiş
+              <input type="date" id="cash-end" />
+            </label>
+            <label>
+              Tür
+              <select id="cash-type">
+                <option value="">Hepsi</option>
+                <option value="gelir">Gelir</option>
+                <option value="gider">Gider</option>
+              </select>
+            </label>
+          </div>
           <form class="form-grid" id="cash-form">
             <label>
               İşlem Türü
@@ -221,6 +239,33 @@
                 </tr>
               </thead>
               <tbody id="cash-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="module" id="customer-detail-module">
+          <div class="module__header">
+            <h2>Cari Ekstre</h2>
+            <p>Seçili cari için satış ve tahsilat hareketleri.</p>
+          </div>
+          <div class="filter-bar">
+            <label>
+              Cari Seç
+              <select id="detail-customer"></select>
+            </label>
+            <button class="primary" id="detail-report">Ekstre PDF</button>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Tür</th>
+                  <th>Tutar</th>
+                  <th>Açıklama</th>
+                </tr>
+              </thead>
+              <tbody id="detail-table"></tbody>
             </table>
           </div>
         </section>
@@ -313,6 +358,35 @@
               </div>
             </div>
           </div>
+        </section>
+
+        <section class="module" id="stock-movement-module">
+          <div class="module__header">
+            <h2>Stok Hareketi</h2>
+            <p>Stok giriş/çıkış fişi oluşturun.</p>
+          </div>
+          <form class="form-grid" id="stock-movement-form">
+            <label>
+              Malzeme Seç
+              <select id="movement-stock"></select>
+            </label>
+            <label>
+              Hareket Türü
+              <select name="type">
+                <option value="giris">Giriş</option>
+                <option value="cikis">Çıkış</option>
+              </select>
+            </label>
+            <label>
+              Miktar
+              <input name="quantity" type="number" min="0" step="1" />
+            </label>
+            <label class="full-width">
+              Açıklama
+              <input name="note" placeholder="Fiş açıklaması" />
+            </label>
+            <button class="primary" type="submit">Hareket Kaydet</button>
+          </form>
         </section>
       </main>
     </div>

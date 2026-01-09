@@ -18,7 +18,8 @@ const loadStorage = async () => {
     customers: [],
     stocks: [],
     cashTransactions: [],
-    sales: []
+    sales: [],
+    stockMovements: []
   };
 };
 
@@ -90,6 +91,9 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     const { customerId, amount, note } = payload;
     const normalizedAmount = Number(amount || 0);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
     data.customers = data.customers.map((customer) => {
       if (customer.id !== customerId) {
         return customer;
@@ -105,7 +109,9 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, {
       type: "gelir",
       amount: normalizedAmount,
-      note: note || "Cari Tahsilat"
+      note: note || "Cari Tahsilat",
+      customerId,
+      customerName
     });
     await saveStorage(data);
     return data;
@@ -116,6 +122,31 @@ app.whenReady().then(() => {
     data.stocks = createRecord(data.stocks, payload);
     await saveStorage(data);
     return data.stocks;
+  });
+
+  ipcMain.handle("stocks:movement", async (_event, payload) => {
+    const data = await loadStorage();
+    const { stockName, type, quantity, note } = payload;
+    data.stockMovements = createRecord(data.stockMovements, {
+      stockName,
+      type,
+      quantity: Number(quantity || 0),
+      note
+    });
+    data.stocks = data.stocks.map((stock) => {
+      if (stock.name !== stockName) {
+        return stock;
+      }
+      const current = Number(stock.quantity || 0);
+      const delta = Number(quantity || 0);
+      const nextQuantity = type === "giris" ? current + delta : current - delta;
+      return {
+        ...stock,
+        quantity: Math.max(nextQuantity, 0)
+      };
+    });
+    await saveStorage(data);
+    return data;
   });
 
   ipcMain.handle("cash:create", async (_event, payload) => {
@@ -188,7 +219,7 @@ app.whenReady().then(() => {
         sandbox: false
       }
     });
-    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-watermark{position:fixed;top:40%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
     await reportWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
     );
