@@ -5,6 +5,12 @@ const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
 const lastBackupEl = document.getElementById("last-backup");
 const backupPathEl = document.getElementById("backup-path");
+const customerForm = document.getElementById("customer-form");
+const customersTable = document.getElementById("customers-table");
+const stockForm = document.getElementById("stock-form");
+const stocksTable = document.getElementById("stocks-table");
+const cashForm = document.getElementById("cash-form");
+const cashTable = document.getElementById("cash-table");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -63,6 +69,91 @@ if (window.mtnApp) {
   versionEl.textContent = window.mtnApp.version;
 }
 
+const renderCustomers = (items) => {
+  customersTable.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.name || "-"}</td>
+      <td>${item.phone || "-"}</td>
+      <td>${item.taxNumber || "-"}</td>
+      <td>${item.email || "-"}</td>
+    `;
+    customersTable.appendChild(row);
+  });
+};
+
+const renderStocks = (items) => {
+  stocksTable.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.name || "-"}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${item.quantity || 0}</td>
+      <td>${item.threshold || 0}</td>
+    `;
+    stocksTable.appendChild(row);
+  });
+};
+
+const renderCash = (items) => {
+  cashTable.innerHTML = "";
+  items.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${item.type || "-"}</td>
+      <td>${formatCurrency(Number(item.amount) || 0)}</td>
+      <td>${item.note || "-"}</td>
+    `;
+    cashTable.appendChild(row);
+  });
+};
+
+const loadInitialData = async () => {
+  if (!window.mtnApp?.getData) {
+    return;
+  }
+  const data = await window.mtnApp.getData();
+  renderCustomers(data.customers || []);
+  renderStocks(data.stocks || []);
+  renderCash(data.cashTransactions || []);
+};
+
+if (customerForm) {
+  customerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(customerForm);
+    const payload = Object.fromEntries(formData.entries());
+    const updated = await window.mtnApp.createCustomer(payload);
+    renderCustomers(updated);
+    customerForm.reset();
+  });
+}
+
+if (stockForm) {
+  stockForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(stockForm);
+    const payload = Object.fromEntries(formData.entries());
+    const updated = await window.mtnApp.createStock(payload);
+    renderStocks(updated);
+    stockForm.reset();
+  });
+}
+
+if (cashForm) {
+  cashForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const formData = new FormData(cashForm);
+    const payload = Object.fromEntries(formData.entries());
+    const updated = await window.mtnApp.createCash(payload);
+    renderCash(updated);
+    cashForm.reset();
+  });
+}
+
 const buildBackupPayload = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
     const getValue = (field) =>
@@ -76,14 +167,24 @@ const buildBackupPayload = () => {
     };
   });
 
-  return {
-    meta: {
-      appVersion: window.mtnApp?.version || "0.1.0",
-      module: "teklif"
-    },
-    teklif: rows,
-    toplam: totalEl.textContent
-  };
+  return window.mtnApp?.getData
+    ? window.mtnApp.getData().then((data) => ({
+        meta: {
+          appVersion: window.mtnApp?.version || "0.1.0",
+          module: "teklif"
+        },
+        teklif: rows,
+        toplam: totalEl.textContent,
+        data
+      }))
+    : {
+        meta: {
+          appVersion: window.mtnApp?.version || "0.1.0",
+          module: "teklif"
+        },
+        teklif: rows,
+        toplam: totalEl.textContent
+      };
 };
 
 if (backupButton) {
@@ -93,8 +194,11 @@ if (backupButton) {
       return;
     }
 
-    const result = await window.mtnApp.createBackup(buildBackupPayload());
+    const payload = await buildBackupPayload();
+    const result = await window.mtnApp.createBackup(payload);
     lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
     backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
   });
 }
+
+loadInitialData();
