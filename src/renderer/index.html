@@ -228,8 +228,11 @@
 
         <section class="offer">
           <div class="offer__header">
-            <h2>Teklif Kalemleri (Enter ile yeni satır)</h2>
-            <button id="add-row">+ Satır Ekle</button>
+            <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
+            <div class="offer__actions">
+              <button id="add-row">+ Satır Ekle</button>
+              <button class="primary" id="offer-pdf">Fatura PDF</button>
+            </div>
           </div>
           <table class="offer__table">
             <thead>
@@ -244,8 +247,24 @@
             <tbody id="offer-body"></tbody>
           </table>
           <div class="offer__summary">
-            <span>Genel Toplam</span>
-            <strong id="offer-total">₺0,00</strong>
+            <label>
+              KDV Oranı (%)
+              <input id="offer-vat" type="number" min="0" step="1" value="20" />
+            </label>
+            <div class="offer__totals">
+              <div>
+                <span>Ara Toplam</span>
+                <strong id="offer-subtotal">₺0,00</strong>
+              </div>
+              <div>
+                <span>KDV Toplam</span>
+                <strong id="offer-vat-total">₺0,00</strong>
+              </div>
+              <div>
+                <span>Genel Toplam</span>
+                <strong id="offer-total">₺0,00</strong>
+              </div>
+            </div>
           </div>
         </section>
       </main>
