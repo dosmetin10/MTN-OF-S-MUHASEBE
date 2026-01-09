@@ -11,6 +11,10 @@ const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
+const reportCustomersButton = document.getElementById("report-customers");
+const reportStocksButton = document.getElementById("report-stocks");
+const reportCashButton = document.getElementById("report-cash");
+const reportPathEl = document.getElementById("report-path");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -18,6 +22,14 @@ const formatCurrency = (value) =>
     currency: "TRY",
     minimumFractionDigits: 2
   }).format(value || 0);
+
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
@@ -121,6 +133,73 @@ const loadInitialData = async () => {
   renderCash(data.cashTransactions || []);
 };
 
+const buildReportTable = (title, headers, rows) => {
+  const headerCells = headers.map((header) => `<th>${header}</th>`).join("");
+  const rowHtml = rows
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+          .join("")}</tr>`
+    )
+    .join("");
+  return `
+    <h1>${escapeHtml(title)}</h1>
+    <table>
+      <thead><tr>${headerCells}</tr></thead>
+      <tbody>${rowHtml}</tbody>
+    </table>
+  `;
+};
+
+const generateReport = async (type) => {
+  if (!window.mtnApp?.getData || !window.mtnApp?.generateReport) {
+    reportPathEl.textContent = "Rapor servisi hazır değil.";
+    return;
+  }
+  const data = await window.mtnApp.getData();
+  let title = "";
+  let headers = [];
+  let rows = [];
+
+  if (type === "customers") {
+    title = "Cari Raporu";
+    headers = ["Ünvan", "Telefon", "Vergi No", "E-posta"];
+    rows = (data.customers || []).map((item) => [
+      item.name || "-",
+      item.phone || "-",
+      item.taxNumber || "-",
+      item.email || "-"
+    ]);
+  }
+
+  if (type === "stocks") {
+    title = "Stok Raporu";
+    headers = ["Malzeme", "Birim", "Stok", "Kritik Seviye"];
+    rows = (data.stocks || []).map((item) => [
+      item.name || "-",
+      item.unit || "-",
+      item.quantity || 0,
+      item.threshold || 0
+    ]);
+  }
+
+  if (type === "cash") {
+    title = "Kasa Raporu";
+    headers = ["Tarih", "Tür", "Tutar", "Açıklama"];
+    rows = (data.cashTransactions || []).map((item) => [
+      new Date(item.createdAt).toLocaleDateString("tr-TR"),
+      item.type || "-",
+      formatCurrency(Number(item.amount) || 0),
+      item.note || "-"
+    ]);
+  }
+
+  const html = buildReportTable(title, headers, rows);
+  const result = await window.mtnApp.generateReport({ title, html });
+  reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+};
+
 if (customerForm) {
   customerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -199,6 +278,20 @@ if (backupButton) {
     lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
     backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
   });
+}
+
+if (reportCustomersButton) {
+  reportCustomersButton.addEventListener("click", () =>
+    generateReport("customers")
+  );
+}
+
+if (reportStocksButton) {
+  reportStocksButton.addEventListener("click", () => generateReport("stocks"));
+}
+
+if (reportCashButton) {
+  reportCashButton.addEventListener("click", () => generateReport("cash"));
 }
 
 loadInitialData();
