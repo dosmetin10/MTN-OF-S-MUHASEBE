@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld("mtnApp", {
   createCustomer: (payload) => ipcRenderer.invoke("customers:create", payload),
   createStock: (payload) => ipcRenderer.invoke("stocks:create", payload),
   createCash: (payload) => ipcRenderer.invoke("cash:create", payload),
+  createSale: (payload) => ipcRenderer.invoke("sales:create", payload),
   generateReport: (payload) => ipcRenderer.invoke("report:generate", payload)
 });
