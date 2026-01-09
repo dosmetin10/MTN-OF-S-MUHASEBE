@@ -24,15 +24,23 @@ const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
+const cashStartInput = document.getElementById("cash-start");
+const cashEndInput = document.getElementById("cash-end");
+const cashTypeSelect = document.getElementById("cash-type");
 const salesTable = document.getElementById("sales-table");
 const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
 const reportCashButton = document.getElementById("report-cash");
 const reportPathEl = document.getElementById("report-path");
+const detailCustomerSelect = document.getElementById("detail-customer");
+const detailTable = document.getElementById("detail-table");
+const detailReportButton = document.getElementById("detail-report");
 const loginScreen = document.getElementById("login-screen");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const appShell = document.getElementById("app-shell");
+const stockMovementForm = document.getElementById("stock-movement-form");
+const movementStockSelect = document.getElementById("movement-stock");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -155,6 +163,13 @@ const renderCustomers = (items) => {
     defaultOption.textContent = "Cari Seç";
     paymentCustomerSelect.appendChild(defaultOption);
   }
+  if (detailCustomerSelect) {
+    detailCustomerSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Cari Seç";
+    detailCustomerSelect.appendChild(defaultOption);
+  }
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -177,11 +192,24 @@ const renderCustomers = (items) => {
       option.textContent = item.name || "Cari";
       paymentCustomerSelect.appendChild(option);
     }
+    if (detailCustomerSelect) {
+      const option = document.createElement("option");
+      option.value = item.id || item.name || "";
+      option.textContent = item.name || "Cari";
+      detailCustomerSelect.appendChild(option);
+    }
   });
 };
 
 const renderStocks = (items) => {
   stocksTable.innerHTML = "";
+  if (movementStockSelect) {
+    movementStockSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Malzeme Seç";
+    movementStockSelect.appendChild(defaultOption);
+  }
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -191,16 +219,44 @@ const renderStocks = (items) => {
       <td>${item.threshold || 0}</td>
     `;
     stocksTable.appendChild(row);
+    if (movementStockSelect) {
+      const option = document.createElement("option");
+      option.value = item.name || "";
+      option.textContent = item.name || "Malzeme";
+      movementStockSelect.appendChild(option);
+    }
   });
 };
 
 const renderCash = (items) => {
+  let filtered = items;
+  const startValue = cashStartInput?.value;
+  const endValue = cashEndInput?.value;
+  const typeValue = cashTypeSelect?.value;
+
+  if (startValue) {
+    const startDate = new Date(startValue);
+    filtered = filtered.filter(
+      (item) => new Date(item.createdAt) >= startDate
+    );
+  }
+  if (endValue) {
+    const endDate = new Date(endValue);
+    endDate.setHours(23, 59, 59, 999);
+    filtered = filtered.filter((item) => new Date(item.createdAt) <= endDate);
+  }
+  if (typeValue) {
+    filtered = filtered.filter((item) => item.type === typeValue);
+  }
+
   cashTable.innerHTML = "";
-  items.forEach((item) => {
+  filtered.forEach((item) => {
     const row = document.createElement("tr");
+    const badgeClass =
+      item.type === "gider" ? "badge badge--expense" : "badge badge--income";
     row.innerHTML = `
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
-      <td>${item.type || "-"}</td>
+      <td><span class="${badgeClass}">${item.type || "-"}</span></td>
       <td>${formatCurrency(Number(item.amount) || 0)}</td>
       <td>${item.note || "-"}</td>
     `;
@@ -222,6 +278,46 @@ const renderSales = (items) => {
       <td>${Number(item.vatRate || 0)}</td>
     `;
     salesTable.appendChild(row);
+  });
+};
+
+const renderCustomerDetail = (data) => {
+  if (!detailTable) {
+    return;
+  }
+  const customerId = detailCustomerSelect?.value;
+  if (!customerId) {
+    detailTable.innerHTML = "";
+    return;
+  }
+  const sales = (data.sales || []).filter(
+    (sale) => sale.customerId === customerId
+  );
+  const payments = (data.cashTransactions || []).filter(
+    (entry) => entry.customerId === customerId
+  );
+  detailTable.innerHTML = "";
+
+  sales.forEach((sale) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(sale.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>Satış</td>
+      <td>${formatCurrency(Number(sale.total) || 0)}</td>
+      <td>Satış faturası</td>
+    `;
+    detailTable.appendChild(row);
+  });
+
+  payments.forEach((payment) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(payment.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>Tahsilat</td>
+      <td>${formatCurrency(Number(payment.amount) || 0)}</td>
+      <td>${payment.note || "Cari Tahsilat"}</td>
+    `;
+    detailTable.appendChild(row);
   });
 };
 
@@ -288,6 +384,7 @@ const loadInitialData = async () => {
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
   renderSummary(data);
+  renderCustomerDetail(data);
 };
 
 const buildReportTable = (title, headers, rows, options = {}) => {
@@ -313,7 +410,7 @@ const buildReportTable = (title, headers, rows, options = {}) => {
     </div>
   `;
   const watermark = includeWatermark
-    ? `<div class="report-watermark">MTN ENERJİ MÜHENDİSLİK</div>`
+    ? `<div class="report-watermark"><img src="assets/logo.svg" alt="MTN logo" /></div>`
     : "";
   return `
     ${companyHtml}
@@ -344,7 +441,7 @@ const buildInvoiceHtml = (title, rows) => {
       </div>
       <div class="report-logo">MTN</div>
     </div>
-    <div class="report-watermark">MTN ENERJİ MÜHENDİSLİK</div>
+    <div class="report-watermark"><img src="assets/logo.svg" alt="MTN logo" /></div>
     <table>
       <thead>
         <tr>
@@ -429,8 +526,10 @@ if (customerForm) {
     event.preventDefault();
     const formData = new FormData(customerForm);
     const payload = Object.fromEntries(formData.entries());
-    const updated = await window.mtnApp.createCustomer(payload);
-    renderCustomers(updated);
+    await window.mtnApp.createCustomer(payload);
+    const data = await window.mtnApp.getData();
+    renderCustomers(data.customers || []);
+    renderSummary(data);
     customerForm.reset();
   });
 }
@@ -457,6 +556,7 @@ if (customerPaymentForm) {
     renderCustomers(result.customers || []);
     renderCash(result.cashTransactions || []);
     renderSummary(result);
+    renderCustomerDetail(result);
     reportPathEl.textContent = "Tahsilat kaydedildi.";
     customerPaymentForm.reset();
   });
@@ -467,8 +567,10 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
-    const updated = await window.mtnApp.createStock(payload);
-    renderStocks(updated);
+    await window.mtnApp.createStock(payload);
+    const data = await window.mtnApp.getData();
+    renderStocks(data.stocks || []);
+    renderSummary(data);
     stockForm.reset();
   });
 }
@@ -478,9 +580,47 @@ if (cashForm) {
     event.preventDefault();
     const formData = new FormData(cashForm);
     const payload = Object.fromEntries(formData.entries());
-    const updated = await window.mtnApp.createCash(payload);
-    renderCash(updated);
+    await window.mtnApp.createCash(payload);
+    const data = await window.mtnApp.getData();
+    renderCash(data.cashTransactions || []);
+    renderSummary(data);
     cashForm.reset();
+  });
+}
+
+if (cashStartInput) {
+  [cashStartInput, cashEndInput, cashTypeSelect].forEach((input) => {
+    input?.addEventListener("input", async () => {
+      const data = await window.mtnApp.getData();
+      renderCash(data.cashTransactions || []);
+    });
+  });
+}
+
+if (stockMovementForm) {
+  stockMovementForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.moveStock) {
+      reportPathEl.textContent = "Stok hareket servisi hazır değil.";
+      return;
+    }
+    const formData = new FormData(stockMovementForm);
+    const payload = Object.fromEntries(formData.entries());
+    const stockName = movementStockSelect?.value || "";
+    if (!stockName) {
+      reportPathEl.textContent = "Lütfen malzeme seçin.";
+      return;
+    }
+    const result = await window.mtnApp.moveStock({
+      stockName,
+      type: payload.type,
+      quantity: payload.quantity,
+      note: payload.note
+    });
+    renderStocks(result.stocks || []);
+    renderSummary(result);
+    reportPathEl.textContent = "Stok hareketi kaydedildi.";
+    stockMovementForm.reset();
   });
 }
 
@@ -545,6 +685,38 @@ if (reportCashButton) {
   reportCashButton.addEventListener("click", () => generateReport("cash"));
 }
 
+if (detailCustomerSelect) {
+  detailCustomerSelect.addEventListener("change", async () => {
+    const data = await window.mtnApp.getData();
+    renderCustomerDetail(data);
+  });
+}
+
+if (detailReportButton) {
+  detailReportButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const customerName =
+      detailCustomerSelect?.selectedOptions?.[0]?.textContent || "Cari";
+    const rows = Array.from(detailTable?.querySelectorAll("tr") || []).map(
+      (row) => Array.from(row.children).map((cell) => cell.textContent || "")
+    );
+    const html = buildReportTable(
+      `Cari Ekstre - ${customerName}`,
+      ["Tarih", "Tür", "Tutar", "Açıklama"],
+      rows,
+      { includeWatermark: true }
+    );
+    const result = await window.mtnApp.generateReport({
+      title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
+      html
+    });
+    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
+}
+
 if (offerPdfButton) {
   offerPdfButton.addEventListener("click", async () => {
     if (!window.mtnApp?.generateReport) {
@@ -600,6 +772,7 @@ if (offerSaveButton) {
     renderSales(result.sales || []);
     renderCustomers(result.customers || []);
     renderSummary(result);
+    renderCustomerDetail(result);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
   });
 }
