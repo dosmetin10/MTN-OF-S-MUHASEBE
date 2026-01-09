@@ -13,6 +13,8 @@ const backupButton = document.getElementById("backup-now");
 const lastBackupEl = document.getElementById("last-backup");
 const backupPathEl = document.getElementById("backup-path");
 const customerForm = document.getElementById("customer-form");
+const customerPaymentForm = document.getElementById("customer-payment-form");
+const paymentCustomerSelect = document.getElementById("payment-customer");
 const customersTable = document.getElementById("customers-table");
 const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
@@ -142,6 +144,13 @@ const renderCustomers = (items) => {
     defaultOption.textContent = "Genel";
     offerCustomerSelect.appendChild(defaultOption);
   }
+  if (paymentCustomerSelect) {
+    paymentCustomerSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Cari Seç";
+    paymentCustomerSelect.appendChild(defaultOption);
+  }
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -157,6 +166,12 @@ const renderCustomers = (items) => {
       option.value = item.id || item.name || "";
       option.textContent = item.name || "Cari";
       offerCustomerSelect.appendChild(option);
+    }
+    if (paymentCustomerSelect) {
+      const option = document.createElement("option");
+      option.value = item.id || item.name || "";
+      option.textContent = item.name || "Cari";
+      paymentCustomerSelect.appendChild(option);
     }
   });
 };
@@ -359,6 +374,32 @@ if (customerForm) {
     const updated = await window.mtnApp.createCustomer(payload);
     renderCustomers(updated);
     customerForm.reset();
+  });
+}
+
+if (customerPaymentForm) {
+  customerPaymentForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.collectPayment) {
+      reportPathEl.textContent = "Tahsilat servisi hazır değil.";
+      return;
+    }
+    const formData = new FormData(customerPaymentForm);
+    const payload = Object.fromEntries(formData.entries());
+    const customerId = paymentCustomerSelect?.value || "";
+    if (!customerId) {
+      reportPathEl.textContent = "Lütfen cari seçin.";
+      return;
+    }
+    const result = await window.mtnApp.collectPayment({
+      customerId,
+      amount: payload.amount,
+      note: payload.note
+    });
+    renderCustomers(result.customers || []);
+    renderCash(result.cashTransactions || []);
+    reportPathEl.textContent = "Tahsilat kaydedildi.";
+    customerPaymentForm.reset();
   });
 }
 
