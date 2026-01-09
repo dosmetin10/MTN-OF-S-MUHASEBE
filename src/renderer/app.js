@@ -5,6 +5,9 @@ const subtotalEl = document.getElementById("offer-subtotal");
 const vatTotalEl = document.getElementById("offer-vat-total");
 const vatInput = document.getElementById("offer-vat");
 const offerPdfButton = document.getElementById("offer-pdf");
+const offerCustomerSelect = document.getElementById("offer-customer");
+const offerPaymentSelect = document.getElementById("offer-payment");
+const offerSaveButton = document.getElementById("offer-save");
 const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
 const lastBackupEl = document.getElementById("last-backup");
@@ -131,6 +134,13 @@ if (window.mtnApp) {
 
 const renderCustomers = (items) => {
   customersTable.innerHTML = "";
+  if (offerCustomerSelect) {
+    offerCustomerSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Genel";
+    offerCustomerSelect.appendChild(defaultOption);
+  }
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -140,6 +150,12 @@ const renderCustomers = (items) => {
       <td>${item.email || "-"}</td>
     `;
     customersTable.appendChild(row);
+    if (offerCustomerSelect) {
+      const option = document.createElement("option");
+      option.value = item.id || item.name || "";
+      option.textContent = item.name || "Cari";
+      offerCustomerSelect.appendChild(option);
+    }
   });
 };
 
@@ -427,6 +443,40 @@ if (offerPdfButton) {
       html
     });
     reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
+}
+
+if (offerSaveButton) {
+  offerSaveButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.createSale) {
+      reportPathEl.textContent = "Satış servisi hazır değil.";
+      return;
+    }
+    const customerId = offerCustomerSelect?.value || "";
+    const customerName =
+      offerCustomerSelect?.selectedOptions?.[0]?.textContent || "Genel";
+    const vatRate = Number(vatInput?.value || 0);
+    const items = Array.from(offerBody.querySelectorAll("tr")).map((row) => ({
+      name: row.querySelector("[data-field='name']")?.value || "",
+      quantity: Number(row.querySelector("[data-field='quantity']")?.value || 0),
+      unit: row.querySelector("[data-field='unit']")?.value || "",
+      price: Number(row.querySelector("[data-field='price']")?.value || 0),
+      total: Number(row.querySelector("[data-field='total']")?.value || 0)
+    }));
+    const total = Number(
+      totalEl.textContent.replace(/[^\d,.-]/g, "").replace(",", ".")
+    );
+    const result = await window.mtnApp.createSale({
+      customerId,
+      customerName,
+      vatRate,
+      paymentType: offerPaymentSelect?.value || "nakit",
+      total,
+      items
+    });
+    renderStocks(result.stocks || []);
+    renderCash(result.cashTransactions || []);
+    reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
   });
 }
 
