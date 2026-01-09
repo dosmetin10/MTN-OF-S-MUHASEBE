@@ -17,7 +17,8 @@ const loadStorage = async () => {
   return {
     customers: [],
     stocks: [],
-    cashTransactions: []
+    cashTransactions: [],
+    sales: []
   };
 };
 
@@ -94,6 +95,42 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, payload);
     await saveStorage(data);
     return data.cashTransactions;
+  });
+
+  ipcMain.handle("sales:create", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, customerName, items, total, vatRate } = payload;
+    const saleRecord = {
+      customerId,
+      customerName,
+      items,
+      total,
+      vatRate
+    };
+    data.sales = createRecord(data.sales, saleRecord);
+
+    const updatedStocks = data.stocks.map((stock) => {
+      const item = items.find((entry) => entry.name === stock.name);
+      if (!item) {
+        return stock;
+      }
+      const nextQuantity =
+        Number(stock.quantity || 0) - Number(item.quantity || 0);
+      return {
+        ...stock,
+        quantity: Math.max(nextQuantity, 0)
+      };
+    });
+    data.stocks = updatedStocks;
+
+    data.cashTransactions = createRecord(data.cashTransactions, {
+      type: "gelir",
+      amount: total,
+      note: `Satış: ${customerName || "Genel"}`
+    });
+
+    await saveStorage(data);
+    return data;
   });
 
   ipcMain.handle("report:generate", async (_event, payload) => {
