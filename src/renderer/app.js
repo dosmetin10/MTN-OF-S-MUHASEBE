@@ -1,6 +1,10 @@
 const offerBody = document.getElementById("offer-body");
 const addRowButton = document.getElementById("add-row");
 const totalEl = document.getElementById("offer-total");
+const subtotalEl = document.getElementById("offer-subtotal");
+const vatTotalEl = document.getElementById("offer-vat-total");
+const vatInput = document.getElementById("offer-vat");
+const offerPdfButton = document.getElementById("offer-pdf");
 const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
 const lastBackupEl = document.getElementById("last-backup");
@@ -58,12 +62,27 @@ const handleLogin = (event) => {
 
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
-  const total = rows.reduce((sum, row) => {
+  const subtotal = rows.reduce((sum, row) => {
+    const quantity = Number(
+      row.querySelector("[data-field='quantity']")?.value || 0
+    );
+    const price = Number(
+      row.querySelector("[data-field='price']")?.value || 0
+    );
     const totalInput = row.querySelector("[data-field='total']");
-    const value = Number(totalInput?.value) || 0;
-    return sum + value;
+    const rowTotal = quantity * price;
+    if (totalInput) {
+      totalInput.value = rowTotal ? rowTotal.toFixed(2) : "";
+    }
+    return sum + rowTotal;
   }, 0);
 
+  const vatRate = Number(vatInput?.value || 0) / 100;
+  const vatTotal = subtotal * vatRate;
+  const total = subtotal + vatTotal;
+
+  subtotalEl.textContent = formatCurrency(subtotal);
+  vatTotalEl.textContent = formatCurrency(vatTotal);
   totalEl.textContent = formatCurrency(total);
 };
 
@@ -101,6 +120,10 @@ addRowButton.addEventListener("click", () => {
 
 offerBody.appendChild(createRow());
 calculateTotal();
+
+if (vatInput) {
+  vatInput.addEventListener("input", calculateTotal);
+}
 
 if (window.mtnApp) {
   versionEl.textContent = window.mtnApp.version;
@@ -190,6 +213,54 @@ const buildReportTable = (title, headers, rows, options = {}) => {
       <thead><tr>${headerCells}</tr></thead>
       <tbody>${rowHtml}</tbody>
     </table>
+  `;
+};
+
+const buildInvoiceHtml = (title, rows) => {
+  const rowHtml = rows
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+          .join("")}</tr>`
+    )
+    .join("");
+  return `
+    <div class="report-header">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>MTN ENERJİ MÜHENDİSLİK (METİN DÖŞ)</p>
+        <p>Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / G.ANTEP</p>
+        <p>Tel: 0535 641 90 61 • Vergi Dairesi: ŞAHİNBEY • Vergi No: 14168163156</p>
+      </div>
+      <div class="report-logo">MTN</div>
+    </div>
+    <div class="report-watermark">MTN ENERJİ MÜHENDİSLİK</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Malzeme</th>
+          <th>Miktar</th>
+          <th>Birim</th>
+          <th>Birim Fiyat</th>
+          <th>Tutar</th>
+        </tr>
+      </thead>
+      <tbody>${rowHtml}</tbody>
+    </table>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+      <table style="width:260px;border-collapse:collapse;">
+        <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+          subtotalEl.textContent
+        )}</td></tr>
+        <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+          vatTotalEl.textContent
+        )}</td></tr>
+        <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+          totalEl.textContent
+        )}</strong></td></tr>
+      </table>
+    </div>
   `;
 };
 
@@ -335,6 +406,28 @@ if (reportStocksButton) {
 
 if (reportCashButton) {
   reportCashButton.addEventListener("click", () => generateReport("cash"));
+}
+
+if (offerPdfButton) {
+  offerPdfButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => [
+      row.querySelector("[data-field='name']")?.value || "-",
+      row.querySelector("[data-field='quantity']")?.value || "0",
+      row.querySelector("[data-field='unit']")?.value || "-",
+      row.querySelector("[data-field='price']")?.value || "0",
+      row.querySelector("[data-field='total']")?.value || "0"
+    ]);
+    const html = buildInvoiceHtml("Satış Faturası", rows);
+    const result = await window.mtnApp.generateReport({
+      title: "Satis-Faturasi",
+      html
+    });
+    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
 }
 
 if (loginForm) {
