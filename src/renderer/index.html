@@ -279,6 +279,8 @@
             <button class="primary" id="report-customers">Cari Ekstre (PDF)</button>
             <button class="primary" id="report-stocks">Stok Raporu (PDF)</button>
             <button class="primary" id="report-cash">Satış Raporu (PDF)</button>
+            <button class="primary" id="report-stock-movements">Stok Hareket Raporu</button>
+            <button class="primary" id="report-cash-summary">Kasa Özet Raporu</button>
           </div>
           <p class="report-path" id="report-path"></p>
         </section>
@@ -387,6 +389,39 @@
             </label>
             <button class="primary" type="submit">Hareket Kaydet</button>
           </form>
+        </section>
+
+        <section class="module" id="settings-module">
+          <div class="module__header">
+            <h2>Otomatik Yedekleme & Taşıma</h2>
+            <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
+          </div>
+          <form class="form-grid" id="settings-form">
+            <label>
+              Otomatik Taşıma Klasörü
+              <input id="auto-sync-path" placeholder="\\\\SUNUCU\\MTN-YEDEK" />
+            </label>
+            <label>
+              Aktif
+              <select id="auto-sync-enabled">
+                <option value="false">Hayır</option>
+                <option value="true">Evet</option>
+              </select>
+            </label>
+            <label>
+              Bulut Yedek Klasörü
+              <input id="cloud-backup-path" placeholder="C:\\Users\\...\\OneDrive\\MTN" />
+            </label>
+            <label>
+              Aktif
+              <select id="cloud-backup-enabled">
+                <option value="false">Hayır</option>
+                <option value="true">Evet</option>
+              </select>
+            </label>
+            <button class="primary" type="submit">Ayarları Kaydet</button>
+          </form>
+          <p class="report-path" id="settings-status"></p>
         </section>
       </main>
     </div>

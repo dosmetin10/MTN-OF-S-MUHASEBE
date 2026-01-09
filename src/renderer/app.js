@@ -31,6 +31,10 @@ const salesTable = document.getElementById("sales-table");
 const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
 const reportCashButton = document.getElementById("report-cash");
+const reportStockMovementsButton = document.getElementById(
+  "report-stock-movements"
+);
+const reportCashSummaryButton = document.getElementById("report-cash-summary");
 const reportPathEl = document.getElementById("report-path");
 const detailCustomerSelect = document.getElementById("detail-customer");
 const detailTable = document.getElementById("detail-table");
@@ -41,6 +45,12 @@ const loginError = document.getElementById("login-error");
 const appShell = document.getElementById("app-shell");
 const stockMovementForm = document.getElementById("stock-movement-form");
 const movementStockSelect = document.getElementById("movement-stock");
+const settingsForm = document.getElementById("settings-form");
+const autoSyncPathInput = document.getElementById("auto-sync-path");
+const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
+const cloudBackupPathInput = document.getElementById("cloud-backup-path");
+const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
+const settingsStatusEl = document.getElementById("settings-status");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -385,6 +395,21 @@ const loadInitialData = async () => {
   renderSales(data.sales || []);
   renderSummary(data);
   renderCustomerDetail(data);
+  if (window.mtnApp?.getSettings) {
+    const settings = await window.mtnApp.getSettings();
+    if (autoSyncPathInput) {
+      autoSyncPathInput.value = settings.autoSyncPath || "";
+    }
+    if (autoSyncEnabledSelect) {
+      autoSyncEnabledSelect.value = String(settings.enableAutoSync);
+    }
+    if (cloudBackupPathInput) {
+      cloudBackupPathInput.value = settings.cloudBackupPath || "";
+    }
+    if (cloudBackupEnabledSelect) {
+      cloudBackupEnabledSelect.value = String(settings.enableCloudBackup);
+    }
+  }
 };
 
 const buildReportTable = (title, headers, rows, options = {}) => {
@@ -514,6 +539,35 @@ const generateReport = async (type) => {
     ]);
   }
 
+  if (type === "stock-movements") {
+    title = "Stok Hareket Raporu";
+    headers = ["Tarih", "Malzeme", "Tür", "Miktar", "Açıklama"];
+    rows = (data.stockMovements || []).map((item) => [
+      new Date(item.createdAt).toLocaleDateString("tr-TR"),
+      item.stockName || "-",
+      item.type || "-",
+      Number(item.quantity || 0),
+      item.note || "-"
+    ]);
+  }
+
+  if (type === "cash-summary") {
+    title = "Kasa Özet Raporu";
+    const totalIncome = (data.cashTransactions || [])
+      .filter((item) => item.type === "gelir")
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalExpense = (data.cashTransactions || [])
+      .filter((item) => item.type === "gider")
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const net = totalIncome - totalExpense;
+    headers = ["Kalem", "Tutar"];
+    rows = [
+      ["Toplam Gelir", formatCurrency(totalIncome)],
+      ["Toplam Gider", formatCurrency(totalExpense)],
+      ["Net", formatCurrency(net)]
+    ];
+  }
+
   const html = buildReportTable(title, headers, rows, {
     includeWatermark: type === "customers" || type === "cash"
   });
@@ -624,6 +678,24 @@ if (stockMovementForm) {
   });
 }
 
+if (settingsForm) {
+  settingsForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.saveSettings) {
+      settingsStatusEl.textContent = "Ayar servisi hazır değil.";
+      return;
+    }
+    const payload = {
+      autoSyncPath: autoSyncPathInput?.value || "",
+      cloudBackupPath: cloudBackupPathInput?.value || "",
+      enableAutoSync: autoSyncEnabledSelect?.value === "true",
+      enableCloudBackup: cloudBackupEnabledSelect?.value === "true"
+    };
+    await window.mtnApp.saveSettings(payload);
+    settingsStatusEl.textContent = "Ayarlar kaydedildi.";
+  });
+}
+
 const buildBackupPayload = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
     const getValue = (field) =>
@@ -683,6 +755,18 @@ if (reportStocksButton) {
 
 if (reportCashButton) {
   reportCashButton.addEventListener("click", () => generateReport("cash"));
+}
+
+if (reportStockMovementsButton) {
+  reportStockMovementsButton.addEventListener("click", () =>
+    generateReport("stock-movements")
+  );
+}
+
+if (reportCashSummaryButton) {
+  reportCashSummaryButton.addEventListener("click", () =>
+    generateReport("cash-summary")
+  );
 }
 
 if (detailCustomerSelect) {

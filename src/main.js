@@ -3,6 +3,7 @@ const fs = require("fs/promises");
 const path = require("path");
 
 const storageFileName = "mtn-data.json";
+const settingsFileName = "mtn-settings.json";
 
 const loadStorage = async () => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
@@ -26,6 +27,44 @@ const loadStorage = async () => {
 const saveStorage = async (data) => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+};
+
+const loadSettings = async () => {
+  const filePath = path.join(app.getPath("userData"), settingsFileName);
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    return JSON.parse(raw);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+  return {
+    autoSyncPath: "",
+    cloudBackupPath: "",
+    enableAutoSync: false,
+    enableCloudBackup: false
+  };
+};
+
+const saveSettings = async (settings) => {
+  const filePath = path.join(app.getPath("userData"), settingsFileName);
+  await fs.writeFile(filePath, JSON.stringify(settings, null, 2), "utf8");
+};
+
+const syncStorageCopies = async (data) => {
+  const settings = await loadSettings();
+  const payload = JSON.stringify(data, null, 2);
+  const tasks = [];
+  if (settings.enableAutoSync && settings.autoSyncPath) {
+    const target = path.join(settings.autoSyncPath, storageFileName);
+    tasks.push(fs.writeFile(target, payload, "utf8"));
+  }
+  if (settings.enableCloudBackup && settings.cloudBackupPath) {
+    const target = path.join(settings.cloudBackupPath, storageFileName);
+    tasks.push(fs.writeFile(target, payload, "utf8"));
+  }
+  await Promise.allSettled(tasks);
 };
 
 const createRecord = (items, record) => [
@@ -76,6 +115,11 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle("data:get", async () => loadStorage());
+  ipcMain.handle("settings:get", async () => loadSettings());
+  ipcMain.handle("settings:save", async (_event, payload) => {
+    await saveSettings(payload);
+    return payload;
+  });
 
   ipcMain.handle("customers:create", async (_event, payload) => {
     const data = await loadStorage();
@@ -84,6 +128,7 @@ app.whenReady().then(() => {
       ...payload
     });
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data.customers;
   });
 
@@ -114,6 +159,7 @@ app.whenReady().then(() => {
       customerName
     });
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data;
   });
 
@@ -121,6 +167,7 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     data.stocks = createRecord(data.stocks, payload);
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data.stocks;
   });
 
@@ -146,6 +193,7 @@ app.whenReady().then(() => {
       };
     });
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data;
   });
 
@@ -153,6 +201,7 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     data.cashTransactions = createRecord(data.cashTransactions, payload);
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data.cashTransactions;
   });
 
@@ -201,6 +250,7 @@ app.whenReady().then(() => {
     });
 
     await saveStorage(data);
+    await syncStorageCopies(data);
     return data;
   });
 
