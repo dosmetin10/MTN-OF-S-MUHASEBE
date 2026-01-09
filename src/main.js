@@ -46,10 +46,11 @@ const createWindow = () => {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+  return mainWindow;
 };
 
 app.whenReady().then(() => {
-  createWindow();
+  const mainWindow = createWindow();
 
   ipcMain.handle("backup:create", async (_event, payload) => {
     const baseDir = path.join(
@@ -93,6 +94,31 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, payload);
     await saveStorage(data);
     return data.cashTransactions;
+  });
+
+  ipcMain.handle("report:generate", async (_event, payload) => {
+    const { title, html } = payload;
+    const reportsDir = path.join(
+      app.getPath("documents"),
+      "MTN-Muhasebe-Raporlar"
+    );
+    await fs.mkdir(reportsDir, { recursive: true });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const reportFile = path.join(reportsDir, `${title}-${timestamp}.pdf`);
+    const reportWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        sandbox: false
+      }
+    });
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44}h1{font-size:20px;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    await reportWindow.loadURL(
+      `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
+    );
+    const pdfBuffer = await reportWindow.webContents.printToPDF({});
+    await fs.writeFile(reportFile, pdfBuffer);
+    reportWindow.close();
+    return { reportFile };
   });
 
   app.on("activate", () => {
