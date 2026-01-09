@@ -118,6 +118,21 @@
             </label>
             <button class="primary" type="submit">Cari Kaydet</button>
           </form>
+          <form class="form-grid" id="customer-payment-form">
+            <label>
+              Cari Seç
+              <select id="payment-customer"></select>
+            </label>
+            <label>
+              Tahsilat Tutarı
+              <input name="amount" type="number" min="0" step="0.01" />
+            </label>
+            <label class="full-width">
+              Açıklama
+              <input name="note" placeholder="Tahsilat notu" />
+            </label>
+            <button class="primary" type="submit">Tahsilat Kaydet</button>
+          </form>
           <div class="table-card">
             <h3>Mevcut Cariler</h3>
             <table>

@@ -86,6 +86,31 @@ app.whenReady().then(() => {
     return data.customers;
   });
 
+  ipcMain.handle("customers:payment", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, amount, note } = payload;
+    const normalizedAmount = Number(amount || 0);
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        balance: Math.max(
+          0,
+          Number(customer.balance || 0) - Number(normalizedAmount || 0)
+        )
+      };
+    });
+    data.cashTransactions = createRecord(data.cashTransactions, {
+      type: "gelir",
+      amount: normalizedAmount,
+      note: note || "Cari Tahsilat"
+    });
+    await saveStorage(data);
+    return data;
+  });
+
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
     data.stocks = createRecord(data.stocks, payload);
