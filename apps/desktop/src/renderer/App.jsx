@@ -11,7 +11,9 @@ const emptyCariForm = {
   name: "",
   phone: "",
   email: "",
-  address: ""
+  address: "",
+  balance: "",
+  dueDate: ""
 };
 
 const emptyMovementForm = {
@@ -27,8 +29,23 @@ const emptyCashForm = {
   note: ""
 };
 
+const emptyInvoiceForm = {
+  cariId: "",
+  itemId: "",
+  quantity: "",
+  price: "",
+  note: ""
+};
+
 const formatCode = (prefix, index) => {
   return `${prefix}${String(index).padStart(4, "0")}`;
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+  return new Date(value).toLocaleDateString("tr-TR");
 };
 
 export default function App() {
@@ -36,13 +53,16 @@ export default function App() {
   const [cariForm, setCariForm] = useState(emptyCariForm);
   const [movementForm, setMovementForm] = useState(emptyMovementForm);
   const [cashForm, setCashForm] = useState(emptyCashForm);
+  const [invoiceForm, setInvoiceForm] = useState(emptyInvoiceForm);
   const [stockItems, setStockItems] = useState([]);
   const [cariItems, setCariItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [cashEntries, setCashEntries] = useState([]);
+  const [invoices, setInvoices] = useState([]);
 
   const nextStockCode = formatCode("MLZ", stockItems.length + 1);
   const nextCariCode = formatCode("CARI", cariItems.length + 1);
+  const nextInvoiceCode = formatCode("FTR", invoices.length + 1);
 
   const totalStockValue = useMemo(() => {
     return stockItems.reduce(
@@ -85,6 +105,22 @@ export default function App() {
     setCashForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleInvoiceChange = (event) => {
+    const { name, value } = event.target;
+    setInvoiceForm((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "itemId") {
+      const selectedItem = stockItems.find((item) => item.id === value);
+      if (selectedItem && !invoiceForm.price) {
+        setInvoiceForm((prev) => ({
+          ...prev,
+          itemId: value,
+          price: String(selectedItem.price)
+        }));
+      }
+    }
+  };
+
   const handleStockSubmit = (event) => {
     event.preventDefault();
     const nextItem = {
@@ -112,7 +148,9 @@ export default function App() {
       name: cariForm.name.trim(),
       phone: cariForm.phone.trim(),
       email: cariForm.email.trim(),
-      address: cariForm.address.trim()
+      address: cariForm.address.trim(),
+      balance: Number(cariForm.balance),
+      dueDate: cariForm.dueDate
     };
 
     if (!nextCari.name) {
@@ -161,6 +199,59 @@ export default function App() {
     setMovementForm(emptyMovementForm);
   };
 
+  const handleInvoiceSubmit = (event) => {
+    event.preventDefault();
+    const selectedCari = cariItems.find((cari) => cari.id === invoiceForm.cariId);
+    const selectedItem = stockItems.find(
+      (item) => item.id === invoiceForm.itemId
+    );
+    const quantity = Number(invoiceForm.quantity);
+    const price = Number(invoiceForm.price);
+
+    if (!selectedCari || !selectedItem || !quantity || !price) {
+      return;
+    }
+
+    if (selectedItem.quantity < quantity) {
+      return;
+    }
+
+    const invoice = {
+      id: crypto.randomUUID(),
+      code: nextInvoiceCode,
+      cariName: selectedCari.name,
+      cariCode: selectedCari.code,
+      itemName: selectedItem.name,
+      itemCode: selectedItem.code,
+      quantity,
+      price,
+      total: quantity * price,
+      note: invoiceForm.note.trim()
+    };
+
+    const movement = {
+      id: crypto.randomUUID(),
+      itemId: selectedItem.id,
+      itemName: selectedItem.name,
+      code: selectedItem.code,
+      type: "out",
+      quantity,
+      note: `Fatura ${invoice.code}`
+    };
+
+    setInvoices((prev) => [invoice, ...prev]);
+    setMovements((prev) => [movement, ...prev]);
+    setStockItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== selectedItem.id) {
+          return item;
+        }
+        return { ...item, quantity: item.quantity - quantity };
+      })
+    );
+    setInvoiceForm(emptyInvoiceForm);
+  };
+
   const handleCashSubmit = (event) => {
     event.preventDefault();
     const entry = {
@@ -197,6 +288,9 @@ export default function App() {
           </button>
           <button type="button" className="nav-item">
             Cari Kartlar
+          </button>
+          <button type="button" className="nav-item">
+            Faturalar
           </button>
           <button type="button" className="nav-item">
             Stok Hareketleri
@@ -241,6 +335,11 @@ export default function App() {
             <p className="label">Cari Kart</p>
             <p className="metric">{cariItems.length}</p>
             <p className="hint">Müşteri / Tedarikçi</p>
+          </div>
+          <div className="stat-card">
+            <p className="label">Fatura</p>
+            <p className="metric">{invoices.length}</p>
+            <p className="hint">Kesilen fatura</p>
           </div>
           <div className="stat-card">
             <p className="label">Gelir</p>
@@ -391,6 +490,27 @@ export default function App() {
                   placeholder="İl/İlçe"
                 />
               </label>
+              <label>
+                Açılış bakiyesi (₺)
+                <input
+                  type="number"
+                  name="balance"
+                  value={cariForm.balance}
+                  onChange={handleCariChange}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Vade tarihi
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={cariForm.dueDate}
+                  onChange={handleCariChange}
+                />
+              </label>
               <button type="submit">Cari Kartı Kaydet</button>
             </form>
           </div>
@@ -407,15 +527,122 @@ export default function App() {
                 <div className="table-row table-head table-cari">
                   <span>Firma</span>
                   <span>Kod</span>
+                  <span>Bakiye</span>
+                  <span>Vade</span>
                   <span>Telefon</span>
-                  <span>E-posta</span>
                 </div>
                 {cariItems.map((cari) => (
                   <div key={cari.id} className="table-row table-cari">
                     <span>{cari.name}</span>
                     <span>{cari.code}</span>
+                    <span>₺{cari.balance.toLocaleString("tr-TR")}</span>
+                    <span>{formatDate(cari.dueDate)}</span>
                     <span>{cari.phone || "-"}</span>
-                    <span>{cari.email || "-"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="grid">
+          <div className="card">
+            <h2>Fatura Kes</h2>
+            <p className="helper">Fatura oluşturduğunuzda stoktan düşer.</p>
+            <form className="form" onSubmit={handleInvoiceSubmit}>
+              <label>
+                Fatura kodu
+                <input name="code" value={nextInvoiceCode} readOnly />
+              </label>
+              <label>
+                Cari seç
+                <select
+                  name="cariId"
+                  value={invoiceForm.cariId}
+                  onChange={handleInvoiceChange}
+                  required
+                >
+                  <option value="">Seçiniz</option>
+                  {cariItems.map((cari) => (
+                    <option key={cari.id} value={cari.id}>
+                      {cari.code} · {cari.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Ürün seç
+                <select
+                  name="itemId"
+                  value={invoiceForm.itemId}
+                  onChange={handleInvoiceChange}
+                  required
+                >
+                  <option value="">Seçiniz</option>
+                  {stockItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.code} · {item.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Miktar
+                <input
+                  type="number"
+                  name="quantity"
+                  value={invoiceForm.quantity}
+                  onChange={handleInvoiceChange}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Birim fiyat (₺)
+                <input
+                  type="number"
+                  name="price"
+                  value={invoiceForm.price}
+                  onChange={handleInvoiceChange}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Not
+                <input
+                  name="note"
+                  value={invoiceForm.note}
+                  onChange={handleInvoiceChange}
+                  placeholder="Fatura notu"
+                />
+              </label>
+              <button type="submit">Fatura Oluştur</button>
+            </form>
+          </div>
+
+          <div className="card">
+            <h2>Faturalar</h2>
+            {invoices.length === 0 ? (
+              <p className="empty">Henüz fatura kesilmedi.</p>
+            ) : (
+              <div className="table">
+                <div className="table-row table-head table-invoice">
+                  <span>Fatura</span>
+                  <span>Cari</span>
+                  <span>Ürün</span>
+                  <span>Miktar</span>
+                  <span>Tutar</span>
+                </div>
+                {invoices.map((invoice) => (
+                  <div key={invoice.id} className="table-row table-invoice">
+                    <span>{invoice.code}</span>
+                    <span>{invoice.cariName}</span>
+                    <span>{invoice.itemName}</span>
+                    <span>{invoice.quantity}</span>
+                    <span>₺{invoice.total.toLocaleString("tr-TR")}</span>
                   </div>
                 ))}
               </div>
@@ -587,8 +814,8 @@ export default function App() {
         <section className="card roadmap">
           <h2>Sıradaki Adımlar</h2>
           <ol>
-            <li>Cari kartlara bakiye ve vade takibi ekleyelim.</li>
-            <li>Stok hareketlerini fatura ekranına bağlayalım.</li>
+            <li>Tahsilat/ödeme ekranı ekleyelim (cari bakiyeyi güncelleme).</li>
+            <li>Fatura çıktısı ve yazdırma şablonları hazırlayalım.</li>
             <li>Raporları PDF/Excel dışa aktarıma hazırlayalım.</li>
             <li>Verileri yerel veritabanına (SQLite) kaydedelim.</li>
           </ol>
