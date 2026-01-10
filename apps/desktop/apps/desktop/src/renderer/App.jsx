@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 const emptyStockForm = {
   name: "",
@@ -49,19 +49,7 @@ const formatDate = (value) => {
 };
 
 export default function App() {
-  // simple hash-based routing (e.g. #/stok, #/cari)
-  const getHashModule = () => {
-    if (typeof window === "undefined") return null;
-    const h = window.location.hash || "";
-    if (!h) return null;
-    return h.replace(/^#\/?/, "");
-  };
-  const [hashModule, setHashModule] = useState(getHashModule());
-  useEffect(() => {
-    const onHash = () => setHashModule(getHashModule());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
+  const moduleParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("module") : null;
   const mapModule = {
     stock: "stok",
     stok: "stok",
@@ -73,7 +61,7 @@ export default function App() {
     cash: "kasa",
     kasa: "kasa"
   };
-  const activeModule = hashModule ? (mapModule[hashModule] || hashModule) : null;
+  const activeModule = moduleParam ? (mapModule[moduleParam] || moduleParam) : null;
 
   const openModule = (name) => {
     const moduleName = mapModule[name] || name;
@@ -83,10 +71,6 @@ export default function App() {
       console.warn("IPC unavailable, cannot open module window", moduleName);
     }
   };
-  
-  // Edit states for simple inline editing in grids
-  const [editingStockId, setEditingStockId] = useState(null);
-  const [editingCariId, setEditingCariId] = useState(null);
   const [stockForm, setStockForm] = useState(emptyStockForm);
   const [cariForm, setCariForm] = useState(emptyCariForm);
   const [movementForm, setMovementForm] = useState(emptyMovementForm);
@@ -178,15 +162,6 @@ export default function App() {
     setStockForm(emptyStockForm);
   };
 
-  const startEditStock = (id) => {
-    setEditingStockId(id);
-  };
-
-  const saveStockEdit = (id, field, value) => {
-    setStockItems((prev) => prev.map((it) => (it.id === id ? { ...it, [field]: value } : it)));
-    setEditingStockId(null);
-  };
-
   const handleCariSubmit = (event) => {
     event.preventDefault();
     const nextCari = {
@@ -206,12 +181,6 @@ export default function App() {
 
     setCariItems((prev) => [nextCari, ...prev]);
     setCariForm(emptyCariForm);
-  };
-
-  const startEditCari = (id) => setEditingCariId(id);
-  const saveCariEdit = (id, field, value) => {
-    setCariItems((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
-    setEditingCariId(null);
   };
 
   const handleMovementSubmit = (event) => {
@@ -333,131 +302,25 @@ export default function App() {
           </div>
         </div>
         <nav className="nav">
-          <a className="nav-item" href="#/">Genel Bakış</a>
-          <a className="nav-item" href="#/stok">Stok Yönetimi</a>
-          <a className="nav-item" href="#/cari">Cari Kartlar</a>
-          <a className="nav-item" href="#/fatura">Faturalar</a>
-          <a className="nav-item" href="#/hareket">Stok Hareketleri</a>
-          <a className="nav-item" href="#/kasa">Gelir / Gider</a>
+          <button type="button" className="nav-item active" onClick={() => { /* main overview */ }}>
+            Genel Bakış
+          </button>
+          <button type="button" className="nav-item" onClick={() => openModule("stok")}>
+            Stok Yönetimi
+          </button>
+          <button type="button" className="nav-item" onClick={() => openModule("cari")}>
+            Cari Kartlar
+          </button>
+          <button type="button" className="nav-item" onClick={() => openModule("fatura")}>
+            Faturalar
+          </button>
+          <button type="button" className="nav-item" onClick={() => openModule("hareket")}>
+            Stok Hareketleri
+          </button>
+          <button type="button" className="nav-item" onClick={() => openModule("kasa")}>
+            Gelir / Gider
+          </button>
         </nav>
-        <div className="nav-group">
-          <h3>MUHASEBE / ÖN MUHASEBE</h3>
-          <a className="nav-sub" href="#/muhasebe/gosterge">Gösterge Paneli</a>
-          <a className="nav-sub" href="#/muhasebe/toplam-borc-alacak">Toplam Borç / Alacak</a>
-          <a className="nav-sub" href="#/muhasebe/gunluk-kasa">Günlük Kasa</a>
-          <a className="nav-sub" href="#/muhasebe/tahsilat">TAHSİLAT YAP</a>
-          <a className="nav-sub" href="#/muhasebe/vade-uyari">Vade Uyarıları</a>
-
-          <h4>Cari Hesaplar</h4>
-          <a className="nav-sub" href="#/cari">Cari Kartlar</a>
-          <a className="nav-sub" href="#/cari/ekle">Müşteriler / CARI EKLE</a>
-          <a className="nav-sub" href="#/cari/tedarikci">Tedarikçiler</a>
-          <a className="nav-sub" href="#/cari/hareket">Cari Hareketler</a>
-          <a className="nav-sub" href="#/cari/ekstre">Cari Ekstre (PDF)</a>
-          <a className="nav-sub" href="#/cari/mutabakat">Cari Mutabakat</a>
-          <a className="nav-sub" href="#/cari/risk">Risk & Limit Takibi</a>
-
-          <h4>Kasa</h4>
-          <a className="nav-sub" href="#/kasa/tanim">Kasa Tanımları</a>
-          <a className="nav-sub" href="#/kasa/giris">Kasa Giriş Fişi</a>
-          <a className="nav-sub" href="#/kasa/cikis">Kasa Çıkış Fişi</a>
-          <a className="nav-sub" href="#/kasa/transfer">Kasa Transferleri</a>
-          <a className="nav-sub" href="#/kasa/defter">Günlük Kasa Defteri</a>
-
-          <h4>Çek / Senet</h4>
-          <a className="nav-sub" href="#/cek/alinan">Alınan Çekler</a>
-          <a className="nav-sub" href="#/cek/verilen">Verilen Çekler</a>
-          <a className="nav-sub" href="#/senet/alinan">Alınan Senetler</a>
-          <a className="nav-sub" href="#/senet/verilen">Verilen Senetler</a>
-          <a className="nav-sub" href="#/cek/vade">Vade Takibi</a>
-
-          <h4>Tahsilat & Ödeme</h4>
-          <a className="nav-sub" href="#/tahsilat/fiş">Tahsilat Fişleri</a>
-          <a className="nav-sub" href="#/tahsilat/odeme">Ödeme Fişleri</a>
-          <a className="nav-sub" href="#/tahsilat/vadeli">Vadeli İşlemler</a>
-          <a className="nav-sub" href="#/tahsilat/geciken">Geciken Tahsilatlar</a>
-          <a className="nav-sub" href="#/tahsilat/toplu">Toplu Tahsilat / Ödeme</a>
-
-          <h4>Muhasebe Fişleri</h4>
-          <a className="nav-sub" href="#/muhasebe/acilis">Açılış Fişi</a>
-          <a className="nav-sub" href="#/muhasebe/mahsup">Mahsup Fişi</a>
-          <a className="nav-sub" href="#/muhasebe/masraf">Masraf Fişi</a>
-          <a className="nav-sub" href="#/muhasebe/serbest">Serbest Fiş</a>
-
-          <h4>Raporlar</h4>
-          <a className="nav-sub" href="#/rapor/cari-borc">Cari Borç / Alacak</a>
-          <a className="nav-sub" href="#/rapor/kasa">Kasa Raporları</a>
-          <a className="nav-sub" href="#/rapor/banka">Banka Raporları</a>
-          <a className="nav-sub" href="#/rapor/tahsilat">Tahsilat / Ödeme Raporları</a>
-          <a className="nav-sub" href="#/rapor/gelir-gider">Gelir – Gider Özeti</a>
-
-          <h4>Tanımlar & Ayarlar</h4>
-          <a className="nav-sub" href="#/ayar/kullanicilar">Kullanıcılar & Yetkiler</a>
-          <a className="nav-sub" href="#/ayar/para-birimleri">Para Birimleri</a>
-          <a className="nav-sub" href="#/ayar/doviz">Döviz Kurları</a>
-          <a className="nav-sub" href="#/ayar/masraf">Masraf Türleri</a>
-          <a className="nav-sub" href="#/ayar/vergi">Vergi Tanımları</a>
-          <a className="nav-sub" href="#/ayar/firma">Firma Bilgileri</a>
-        </div>
-        <div className="nav-group">
-          <h3>STOK / TİCARİ İŞLEMLER</h3>
-          <a className="nav-sub" href="#/stok/giris">Malzeme Girişi</a>
-          <a className="nav-sub" href="#/stok/kart">Stok Kartları</a>
-          <a className="nav-sub" href="#/stok/grup">Stok Grupları</a>
-          <a className="nav-sub" href="#/stok/birim">Birim Tanımları</a>
-          <a className="nav-sub" href="#/stok/depo">Depolar</a>
-          <a className="nav-sub" href="#/stok/acilis">Stok Açılış Bakiyesi</a>
-
-          <h4>Stok Hareketleri</h4>
-          <a className="nav-sub" href="#/hareket/giris">Stok Giriş</a>
-          <a className="nav-sub" href="#/hareket/cikis">Stok Çıkış</a>
-          <a className="nav-sub" href="#/hareket/transfer">Depo Transferi</a>
-          <a className="nav-sub" href="#/hareket/sayim">Stok Sayım</a>
-
-          <h4>Satış İşlemleri</h4>
-          <a className="nav-sub" href="#/satis/teklif">Satış Teklifi</a>
-          <a className="nav-sub" href="#/satis/siparis">Satış Siparişi</a>
-          <a className="nav-sub" href="#/satis/irsaliye">Satış İrsaliyesi</a>
-          <a className="nav-sub" href="#/satis/fatura">Satış Faturası</a>
-          <a className="nav-sub" href="#/satis/iade">Satış İade</a>
-
-          <h4>Alış İşlemleri</h4>
-          <a className="nav-sub" href="#/alis/siparis">Alış Siparişi</a>
-          <a className="nav-sub" href="#/alis/irsaliye">Alış İrsaliyesi</a>
-          <a className="nav-sub" href="#/alis/fatura">Alış Faturası</a>
-          <a className="nav-sub" href="#/alis/iade">Alış İade</a>
-
-          <h4>Teklif & Sipariş</h4>
-          <a className="nav-sub" href="#/teklif/hazirla">Teklif Hazırlama</a>
-          <a className="nav-sub" href="#/teklif/onay">Teklif Onay / Red</a>
-          <a className="nav-sub" href="#/siparis/takip">Sipariş Takibi</a>
-          <a className="nav-sub" href="#/teklif/toOrder">Tekliften Siparişe</a>
-          <a className="nav-sub" href="#/siparis/toInvoice">Siparişten Faturaya</a>
-
-          <h4>Depo & Lojistik</h4>
-          <a className="nav-sub" href="#/depo/durum">Depo Stok Durumu</a>
-          <a className="nav-sub" href="#/depo/raf">Raf / Lokasyon</a>
-          <a className="nav-sub" href="#/depo/minimum">Minimum Stok Seviyesi</a>
-          <a className="nav-sub" href="#/depo/kritik">Kritik Stok Uyarıları</a>
-
-          <h4>Stok Raporları</h4>
-          <a className="nav-sub" href="#/rapor/stok-durum">Stok Durum Raporu</a>
-          <a className="nav-sub" href="#/rapor/stok-hareket">Stok Hareket Raporu</a>
-          <a className="nav-sub" href="#/rapor/depo-stok">Depo Bazlı Stok</a>
-          <a className="nav-sub" href="#/rapor/hizli-yavas">Hızlı / Yavaş Dönen Stok</a>
-          <a className="nav-sub" href="#/rapor/maliyet">Maliyet Raporları</a>
-
-          <h4>Entegrasyon</h4>
-          <a className="nav-sub" href="#/entegrasyon/stok-cari">Stok ↔ Cari Bağlantıları</a>
-          <a className="nav-sub" href="#/entegrasyon/fatura">Stok ↔ Fatura Otomatik Kayıt</a>
-          <a className="nav-sub" href="#/entegrasyon/muhasebe">Muhasebe Entegrasyon Ayarları</a>
-
-          <h4>Genel Ayarlar</h4>
-          <a className="nav-sub" href="#/ayar/barkod">Barkod Ayarları</a>
-          <a className="nav-sub" href="#/ayar/fiyat">Fiyat Listeleri</a>
-          <a className="nav-sub" href="#/ayar/iskonto">İskonto Kuralları</a>
-          <a className="nav-sub" href="#/ayar/kdv">KDV Oranları</a>
-        </div>
         <div className="sidebar-card">
           <p className="label">Bugünkü Özet</p>
           <p className="metric">₺{totalStockValue.toLocaleString("tr-TR")}</p>
@@ -466,13 +329,6 @@ export default function App() {
             ₺{(cashSummary.income - cashSummary.expense).toLocaleString("tr-TR")}
           </p>
           <p className="hint">Net nakit</p>
-        </div>
-        <div className="sidebar-footer">
-          <p className="firm">MTN ENERJİ MÜHENDİSLİK (METİN DÖŞ)</p>
-          <p>Adres: Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / GAZİANTEP</p>
-          <p>Tel: 0535 641 90 61</p>
-          <p>Banka: FİNANSBANK · IBAN: TR13 0011 1000 0000 0136 9157 74</p>
-          <p>Vergi Dairesi: ŞAHİNBEY · Vergi No: 14168163156</p>
         </div>
       </aside>
 
@@ -601,49 +457,11 @@ export default function App() {
                 </div>
                 {stockItems.map((item) => (
                   <div key={item.id} className="table-row">
-                    <span>
-                      {editingStockId === item.id ? (
-                        <input
-                          defaultValue={item.name}
-                          onBlur={(e) => saveStockEdit(item.id, "name", e.target.value)}
-                        />
-                      ) : (
-                        <span onDoubleClick={() => startEditStock(item.id)}>{item.name}</span>
-                      )}
-                    </span>
+                    <span>{item.name}</span>
                     <span>{item.code}</span>
-                    <span>
-                      {editingStockId === item.id ? (
-                        <input
-                          defaultValue={item.unit}
-                          onBlur={(e) => saveStockEdit(item.id, "unit", e.target.value)}
-                        />
-                      ) : (
-                        <span onDoubleClick={() => startEditStock(item.id)}>{item.unit || "-"}</span>
-                      )}
-                    </span>
-                    <span>
-                      {editingStockId === item.id ? (
-                        <input
-                          type="number"
-                          defaultValue={item.price}
-                          onBlur={(e) => saveStockEdit(item.id, "price", Number(e.target.value || 0))}
-                        />
-                      ) : (
-                        <span onDoubleClick={() => startEditStock(item.id)}>₺{item.price.toLocaleString("tr-TR")}</span>
-                      )}
-                    </span>
-                    <span>
-                      {editingStockId === item.id ? (
-                        <input
-                          type="number"
-                          defaultValue={item.quantity}
-                          onBlur={(e) => saveStockEdit(item.id, "quantity", Number(e.target.value || 0))}
-                        />
-                      ) : (
-                        <span onDoubleClick={() => startEditStock(item.id)}>{item.quantity.toLocaleString("tr-TR")}</span>
-                      )}
-                    </span>
+                    <span>{item.unit || "-"}</span>
+                    <span>₺{item.price.toLocaleString("tr-TR")}</span>
+                    <span>{item.quantity.toLocaleString("tr-TR")}</span>
                   </div>
                 ))}
               </div>
@@ -742,29 +560,11 @@ export default function App() {
                 </div>
                 {cariItems.map((cari) => (
                   <div key={cari.id} className="table-row table-cari">
-                    <span>
-                      {editingCariId === cari.id ? (
-                        <input defaultValue={cari.name} onBlur={(e) => saveCariEdit(cari.id, "name", e.target.value)} />
-                      ) : (
-                        <span onDoubleClick={() => startEditCari(cari.id)}>{cari.name}</span>
-                      )}
-                    </span>
+                    <span>{cari.name}</span>
                     <span>{cari.code}</span>
-                    <span>
-                      {editingCariId === cari.id ? (
-                        <input type="number" defaultValue={cari.balance} onBlur={(e) => saveCariEdit(cari.id, "balance", Number(e.target.value || 0))} />
-                      ) : (
-                        <span onDoubleClick={() => startEditCari(cari.id)}>₺{cari.balance.toLocaleString("tr-TR")}</span>
-                      )}
-                    </span>
+                    <span>₺{cari.balance.toLocaleString("tr-TR")}</span>
                     <span>{formatDate(cari.dueDate)}</span>
-                    <span>
-                      {editingCariId === cari.id ? (
-                        <input defaultValue={cari.phone} onBlur={(e) => saveCariEdit(cari.id, "phone", e.target.value)} />
-                      ) : (
-                        <span onDoubleClick={() => startEditCari(cari.id)}>{cari.phone || "-"}</span>
-                      )}
-                    </span>
+                    <span>{cari.phone || "-"}</span>
                   </div>
                 ))}
               </div>
