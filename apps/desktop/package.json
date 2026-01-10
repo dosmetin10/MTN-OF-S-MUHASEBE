@@ -1,0 +1,36 @@
+{
+  "name": "mtn-ofs-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MTN OFS muhasebe ve stok takip masaüstü uygulaması.",
+  "main": "src/main/index.js",
+  "scripts": {
+    "dev:renderer": "vite",
+    "build:renderer": "vite build",
+    "preview:renderer": "vite preview",
+    "dev": "concurrently -k \"vite\" \"electron .\"",
+    "build": "npm run build:renderer && electron-builder"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "concurrently": "^9.0.1",
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.4.6"
+  },
+  "build": {
+    "appId": "com.mtn.ofs.muhasebe",
+    "productName": "MTN OFS Muhasebe",
+    "files": [
+      "dist/**",
+      "src/main/**"
+    ],
+    "directories": {
+      "output": "release"
+    }
+  }
+}
