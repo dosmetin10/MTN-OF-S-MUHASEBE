@@ -302,22 +302,22 @@ export default function App() {
           </div>
         </div>
         <nav className="nav">
-          <button type="button" className="nav-item active">
+          <button type="button" className="nav-item active" onClick={() => { /* main overview */ }}>
             Genel Bakış
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => openModule("stok")}>
             Stok Yönetimi
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => openModule("cari")}>
             Cari Kartlar
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => openModule("fatura")}>
             Faturalar
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => openModule("hareket")}>
             Stok Hareketleri
           </button>
-          <button type="button" className="nav-item">
+          <button type="button" className="nav-item" onClick={() => openModule("kasa")}>
             Gelir / Gider
           </button>
         </nav>
@@ -347,6 +347,7 @@ export default function App() {
           </div>
         </header>
 
+        {!activeModule && (
         <section className="stats-grid">
           <div className="stat-card">
             <p className="label">Stok Kartı</p>
@@ -374,7 +375,13 @@ export default function App() {
             <p className="hint">Toplam gider</p>
           </div>
         </section>
+        )}
 
+        {(!activeModule || activeModule === "stok") && (
+        {(!activeModule || activeModule === "cari") && (
+        {(!activeModule || activeModule === "fatura") && (
+        {(!activeModule || activeModule === "hareket") && (
+        {(!activeModule || activeModule === "kasa") && (
         <section className="grid">
           <div className="card">
             <h2>Stok Kartı Ekle</h2>
@@ -465,6 +472,11 @@ export default function App() {
             )}
           </div>
         </section>
+        )}
+        )}
+        )}
+        )}
+        )}
 
         <section className="grid">
           <div className="card">
@@ -833,6 +845,7 @@ export default function App() {
           </div>
         </section>
 
+        {!activeModule && (
         <section className="card roadmap">
           <h2>Sıradaki Adımlar</h2>
           <ol>
@@ -842,6 +855,7 @@ export default function App() {
             <li>Verileri yerel veritabanına (SQLite) kaydedelim.</li>
           </ol>
         </section>
+        )}
       </main>
     </div>
   );
