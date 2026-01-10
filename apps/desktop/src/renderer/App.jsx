@@ -378,10 +378,6 @@ export default function App() {
         )}
 
         {(!activeModule || activeModule === "stok") && (
-        {(!activeModule || activeModule === "cari") && (
-        {(!activeModule || activeModule === "fatura") && (
-        {(!activeModule || activeModule === "hareket") && (
-        {(!activeModule || activeModule === "kasa") && (
         <section className="grid">
           <div className="card">
             <h2>Stok Kartı Ekle</h2>
@@ -472,10 +468,6 @@ export default function App() {
             )}
           </div>
         </section>
-        )}
-        )}
-        )}
-        )}
         )}
 
         <section className="grid">
