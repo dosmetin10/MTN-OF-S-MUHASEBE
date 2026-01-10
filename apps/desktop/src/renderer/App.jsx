@@ -49,6 +49,28 @@ const formatDate = (value) => {
 };
 
 export default function App() {
+  const moduleParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("module") : null;
+  const mapModule = {
+    stock: "stok",
+    stok: "stok",
+    cari: "cari",
+    invoice: "fatura",
+    fatura: "fatura",
+    movement: "hareket",
+    hareket: "hareket",
+    cash: "kasa",
+    kasa: "kasa"
+  };
+  const activeModule = moduleParam ? (mapModule[moduleParam] || moduleParam) : null;
+
+  const openModule = (name) => {
+    const moduleName = mapModule[name] || name;
+    if (window && window.electronAPI && window.electronAPI.openModule) {
+      window.electronAPI.openModule(moduleName);
+    } else {
+      console.warn("IPC unavailable, cannot open module window", moduleName);
+    }
+  };
   const [stockForm, setStockForm] = useState(emptyStockForm);
   const [cariForm, setCariForm] = useState(emptyCariForm);
   const [movementForm, setMovementForm] = useState(emptyMovementForm);
