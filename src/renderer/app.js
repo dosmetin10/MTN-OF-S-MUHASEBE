@@ -865,4 +865,52 @@ if (loginForm) {
   loginForm.addEventListener("submit", handleLogin);
 }
 
+// Menu click handler
+const menuItems = document.querySelectorAll(".menu__item");
+const modules = {
+  0: "customers-module",
+  1: "stocks-module",
+  2: "sales-module",
+  3: "offer",
+  4: "cash-module",
+  5: "reports-module",
+  6: "settings-module"
+};
+
+const showModule = (moduleId) => {
+  document.querySelectorAll(".module, .offer").forEach((el) => {
+    el.style.display = "none";
+  });
+  document.querySelectorAll(".menu__item").forEach((el) => {
+    el.classList.remove("menu__item--active");
+  });
+  if (modules[moduleId]) {
+    const target = document.getElementById(modules[moduleId]);
+    if (target) {
+      target.style.display = "";
+    }
+  }
+};
+
+menuItems.forEach((item, index) => {
+  item.addEventListener("click", (event) => {
+    event.preventDefault();
+    menuItems.forEach((el) => el.classList.remove("menu__item--active"));
+    item.classList.add("menu__item--active");
+    if (index === 0) {
+      document.querySelectorAll(".cards, .quick-actions").forEach((el) => {
+        el.style.display = "";
+      });
+      document.querySelectorAll(".module, .offer").forEach((el) => {
+        el.style.display = "none";
+      });
+    } else {
+      document.querySelectorAll(".cards, .quick-actions").forEach((el) => {
+        el.style.display = "none";
+      });
+      showModule(index);
+    }
+  });
+});
+
 loadInitialData();
