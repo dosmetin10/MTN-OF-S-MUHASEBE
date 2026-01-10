@@ -101,6 +101,50 @@ ipcMain.handle('auth-create-user', async (_, { username, password, role }) => {
 
 ipcMain.handle('ping', () => 'pong');
 
+ipcMain.handle('ai-checks', async (_, payload) => {
+  try {
+    // Simple rule-based analysis for now. Payload expected: { cariItems, stockItems }
+    const suggestions = [];
+    const { cariItems = [], stockItems = [] } = payload || {};
+
+    // Duplicate cari name check
+    const nameCounts = {};
+    for (const c of cariItems) {
+      const n = (c.name || '').trim().toLowerCase();
+      if (!n) continue;
+      nameCounts[n] = (nameCounts[n] || 0) + 1;
+    }
+    for (const [name, cnt] of Object.entries(nameCounts)) {
+      if (cnt > 1) suggestions.push({ type: 'duplicate-cari', message: `Aynı isimli ${cnt} kayıt: ${name}` });
+    }
+
+    // Negative or large balances
+    for (const c of cariItems) {
+      if (typeof c.balance === 'number') {
+        if (c.balance < 0) suggestions.push({ type: 'negative-balance', message: `Cari ${c.name} bakiyesi negatif: ${c.balance}` });
+        if (c.balance > 1000000) suggestions.push({ type: 'large-balance', message: `Cari ${c.name} bakiyesi yüksek: ${c.balance}` });
+      }
+    }
+
+    // Critical stock check
+    for (const s of stockItems) {
+      if (typeof s.quantity === 'number' && typeof s.critical === 'number') {
+        if (s.quantity <= s.critical) suggestions.push({ type: 'critical-stock', message: `Kritik stok: ${s.name} (${s.quantity})` });
+      }
+    }
+
+    // If nothing found, return a helpful hint
+    if (suggestions.length === 0) {
+      suggestions.push({ type: 'ok', message: 'AI kontrolü tamamlandı. Anomali bulunmadı.' });
+    }
+
+    return { ok: true, suggestions };
+  } catch (err) {
+    logger.error(`ai-checks error: ${err.message}`);
+    return { ok: false, error: err.message };
+  }
+});
+
 app.whenReady().then(() => {
   try {
     dbInstance = initDatabase();

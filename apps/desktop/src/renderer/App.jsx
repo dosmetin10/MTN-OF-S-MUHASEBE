@@ -470,6 +470,7 @@ export default function App() {
         </section>
         )}
 
+        {(!activeModule || activeModule === "cari") && (
         <section className="grid">
           <div className="card">
             <h2>Cari Kartı Ekle</h2>
@@ -570,7 +571,9 @@ export default function App() {
             )}
           </div>
         </section>
+        )}
 
+        {(!activeModule || activeModule === "fatura") && (
         <section className="grid">
           <div className="card">
             <h2>Fatura Kes</h2>
@@ -675,7 +678,9 @@ export default function App() {
             )}
           </div>
         </section>
+        )}
 
+        {(!activeModule || activeModule === "hareket") && (
         <section className="grid">
           <div className="card">
             <h2>Stok Hareketi</h2>
@@ -763,7 +768,9 @@ export default function App() {
             )}
           </div>
         </section>
+        )}
 
+        {(!activeModule || activeModule === "kasa") && (
         <section className="grid">
           <div className="card">
             <h2>Gelir / Gider Kaydı</h2>
@@ -836,6 +843,7 @@ export default function App() {
             )}
           </div>
         </section>
+        )}
 
         {!activeModule && (
         <section className="card roadmap">
