@@ -118,36 +118,36 @@
             <button class="primary">+ Yeni İşlem</button>
           </div>
         </header>
+        <div class="content__scroll">
+          <section class="quick-actions">
+            <button>➕ Yeni Cari</button>
+            <button>📦 Stok Girişi</button>
+            <button>💰 Tahsilat Yap</button>
+            <button>🧾 Yeni Teklif</button>
+            <button>📊 Raporlar</button>
+          </section>
 
-        <section class="quick-actions">
-          <button>➕ Yeni Cari</button>
-          <button>📦 Stok Girişi</button>
-          <button>💰 Tahsilat Yap</button>
-          <button>🧾 Yeni Teklif</button>
-          <button>📊 Raporlar</button>
-        </section>
+          <section class="cards">
+            <article class="card">
+              <h3>Günlük Durum</h3>
+              <p>Toplam tahsilat: <strong id="summary-collections">₺0,00</strong></p>
+              <p>Kasa bakiyesi: <strong id="summary-cash">₺0,00</strong></p>
+              <p>Bekleyen borç: <strong id="summary-balance">₺0,00</strong></p>
+            </article>
+            <article class="card">
+              <h3>Hatırlatıcılar</h3>
+              <ul id="summary-alerts"></ul>
+            </article>
+            <article class="card">
+              <h3>Yedekleme</h3>
+              <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
+              <p>Bulut senkron: <strong>Opsiyonel</strong></p>
+              <button class="ghost" id="backup-now">Flash'a Yedekle</button>
+              <p class="backup-path" id="backup-path"></p>
+            </article>
+          </section>
 
-        <section class="cards">
-          <article class="card">
-            <h3>Günlük Durum</h3>
-            <p>Toplam tahsilat: <strong id="summary-collections">₺0,00</strong></p>
-            <p>Kasa bakiyesi: <strong id="summary-cash">₺0,00</strong></p>
-            <p>Bekleyen borç: <strong id="summary-balance">₺0,00</strong></p>
-          </article>
-          <article class="card">
-            <h3>Hatırlatıcılar</h3>
-            <ul id="summary-alerts"></ul>
-          </article>
-          <article class="card">
-            <h3>Yedekleme</h3>
-            <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
-            <p>Bulut senkron: <strong>Opsiyonel</strong></p>
-            <button class="ghost" id="backup-now">Flash'a Yedekle</button>
-            <p class="backup-path" id="backup-path"></p>
-          </article>
-        </section>
-
-        <section class="module" id="customers-module">
+          <section class="module" id="customers-module">
           <div class="module__header">
             <h2>Cari Yönetimi</h2>
             <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
@@ -207,7 +207,7 @@
           </div>
         </section>
 
-        <section class="module" id="stocks-module">
+          <section class="module" id="stocks-module">
           <div class="module__header">
             <h2>Stok & Depo</h2>
             <p>Malzeme kartları oluşturun ve stok seviyelerini izleyin.</p>
@@ -247,7 +247,7 @@
           </div>
         </section>
 
-        <section class="module" id="cash-module">
+          <section class="module" id="cash-module">
           <div class="module__header">
             <h2>Kasa & Banka</h2>
             <p>Gelir ve gider işlemlerini takip edin.</p>
@@ -304,7 +304,7 @@
           </div>
         </section>
 
-        <section class="module" id="customer-detail-module">
+          <section class="module" id="customer-detail-module">
           <div class="module__header">
             <h2>Cari Ekstre</h2>
             <p>Seçili cari için satış ve tahsilat hareketleri.</p>
@@ -331,7 +331,7 @@
           </div>
         </section>
 
-        <section class="module" id="reports-module">
+          <section class="module" id="reports-module">
           <div class="module__header">
             <h2>Raporlar</h2>
             <p>PDF raporlarını tek tıkla oluşturun.</p>
@@ -346,7 +346,7 @@
           <p class="report-path" id="report-path"></p>
         </section>
 
-        <section class="module" id="sales-module">
+          <section class="module" id="sales-module">
           <div class="module__header">
             <h2>Satışlar</h2>
             <p>Fatura ve satış hareketleri listesi.</p>
@@ -366,7 +366,7 @@
           </div>
         </section>
 
-        <section class="offer">
+          <section class="offer">
           <div class="offer__header">
             <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
             <div class="offer__actions">
@@ -423,7 +423,7 @@
           </div>
         </section>
 
-        <section class="module" id="stock-movement-module">
+          <section class="module" id="stock-movement-module">
           <div class="module__header">
             <h2>Stok Hareketi</h2>
             <p>Stok giriş/çıkış fişi oluşturun.</p>
@@ -452,7 +452,7 @@
           </form>
         </section>
 
-        <section class="module" id="settings-module">
+          <section class="module" id="settings-module">
           <div class="module__header">
             <h2>Otomatik Yedekleme & Taşıma</h2>
             <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
@@ -508,7 +508,8 @@
             <button class="danger" id="reset-data">Tüm Verileri Sil</button>
           </div>
           <p class="report-path" id="settings-status"></p>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
 
