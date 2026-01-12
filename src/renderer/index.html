@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MTN Muhasebe</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="login" id="login-screen">
+      <div class="login__card">
+        <div class="login__brand">
+          <img
+            class="login__logo"
+            src="assets/logo.svg"
+            alt="MTN Enerji Mühendislik"
+          />
+          <div>
+            <h1>MTN ENERJİ</h1>
+            <p>Mühendislik • Doğalgaz</p>
+          </div>
+        </div>
+        <form id="login-form">
+          <label>
+            Kullanıcı Adı
+            <input name="username" required placeholder="kullanıcı adı" />
+          </label>
+          <label>
+            Şifre
+            <input name="password" type="password" required placeholder="****" />
+          </label>
+          <button class="button button--primary" type="submit">Giriş Yap</button>
+          <span class="login__error" id="login-error"></span>
+        </form>
+        <p class="login__hint">mtn / 1453 • muhasebe / 1453</p>
+      </div>
+    </div>
+
+    <div class="boot boot--hidden" id="boot-screen">
+      <div class="boot__panel">
+        <img src="assets/logo.svg" alt="MTN Enerji" />
+        <p>Veriler yükleniyor...</p>
+      </div>
+    </div>
+
+    <div class="app app--hidden" id="app-shell">
+      <aside class="sidebar">
+        <div class="logo">
+          <img class="logo__icon" src="assets/logo.svg" alt="MTN Enerji" />
+          <div>
+            <span class="logo__title">MTN ENERJİ MÜHENDİSLİK</span>
+            <span class="logo__subtitle"
+              >ENDÜSTİYEL DOĞALGAZ • MEKANİK TASARIM • UYGULAMA</span
+            >
+          </div>
+        </div>
+        <div class="sidebar__welcome">Hoş geldiniz: <strong>mtn</strong></div>
+        <nav class="nav">
+          <button class="nav__item nav__item--active" data-target="main-top">
+            <span>🏠</span> Ana
+          </button>
+          <button class="nav__item" data-target="customers-module">
+            <span>👤</span> Cari
+          </button>
+          <button class="nav__item" data-target="stocks-module">
+            <span>📦</span> Stok
+          </button>
+          <button class="nav__item" data-target="offer-section">
+            <span>🧾</span> Fatura
+          </button>
+          <button class="nav__item" data-target="cash-module">
+            <span>💳</span> Kasa
+          </button>
+          <button class="nav__item" data-target="stock-movement-module">
+            <span>⚙️</span> Müh.
+          </button>
+        </nav>
+        <div class="sidebar__actions">
+          <button class="button button--outline" data-target="settings-module">
+            Ayarlar
+          </button>
+          <button class="button button--outline" id="sidebar-backup">Yedek Al</button>
+          <button class="button button--outline" id="sidebar-exit">Çıkış</button>
+        </div>
+        <div class="sidebar__footer">
+          <div>
+            Offline mod: <strong class="status status--online">Hazır</strong>
+          </div>
+          <div>
+            Versiyon: <span id="app-version">0.1.0</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main" id="main-top">
+        <header class="main__header">
+          <div class="main__title">
+            <img class="main__logo" src="assets/logo.svg" alt="MTN Enerji" />
+            <div>
+              <h1>ANA PANEL — v15.1 (restore)</h1>
+              <p>Cari, malzeme, fatura, fiş… her şeyi ara</p>
+            </div>
+          </div>
+          <div class="main__actions">
+            <label class="search">
+              <span>🔍</span>
+              <input
+                class="search__input"
+                placeholder="Cari, malzeme, fatura, fiş… her şeyi ara"
+              />
+            </label>
+            <button class="button button--ghost">ARA</button>
+            <div class="profile">
+              <div class="profile__avatar">M</div>
+              <div class="profile__info">
+                <span>Metin Tunç</span>
+                <small>Yönetici</small>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section class="quick-actions">
+          <h2 class="section-title">Kısayollar:</h2>
+          <button class="button button--ghost" data-target="customers-module">
+            CARİ EKLE
+          </button>
+          <button class="button button--ghost" data-target="customers-module">
+            CARİ LİSTESİ
+          </button>
+          <button class="button button--ghost" data-target="stocks-module">
+            MALZEME HIZLI EKLE
+          </button>
+          <button class="button button--ghost" data-target="stocks-module">
+            MALZEME LİSTESİ
+          </button>
+          <button class="button button--ghost" data-target="stock-movement-module">
+            FİŞ GİRİŞİ
+          </button>
+          <button class="button button--ghost" data-target="offer-section">
+            FATURA ALIŞ (FİYAT)
+          </button>
+          <button class="button button--ghost" data-target="offer-section">
+            SATIŞ FİŞİ
+          </button>
+          <button class="button button--ghost" data-target="offer-section">
+            TEKLİF
+          </button>
+          <button class="button button--ghost" data-target="reports-module">
+            RAPOR / ANALİZ
+          </button>
+          <button class="button button--ghost" data-target="cash-module">
+            TAHSİLAT YAP
+          </button>
+          <button class="button button--ghost" data-target="cash-module">
+            ÖDEME YAP
+          </button>
+          <button class="button button--ghost" data-target="stocks-module">
+            DEPO STOK
+          </button>
+          <button class="button button--ghost" data-target="customers-module">
+            TÜM BORÇLULAR
+          </button>
+          <button class="button button--ghost" data-target="customers-module">
+            ÖDEMESİ YAKLAŞANLAR
+          </button>
+          <button class="button button--ghost" data-target="cash-module">
+            KASA
+          </button>
+        </section>
+
+        <section class="stats">
+          <article class="stat">
+            <div>
+              <h3>Toplam Tahsilat</h3>
+              <strong id="summary-collections">₺0,00</strong>
+            </div>
+            <span class="stat__badge stat__badge--up">+12%</span>
+          </article>
+          <article class="stat">
+            <div>
+              <h3>Kasa</h3>
+              <strong id="summary-cash">₺0,00</strong>
+            </div>
+            <span class="stat__badge stat__badge--neutral">Dengeli</span>
+          </article>
+          <article class="stat">
+            <div>
+              <h3>Toplam Borç</h3>
+              <strong id="summary-balance">₺0,00</strong>
+            </div>
+            <span class="stat__badge stat__badge--down">-3%</span>
+          </article>
+        </section>
+
+        <section class="grid">
+          <article class="panel">
+            <div class="panel__header">
+              <h2>YZ Asistan</h2>
+              <span class="panel__tag">Aktif</span>
+            </div>
+            <p class="muted">Zorunlu alan ve kâr/zarar kontrolünde uyarır.</p>
+          </article>
+          <article class="panel">
+            <div class="panel__header">
+              <h2>Durum</h2>
+              <span class="panel__tag">Güncel</span>
+            </div>
+            <p class="muted">Toplam Cari: 0 • Toplam Malzeme: 0</p>
+          </article>
+          <article class="panel">
+            <div class="panel__header">
+              <h2>Hatırlatıcılar</h2>
+              <span class="panel__tag">Bugün</span>
+            </div>
+            <ul class="list" id="summary-alerts"></ul>
+          </article>
+          <article class="panel">
+            <div class="panel__header">
+              <h2>Yedekleme</h2>
+              <span class="panel__tag">Güvenli</span>
+            </div>
+            <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
+            <p>Bulut senkron: <strong>Opsiyonel</strong></p>
+            <button class="button button--outline" id="backup-now">
+              Flash'a Yedekle
+            </button>
+            <p class="muted" id="backup-path"></p>
+          </article>
+          <article class="panel">
+            <div class="panel__header">
+              <h2>Günlük Durum</h2>
+              <span class="panel__tag">Özet</span>
+            </div>
+            <div class="summary">
+              <div>
+                <span>Toplam Tahsilat</span>
+                <strong>₺0,00</strong>
+              </div>
+              <div>
+                <span>Kasa Bakiyesi</span>
+                <strong>₺0,00</strong>
+              </div>
+              <div>
+                <span>Bekleyen Borç</span>
+                <strong>₺0,00</strong>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="module" id="customers-module">
+          <div class="module__header">
+            <div>
+              <h2>Cari Yönetimi</h2>
+              <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
+            </div>
+            <button class="button button--primary">Yeni Cari</button>
+          </div>
+          <div class="module__content">
+            <form class="form-grid" id="customer-form">
+              <label>
+                Ünvan / Ad Soyad
+                <input name="name" required placeholder="Müşteri adı" />
+              </label>
+              <label>
+                Telefon
+                <input name="phone" placeholder="05xx xxx xx xx" />
+              </label>
+              <label>
+                Vergi No
+                <input name="taxNumber" placeholder="Vergi numarası" />
+              </label>
+              <label>
+                E-posta
+                <input name="email" type="email" placeholder="mail@firma.com" />
+              </label>
+              <label class="full-width">
+                Adres
+                <input name="address" placeholder="Firma adresi" />
+              </label>
+              <button class="button button--primary" type="submit">
+                Cari Kaydet
+              </button>
+            </form>
+            <form class="form-grid" id="customer-payment-form">
+              <label>
+                Cari Seç
+                <select id="payment-customer"></select>
+              </label>
+              <label>
+                Tahsilat Tutarı
+                <input name="amount" type="number" min="0" step="0.01" />
+              </label>
+              <label class="full-width">
+                Açıklama
+                <input name="note" placeholder="Tahsilat notu" />
+              </label>
+              <button class="button button--primary" type="submit">
+                Tahsilat Kaydet
+              </button>
+            </form>
+            <div class="table-card">
+              <h3>Mevcut Cariler</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ünvan</th>
+                    <th>Telefon</th>
+                    <th>Vergi No</th>
+                    <th>E-posta</th>
+                    <th>Bakiye</th>
+                  </tr>
+                </thead>
+                <tbody id="customers-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="module" id="stocks-module">
+          <div class="module__header">
+            <div>
+              <h2>Stok & Depo</h2>
+              <p>Malzeme kartları oluşturun ve stok seviyelerini izleyin.</p>
+            </div>
+            <button class="button button--primary">Yeni Malzeme</button>
+          </div>
+          <div class="module__content">
+            <form class="form-grid" id="stock-form">
+              <label>
+                Malzeme Adı
+                <input name="name" required placeholder="PEX 20mm Boru" />
+              </label>
+              <label>
+                Birim
+                <input name="unit" placeholder="m / adet" />
+              </label>
+              <label>
+                Mevcut Stok
+                <input name="quantity" type="number" min="0" step="1" />
+              </label>
+              <label>
+                Kritik Seviye
+                <input name="threshold" type="number" min="0" step="1" />
+              </label>
+              <button class="button button--primary" type="submit">
+                Stok Kaydet
+              </button>
+            </form>
+            <div class="table-card">
+              <h3>Stok Listesi</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Malzeme</th>
+                    <th>Birim</th>
+                    <th>Stok</th>
+                    <th>Kritik Seviye</th>
+                  </tr>
+                </thead>
+                <tbody id="stocks-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="module" id="cash-module">
+          <div class="module__header">
+            <div>
+              <h2>Kasa & Banka</h2>
+              <p>Gelir ve gider işlemlerini takip edin.</p>
+            </div>
+            <button class="button button--primary">Yeni İşlem</button>
+          </div>
+          <div class="module__content">
+            <div class="filter-bar">
+              <label>
+                Başlangıç
+                <input type="date" id="cash-start" />
+              </label>
+              <label>
+                Bitiş
+                <input type="date" id="cash-end" />
+              </label>
+              <label>
+                Tür
+                <select id="cash-type">
+                  <option value="">Hepsi</option>
+                  <option value="gelir">Gelir</option>
+                  <option value="gider">Gider</option>
+                </select>
+              </label>
+            </div>
+            <form class="form-grid" id="cash-form">
+              <label>
+                İşlem Türü
+                <select name="type">
+                  <option value="gelir">Gelir</option>
+                  <option value="gider">Gider</option>
+                </select>
+              </label>
+              <label>
+                Tutar
+                <input name="amount" type="number" min="0" step="0.01" />
+              </label>
+              <label class="full-width">
+                Açıklama
+                <input name="note" placeholder="İşlem açıklaması" />
+              </label>
+              <button class="button button--primary" type="submit">
+                Kasa Kaydet
+              </button>
+            </form>
+            <div class="table-card">
+              <h3>Son Kasa Hareketleri</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>Tür</th>
+                    <th>Tutar</th>
+                    <th>Açıklama</th>
+                  </tr>
+                </thead>
+                <tbody id="cash-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="module" id="customer-detail-module">
+          <div class="module__header">
+            <div>
+              <h2>Cari Ekstre</h2>
+              <p>Seçili cari için satış ve tahsilat hareketleri.</p>
+            </div>
+            <button class="button button--outline" id="detail-report">
+              Ekstre PDF
+            </button>
+          </div>
+          <div class="module__content">
+            <div class="filter-bar">
+              <label>
+                Cari Seç
+                <select id="detail-customer"></select>
+              </label>
+            </div>
+            <div class="table-card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>Tür</th>
+                    <th>Tutar</th>
+                    <th>Açıklama</th>
+                  </tr>
+                </thead>
+                <tbody id="detail-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="module" id="reports-module">
+          <div class="module__header">
+            <div>
+              <h2>Raporlar</h2>
+              <p>PDF raporlarını tek tıkla oluşturun.</p>
+            </div>
+            <div class="report-actions">
+              <button class="button button--primary" id="report-customers">
+                Cari Ekstre (PDF)
+              </button>
+              <button class="button button--primary" id="report-stocks">
+                Stok Raporu (PDF)
+              </button>
+              <button class="button button--primary" id="report-cash">
+                Satış Raporu (PDF)
+              </button>
+              <button class="button button--primary" id="report-stock-movements">
+                Stok Hareket Raporu
+              </button>
+              <button class="button button--primary" id="report-cash-summary">
+                Kasa Özet Raporu
+              </button>
+            </div>
+          </div>
+          <p class="muted" id="report-path"></p>
+        </section>
+
+        <section class="module" id="sales-module">
+          <div class="module__header">
+            <div>
+              <h2>Satışlar</h2>
+              <p>Fatura ve satış hareketleri listesi.</p>
+            </div>
+          </div>
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Cari</th>
+                  <th>Tutar</th>
+                  <th>KDV (%)</th>
+                </tr>
+              </thead>
+              <tbody id="sales-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="offer" id="offer-section">
+          <div class="offer__header">
+            <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
+            <div class="offer__actions">
+              <button class="button button--ghost" id="add-row">+ Satır Ekle</button>
+              <button class="button button--primary" id="offer-pdf">
+                Fatura PDF
+              </button>
+            </div>
+          </div>
+          <div class="offer__meta">
+            <label>
+              Cari Seç
+              <select id="offer-customer"></select>
+            </label>
+            <label>
+              Ödeme Türü
+              <select id="offer-payment">
+                <option value="nakit">Nakit</option>
+                <option value="eft">EFT</option>
+                <option value="kart">Kart</option>
+              </select>
+            </label>
+            <button class="button button--primary" id="offer-save">
+              Satış Kaydet
+            </button>
+          </div>
+          <table class="offer__table">
+            <thead>
+              <tr>
+                <th>Malzeme</th>
+                <th>Miktar</th>
+                <th>Birim</th>
+                <th>Birim Fiyat</th>
+                <th>Tutar</th>
+              </tr>
+            </thead>
+            <tbody id="offer-body"></tbody>
+          </table>
+          <div class="offer__summary">
+            <label>
+              KDV Oranı (%)
+              <input id="offer-vat" type="number" min="0" step="1" value="20" />
+            </label>
+            <div class="offer__totals">
+              <div>
+                <span>Ara Toplam</span>
+                <strong id="offer-subtotal">₺0,00</strong>
+              </div>
+              <div>
+                <span>KDV Toplam</span>
+                <strong id="offer-vat-total">₺0,00</strong>
+              </div>
+              <div>
+                <span>Genel Toplam</span>
+                <strong id="offer-total">₺0,00</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="module" id="stock-movement-module">
+          <div class="module__header">
+            <div>
+              <h2>Stok Hareketi</h2>
+              <p>Stok giriş/çıkış fişi oluşturun.</p>
+            </div>
+          </div>
+          <form class="form-grid" id="stock-movement-form">
+            <label>
+              Malzeme Seç
+              <select id="movement-stock"></select>
+            </label>
+            <label>
+              Hareket Türü
+              <select name="type">
+                <option value="giris">Giriş</option>
+                <option value="cikis">Çıkış</option>
+              </select>
+            </label>
+            <label>
+              Miktar
+              <input name="quantity" type="number" min="0" step="1" />
+            </label>
+            <label class="full-width">
+              Açıklama
+              <input name="note" placeholder="Fiş açıklaması" />
+            </label>
+            <button class="button button--primary" type="submit">
+              Hareket Kaydet
+            </button>
+          </form>
+        </section>
+
+        <section class="module" id="settings-module">
+          <div class="module__header">
+            <div>
+              <h2>Otomatik Yedekleme & Taşıma</h2>
+              <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
+            </div>
+          </div>
+          <form class="form-grid" id="settings-form">
+            <label>
+              Otomatik Taşıma Klasörü
+              <input id="auto-sync-path" placeholder="\\\\SUNUCU\\MTN-YEDEK" />
+            </label>
+            <label>
+              Aktif
+              <select id="auto-sync-enabled">
+                <option value="false">Hayır</option>
+                <option value="true">Evet</option>
+              </select>
+            </label>
+            <label>
+              Bulut Yedek Klasörü
+              <input id="cloud-backup-path" placeholder="C:\\Users\\...\\OneDrive\\MTN" />
+            </label>
+            <label>
+              Aktif
+              <select id="cloud-backup-enabled">
+                <option value="false">Hayır</option>
+                <option value="true">Evet</option>
+              </select>
+            </label>
+            <button class="button button--primary" type="submit">
+              Ayarları Kaydet
+            </button>
+          </form>
+          <p class="muted" id="settings-status"></p>
+        </section>
+        <footer class="app-footer">
+          Bu program MTN Enerji Mühendislik / Metin Döş tarafından kodlanmış ve
+          tasarlanmıştır. © Tüm hakları saklıdır.
+        </footer>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
