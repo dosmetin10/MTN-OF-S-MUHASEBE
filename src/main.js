@@ -23,7 +23,9 @@ const loadStorage = async () => {
       throw error;
     }
   }
-  return getDefaultData();
+  const data = getDefaultData();
+  await saveStorage(data);
+  return data;
 };
 
 const saveStorage = async (data) => {
@@ -45,7 +47,15 @@ const loadSettings = async () => {
     autoSyncPath: "",
     cloudBackupPath: "",
     enableAutoSync: false,
-    enableCloudBackup: false
+    enableCloudBackup: false,
+    hasOnboarded: false,
+    companyName: "MTN Enerji",
+    taxOffice: "",
+    taxNumber: "",
+    logoDataUrl: "",
+    defaultCashName: "Ana Kasa",
+    users: [],
+    licenseKey: ""
   };
 };
 

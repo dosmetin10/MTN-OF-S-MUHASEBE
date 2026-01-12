@@ -7,6 +7,62 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="first-run first-run--hidden" id="first-run-screen">
+      <div class="first-run__card">
+        <div>
+          <h1>İlk Kurulum</h1>
+          <p>Programı kullanmadan önce firma ve kullanıcı bilgilerini girin.</p>
+        </div>
+        <form id="first-run-form">
+          <div class="form-grid">
+            <label>
+              Firma Adı
+              <input name="companyName" required placeholder="MTN Enerji" />
+            </label>
+            <label>
+              Vergi Dairesi
+              <input name="taxOffice" placeholder="Şahinbey" />
+            </label>
+            <label>
+              Vergi No
+              <input name="taxNumber" placeholder="14168163156" />
+            </label>
+            <label>
+              Logo Yükle
+              <input name="logoFile" id="logo-file" type="file" accept="image/*" />
+            </label>
+            <label>
+              Varsayılan Kasa
+              <input name="defaultCashName" required placeholder="Ana Kasa" />
+            </label>
+          </div>
+          <div class="first-run__preview">
+            <img id="logo-preview" alt="Firma logosu" />
+            <div>
+              <h3>Yönetici Kullanıcı</h3>
+              <div class="first-run__user">
+                <label>
+                  Kullanıcı Adı
+                  <input name="adminUsername" required placeholder="admin" />
+                </label>
+                <label>
+                  Şifre
+                  <input name="adminPassword" type="password" required />
+                </label>
+                <label>
+                  Rol
+                  <input name="adminRole" value="admin" readonly />
+                </label>
+              </div>
+              <p class="muted">
+                Lisans ve yetkilendirme altyapısı bu kayıt üzerinden ilerler.
+              </p>
+            </div>
+          </div>
+          <button class="primary" type="submit">Kurulumu Tamamla</button>
+        </form>
+      </div>
+    </div>
     <div class="login" id="login-screen">
       <div class="login__card">
         <h1>MTN Muhasebe</h1>
@@ -28,7 +84,8 @@
     <div class="app app--hidden" id="app-shell">
       <aside class="sidebar">
         <div class="brand">
-          <span class="brand__title">MTN MUHASEBE</span>
+          <img class="brand__logo" id="brand-logo" alt="Firma logosu" />
+          <span class="brand__title" id="brand-title">MTN MUHASEBE</span>
           <span class="brand__subtitle">Kurumsal Yönetim</span>
         </div>
         <nav class="menu">
@@ -50,10 +107,14 @@
         <header class="topbar">
           <div>
             <h1>Ana Panel</h1>
-            <p>Hoş geldin Metin, bugün tüm operasyonlar kontrol altında.</p>
+            <p>
+              Hoş geldin <span id="user-name">Metin</span>,
+              bugün tüm operasyonlar kontrol altında.
+            </p>
           </div>
           <div class="topbar__actions">
             <input class="search" placeholder="Cari, stok, teklif ara..." />
+            <span class="user-chip" id="user-role">Rol: admin</span>
             <button class="primary">+ Yeni İşlem</button>
           </div>
         </header>
@@ -421,6 +482,21 @@
             </label>
             <button class="primary" type="submit">Ayarları Kaydet</button>
           </form>
+          <div class="table-card">
+            <h3>Lisans</h3>
+            <p class="muted">
+              Lisans kontrolü için altyapı hazırdır. Tek bilgisayar ve tek
+              kullanıcı mantığında çalışır.
+            </p>
+            <div class="license-row">
+              <input
+                id="license-key"
+                placeholder="Lisans anahtarı"
+                readonly
+              />
+              <button class="ghost" id="license-check">Lisans Kontrol</button>
+            </div>
+          </div>
           <div class="settings-danger">
             <div>
               <h3>Tüm Verileri Sıfırla</h3>

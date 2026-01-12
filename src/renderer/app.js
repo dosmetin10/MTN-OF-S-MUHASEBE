@@ -52,6 +52,16 @@ const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
+const firstRunScreen = document.getElementById("first-run-screen");
+const firstRunForm = document.getElementById("first-run-form");
+const logoFileInput = document.getElementById("logo-file");
+const logoPreview = document.getElementById("logo-preview");
+const brandTitle = document.getElementById("brand-title");
+const brandLogo = document.getElementById("brand-logo");
+const userRoleEl = document.getElementById("user-role");
+const userNameEl = document.getElementById("user-name");
+const licenseKeyInput = document.getElementById("license-key");
+const licenseCheckButton = document.getElementById("license-check");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -68,22 +78,51 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
-const users = [
+let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
 ];
+let currentSettings = {};
+
+const applyBranding = (settings) => {
+  const companyName = settings.companyName || "MTN Muhasebe";
+  if (brandTitle) {
+    brandTitle.textContent = companyName.toUpperCase();
+  }
+  if (document?.title) {
+    document.title = companyName;
+  }
+  if (brandLogo) {
+    if (settings.logoDataUrl) {
+      brandLogo.src = settings.logoDataUrl;
+      brandLogo.style.display = "block";
+    } else {
+      brandLogo.style.display = "none";
+    }
+  }
+};
+
+const applyUserProfile = (profile) => {
+  if (userNameEl) {
+    userNameEl.textContent = profile?.displayName || profile?.username || "Kullanıcı";
+  }
+  if (userRoleEl) {
+    userRoleEl.textContent = `Rol: ${profile?.role || "kullanıcı"}`;
+  }
+};
 
 const handleLogin = (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
   const { username, password } = Object.fromEntries(formData.entries());
-  const matched = users.some(
+  const matchedUser = users.find(
     (user) => user.username === username && user.password === password
   );
 
-  if (matched) {
+  if (matchedUser) {
     loginScreen.style.display = "none";
     appShell.classList.remove("app--hidden");
+    applyUserProfile(matchedUser);
   } else {
     loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
   }
@@ -396,19 +435,54 @@ const loadInitialData = async () => {
   renderSales(data.sales || []);
   renderSummary(data);
   renderCustomerDetail(data);
-  if (window.mtnApp?.getSettings) {
-    const settings = await window.mtnApp.getSettings();
-    if (autoSyncPathInput) {
-      autoSyncPathInput.value = settings.autoSyncPath || "";
+};
+
+const readLogoFile = (file) =>
+  new Promise((resolve) => {
+    if (!file) {
+      resolve("");
+      return;
     }
-    if (autoSyncEnabledSelect) {
-      autoSyncEnabledSelect.value = String(settings.enableAutoSync);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result || "");
+    reader.readAsDataURL(file);
+  });
+
+const initApp = async () => {
+  if (!window.mtnApp?.getSettings) {
+    return;
+  }
+  const settings = await window.mtnApp.getSettings();
+  currentSettings = settings;
+  applyBranding(settings);
+  if (settings.users?.length) {
+    users = settings.users;
+  }
+  if (licenseKeyInput) {
+    licenseKeyInput.value = settings.licenseKey || "";
+  }
+  if (autoSyncPathInput) {
+    autoSyncPathInput.value = settings.autoSyncPath || "";
+  }
+  if (autoSyncEnabledSelect) {
+    autoSyncEnabledSelect.value = String(settings.enableAutoSync);
+  }
+  if (cloudBackupPathInput) {
+    cloudBackupPathInput.value = settings.cloudBackupPath || "";
+  }
+  if (cloudBackupEnabledSelect) {
+    cloudBackupEnabledSelect.value = String(settings.enableCloudBackup);
+  }
+
+  if (!settings.hasOnboarded && firstRunScreen) {
+    firstRunScreen.classList.remove("first-run--hidden");
+    loginScreen.style.display = "none";
+    if (logoPreview && settings.logoDataUrl) {
+      logoPreview.src = settings.logoDataUrl;
     }
-    if (cloudBackupPathInput) {
-      cloudBackupPathInput.value = settings.cloudBackupPath || "";
-    }
-    if (cloudBackupEnabledSelect) {
-      cloudBackupEnabledSelect.value = String(settings.enableCloudBackup);
+    if (firstRunForm) {
+      firstRunForm.companyName.value = settings.companyName || "";
+      firstRunForm.defaultCashName.value = settings.defaultCashName || "";
     }
   }
 };
@@ -424,13 +498,17 @@ const buildReportTable = (title, headers, rows, options = {}) => {
     )
     .join("");
   const { includeWatermark = false } = options;
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
   const companyHtml = `
     <div class="report-header">
       <div>
         <h1>${escapeHtml(title)}</h1>
-        <p>MTN ENERJİ MÜHENDİSLİK (METİN DÖŞ)</p>
-        <p>Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / G.ANTEP</p>
-        <p>Tel: 0535 641 90 61 • Vergi Dairesi: ŞAHİNBEY • Vergi No: 14168163156</p>
+        <p>${escapeHtml(companyName)}</p>
+        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+          taxNumber
+        )}</p>
       </div>
       <div class="report-logo">MTN</div>
     </div>
@@ -457,13 +535,17 @@ const buildInvoiceHtml = (title, rows) => {
           .join("")}</tr>`
     )
     .join("");
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
   return `
     <div class="report-header">
       <div>
         <h1>${escapeHtml(title)}</h1>
-        <p>MTN ENERJİ MÜHENDİSLİK (METİN DÖŞ)</p>
-        <p>Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / G.ANTEP</p>
-        <p>Tel: 0535 641 90 61 • Vergi Dairesi: ŞAHİNBEY • Vergi No: 14168163156</p>
+        <p>${escapeHtml(companyName)}</p>
+        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+          taxNumber
+        )}</p>
       </div>
       <div class="report-logo">MTN</div>
     </div>
@@ -697,6 +779,14 @@ if (settingsForm) {
   });
 }
 
+if (licenseCheckButton) {
+  licenseCheckButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    settingsStatusEl.textContent =
+      "Lisans kontrol servisi henüz aktif değil.";
+  });
+}
+
 if (resetDataButton) {
   resetDataButton.addEventListener("click", async () => {
     if (!window.mtnApp?.resetData) {
@@ -719,6 +809,63 @@ if (resetDataButton) {
     settingsStatusEl.textContent = "Tüm veriler sıfırlandı.";
   });
 }
+
+if (logoFileInput && logoPreview) {
+  logoFileInput.addEventListener("change", async () => {
+    const file = logoFileInput.files?.[0];
+    const previewUrl = await readLogoFile(file);
+    if (previewUrl) {
+      logoPreview.src = previewUrl;
+    }
+  });
+}
+
+if (firstRunForm) {
+  firstRunForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.saveSettings) {
+      settingsStatusEl.textContent = "Kurulum servisi hazır değil.";
+      return;
+    }
+    const formData = new FormData(firstRunForm);
+    const payload = Object.fromEntries(formData.entries());
+    const logoFile = logoFileInput?.files?.[0];
+    const logoDataUrl = await readLogoFile(logoFile);
+    const nextSettings = {
+      // Varsayım: varsayılan kasa adı ileride kasa kartı eklendiğinde kullanılacak.
+      companyName: payload.companyName,
+      taxOffice: payload.taxOffice || "",
+      taxNumber: payload.taxNumber || "",
+      logoDataUrl,
+      defaultCashName: payload.defaultCashName,
+      hasOnboarded: true,
+      users: [
+        {
+          username: payload.adminUsername,
+          password: payload.adminPassword,
+          role: payload.adminRole,
+          displayName: payload.adminUsername
+        }
+      ],
+      licenseKey: ""
+    };
+    const existingSettings = await window.mtnApp.getSettings();
+    await window.mtnApp.saveSettings({ ...existingSettings, ...nextSettings });
+    currentSettings = { ...existingSettings, ...nextSettings };
+    applyBranding(nextSettings);
+    users = nextSettings.users;
+    firstRunScreen.classList.add("first-run--hidden");
+    loginScreen.style.display = "";
+    loginError.textContent = "Kurulum tamamlandı. Giriş yapabilirsiniz.";
+  });
+}
+
+window.addEventListener("error", () => {
+  if (settingsStatusEl) {
+    settingsStatusEl.textContent =
+      "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.";
+  }
+});
 
 const buildBackupPayload = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
@@ -937,4 +1084,4 @@ menuItems.forEach((item, index) => {
   });
 });
 
-loadInitialData();
+initApp().then(loadInitialData);
