@@ -51,6 +51,7 @@ const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const settingsStatusEl = document.getElementById("settings-status");
+const resetDataButton = document.getElementById("reset-data");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -693,6 +694,29 @@ if (settingsForm) {
     };
     await window.mtnApp.saveSettings(payload);
     settingsStatusEl.textContent = "Ayarlar kaydedildi.";
+  });
+}
+
+if (resetDataButton) {
+  resetDataButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.resetData) {
+      settingsStatusEl.textContent = "Sıfırlama servisi hazır değil.";
+      return;
+    }
+    const approved = window.confirm(
+      "Tüm verileri silmek üzeresiniz. Emin misiniz?"
+    );
+    if (!approved) {
+      return;
+    }
+    const data = await window.mtnApp.resetData();
+    renderCustomers(data.customers || []);
+    renderStocks(data.stocks || []);
+    renderCash(data.cashTransactions || []);
+    renderSales(data.sales || []);
+    renderSummary(data);
+    renderCustomerDetail(data);
+    settingsStatusEl.textContent = "Tüm veriler sıfırlandı.";
   });
 }
 

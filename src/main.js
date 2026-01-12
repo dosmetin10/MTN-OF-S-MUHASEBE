@@ -5,6 +5,14 @@ const path = require("path");
 const storageFileName = "mtn-data.json";
 const settingsFileName = "mtn-settings.json";
 
+const getDefaultData = () => ({
+  customers: [],
+  stocks: [],
+  cashTransactions: [],
+  sales: [],
+  stockMovements: []
+});
+
 const loadStorage = async () => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
   try {
@@ -15,13 +23,7 @@ const loadStorage = async () => {
       throw error;
     }
   }
-  return {
-    customers: [],
-    stocks: [],
-    cashTransactions: [],
-    sales: [],
-    stockMovements: []
-  };
+  return getDefaultData();
 };
 
 const saveStorage = async (data) => {
@@ -115,6 +117,12 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle("data:get", async () => loadStorage());
+  ipcMain.handle("data:reset", async () => {
+    const data = getDefaultData();
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    return data;
+  });
   ipcMain.handle("settings:get", async () => loadSettings());
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
