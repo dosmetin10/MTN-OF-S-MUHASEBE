@@ -47,6 +47,7 @@ const loginError = document.getElementById("login-error");
 const appShell = document.getElementById("app-shell");
 const stockMovementForm = document.getElementById("stock-movement-form");
 const movementStockSelect = document.getElementById("movement-stock");
+const stockMovementDateInput = document.getElementById("stock-movement-date");
 const settingsForm = document.getElementById("settings-form");
 const autoSyncPathInput = document.getElementById("auto-sync-path");
 const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
@@ -467,6 +468,24 @@ const setTodayDate = () => {
   if (cashDateInput) {
     cashDateInput.value = today;
   }
+  if (stockMovementDateInput) {
+    stockMovementDateInput.value = today;
+  }
+};
+
+const buildLocalCode = (prefix) => {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12);
+  const random = Math.floor(Math.random() * 900 + 100);
+  return `${prefix}-${stamp}-${random}`;
+};
+
+const setAutoCodes = () => {
+  if (customerForm?.elements?.code) {
+    customerForm.elements.code.value = buildLocalCode("CAR");
+  }
+  if (stockForm?.elements?.code) {
+    stockForm.elements.code.value = buildLocalCode("STK");
+  }
 };
 
 const initApp = async () => {
@@ -498,6 +517,7 @@ const initApp = async () => {
     autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
   }
   setTodayDate();
+  setAutoCodes();
 
   if (!settings.hasOnboarded && firstRunScreen) {
     firstRunScreen.classList.remove("first-run--hidden");
@@ -699,6 +719,7 @@ if (customerForm) {
     renderCustomers(data.customers || []);
     renderSummary(data);
     customerForm.reset();
+    setAutoCodes();
   });
 }
 
@@ -740,6 +761,7 @@ if (stockForm) {
     renderStocks(data.stocks || []);
     renderSummary(data);
     stockForm.reset();
+    setAutoCodes();
   });
 }
 
@@ -784,12 +806,14 @@ if (stockMovementForm) {
       stockName,
       type: payload.type,
       quantity: payload.quantity,
+      createdAt: payload.createdAt,
       note: payload.note
     });
     renderStocks(result.stocks || []);
     renderSummary(result);
     reportPathEl.textContent = "Stok hareketi kaydedildi.";
     stockMovementForm.reset();
+    setTodayDate();
   });
 }
 
