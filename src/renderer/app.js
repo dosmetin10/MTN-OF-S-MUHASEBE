@@ -54,6 +54,7 @@ const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const autoBackupEnabledSelect = document.getElementById("auto-backup-enabled");
+const lastAutoBackupEl = document.getElementById("last-auto-backup");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
 const firstRunScreen = document.getElementById("first-run-screen");
@@ -515,6 +516,11 @@ const initApp = async () => {
   }
   if (autoBackupEnabledSelect) {
     autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
+  }
+  if (lastAutoBackupEl) {
+    lastAutoBackupEl.textContent = settings.lastAutoBackupAt
+      ? new Date(settings.lastAutoBackupAt).toLocaleString("tr-TR")
+      : "Henüz yok";
   }
   setTodayDate();
   setAutoCodes();
