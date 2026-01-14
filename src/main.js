@@ -7,17 +7,29 @@ const settingsFileName = "mtn-settings.json";
 
 const getDefaultData = () => ({
   customers: [],
+  customerDebts: [],
   stocks: [],
   cashTransactions: [],
   sales: [],
   stockMovements: []
 });
 
+const normalizeData = (data) => ({
+  ...getDefaultData(),
+  ...data,
+  customers: data.customers || [],
+  customerDebts: data.customerDebts || [],
+  stocks: data.stocks || [],
+  cashTransactions: data.cashTransactions || [],
+  sales: data.sales || [],
+  stockMovements: data.stockMovements || []
+});
+
 const loadStorage = async () => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
   try {
     const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw);
+    return normalizeData(JSON.parse(raw));
   } catch (error) {
     if (error.code !== "ENOENT") {
       throw error;
@@ -138,6 +150,17 @@ const createRecord = (items, record) => {
   ];
 };
 
+const normalizeNumber = (value) => Number(value || 0);
+
+// Varsayım: kritik seviye girilmezse miktarın %10'u (en az 1) kritik eşik kabul edilir.
+const getAutoThreshold = (quantity) => {
+  const normalized = normalizeNumber(quantity);
+  if (normalized <= 0) {
+    return 0;
+  }
+  return Math.max(1, Math.round(normalized * 0.1));
+};
+
 const generateCode = (prefix) => {
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12);
   const random = Math.floor(Math.random() * 900 + 100);
@@ -181,11 +204,23 @@ app.whenReady().then(() => {
 
   ipcMain.handle("customers:create", async (_event, payload) => {
     const data = await loadStorage();
+    const { openingDebt, ...rest } = payload;
+    const normalizedOpeningDebt = normalizeNumber(openingDebt);
     data.customers = createRecord(data.customers, {
       code: payload.code || generateCode("CAR"),
-      balance: 0,
-      ...payload
+      balance: normalizedOpeningDebt,
+      ...rest
     });
+    if (normalizedOpeningDebt > 0) {
+      const latestCustomer = data.customers.at(-1);
+      data.customerDebts = createRecord(data.customerDebts, {
+        customerId: latestCustomer?.id || "",
+        customerName: latestCustomer?.name || "",
+        amount: normalizedOpeningDebt,
+        note: "Açılış borcu",
+        createdAt: payload.createdAt
+      });
+    }
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -225,12 +260,76 @@ app.whenReady().then(() => {
     return data;
   });
 
+  ipcMain.handle("customers:debt", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, amount, note, createdAt } = payload;
+    const normalizedAmount = normalizeNumber(amount);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        balance: Number(customer.balance || 0) + normalizedAmount
+      };
+    });
+    data.customerDebts = createRecord(data.customerDebts, {
+      customerId,
+      customerName,
+      amount: normalizedAmount,
+      note: note || "Cari Borç",
+      createdAt
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.stocks = createRecord(data.stocks, {
-      code: payload.code || generateCode("STK"),
-      ...payload
-    });
+    const incomingName = (payload.name || "").trim();
+    const incomingQuantity = normalizeNumber(payload.quantity);
+    // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
+    const existingIndex = data.stocks.findIndex(
+      (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
+    );
+    const threshold =
+      payload.threshold === "" || payload.threshold === undefined
+        ? getAutoThreshold(incomingQuantity)
+        : normalizeNumber(payload.threshold);
+    if (existingIndex >= 0) {
+      const existing = data.stocks[existingIndex];
+      data.stocks[existingIndex] = {
+        ...existing,
+        name: incomingName || existing.name,
+        diameter: payload.diameter || existing.diameter,
+        unit: payload.unit || existing.unit,
+        quantity: normalizeNumber(existing.quantity) + incomingQuantity,
+        threshold,
+        updatedAt: new Date().toISOString()
+      };
+    } else {
+      data.stocks = createRecord(data.stocks, {
+        code: payload.code || generateCode("STK"),
+        ...payload,
+        name: incomingName,
+        quantity: incomingQuantity,
+        threshold
+      });
+    }
+    if (incomingName && incomingQuantity > 0) {
+      data.stockMovements = createRecord(data.stockMovements, {
+        stockName: incomingName,
+        type: "giris",
+        quantity: incomingQuantity,
+        note: "Stok kartı girişi",
+        createdAt: payload.createdAt
+      });
+    }
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -311,6 +410,17 @@ app.whenReady().then(() => {
       };
     });
     data.stocks = updatedStocks;
+    items.forEach((item) => {
+      if (!item.name) {
+        return;
+      }
+      data.stockMovements = createRecord(data.stockMovements, {
+        stockName: item.name,
+        type: "cikis",
+        quantity: normalizeNumber(item.quantity),
+        note: `Satış: ${customerName || "Genel"}`
+      });
+    });
 
     data.cashTransactions = createRecord(data.cashTransactions, {
       type: "gelir",
@@ -339,7 +449,7 @@ app.whenReady().then(() => {
         sandbox: false
       }
     });
-    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:140px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
     await reportWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
     );

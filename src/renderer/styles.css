@@ -244,6 +244,20 @@ body {
   width: 240px;
 }
 
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 10px 0 14px;
+}
+
+.search-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #6b7a99;
+}
+
 .primary {
   background: #1b5cff;
   color: #fff;
@@ -326,6 +340,22 @@ body {
   box-shadow: 0 12px 24px rgba(15, 27, 52, 0.08);
 }
 
+.table-card--sheet {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.table-card--sheet thead th {
+  position: sticky;
+  top: 0;
+  background: #f5f7fb;
+  z-index: 1;
+}
+
+.table-card--sheet tbody tr:nth-child(even) {
+  background: #f9fbff;
+}
+
 .table-card table {
   width: 100%;
   border-collapse: collapse;
@@ -343,6 +373,23 @@ body {
   margin-top: 12px;
   font-size: 13px;
   color: #42516f;
+}
+
+.detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 24px rgba(15, 27, 52, 0.08);
+  font-size: 13px;
+}
+
+.detail-summary strong {
+  display: block;
+  font-size: 16px;
+  color: #1f2a44;
 }
 
 .filter-bar {

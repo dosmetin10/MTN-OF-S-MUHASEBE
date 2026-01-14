@@ -165,6 +165,10 @@
                   <input name="name" required placeholder="Müşteri adı" />
                 </label>
                 <label>
+                  Açılış Borç
+                  <input name="openingDebt" type="number" min="0" step="0.01" placeholder="0" />
+                </label>
+                <label>
                   Telefon
                   <input name="phone" placeholder="05xx xxx xx xx" />
                 </label>
@@ -181,6 +185,25 @@
                   <input name="address" placeholder="Firma adresi" />
                 </label>
                 <button class="primary" type="submit">Cari Kaydet</button>
+              </form>
+              <form class="form-grid" id="customer-debt-form">
+                <label>
+                  Tarih
+                  <input name="createdAt" type="date" id="customer-debt-date" readonly />
+                </label>
+                <label>
+                  Cari Seç
+                  <select id="debt-customer"></select>
+                </label>
+                <label>
+                  Borç Tutarı
+                  <input name="amount" type="number" min="0" step="0.01" />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="note" placeholder="Borç açıklaması" />
+                </label>
+                <button class="primary" type="submit">Borç Ekle</button>
               </form>
           <form class="form-grid" id="customer-payment-form">
             <label>
@@ -203,6 +226,11 @@
               </form>
               <div class="table-card">
                 <h3>Mevcut Cariler</h3>
+                <div class="table-actions">
+                  <input id="customer-search" class="search" placeholder="Cari ara..." />
+                  <button class="ghost" id="customer-search-btn">Ara</button>
+                </div>
+                <p class="search-hint" id="customer-search-suggestion"></p>
                 <table>
                   <thead>
                     <tr>
@@ -211,7 +239,7 @@
                       <th>Telefon</th>
                       <th>Vergi No</th>
                       <th>E-posta</th>
-                      <th>Bakiye</th>
+                      <th>Borç</th>
                     </tr>
                   </thead>
                   <tbody id="customers-table"></tbody>
@@ -231,6 +259,7 @@
                 </label>
                 <button class="primary" id="detail-report">Ekstre PDF</button>
               </div>
+              <div class="detail-summary" id="detail-summary"></div>
               <div class="table-card">
                 <table>
                   <thead>
@@ -276,12 +305,19 @@
                 </label>
                 <label>
                   Kritik Seviye
-                  <input name="threshold" type="number" min="0" step="1" />
+                  <input name="threshold" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
                 <button class="primary" type="submit">Stok Kaydet</button>
               </form>
-              <div class="table-card">
+              <div class="table-card table-card--sheet">
                 <h3>Stok Listesi</h3>
+                <div class="table-actions">
+                  <input id="stock-search" class="search" placeholder="Stok ara..." />
+                  <button class="ghost" id="stock-search-btn">Ara</button>
+                  <button class="ghost" id="stock-export-csv">Excel (CSV)</button>
+                  <button class="ghost" id="stock-export-pdf">PDF</button>
+                </div>
+                <p class="search-hint" id="stock-search-suggestion"></p>
                 <table>
                   <thead>
                     <tr>
@@ -332,6 +368,21 @@
                 </label>
                 <button class="primary" type="submit">Hareket Kaydet</button>
               </form>
+              <div class="table-card table-card--sheet">
+                <h3>Stok Hareketleri</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Malzeme</th>
+                      <th>Tür</th>
+                      <th>Miktar</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stock-movements-table"></tbody>
+                </table>
+              </div>
             </section>
           </section>
 
