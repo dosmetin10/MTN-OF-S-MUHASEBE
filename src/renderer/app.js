@@ -243,19 +243,25 @@ const renderCustomers = (items) => {
     if (offerCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
-      option.textContent = item.name || "Cari";
+      option.textContent = item.code
+        ? `${item.code} - ${item.name || "Cari"}`
+        : item.name || "Cari";
       offerCustomerSelect.appendChild(option);
     }
     if (paymentCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
-      option.textContent = item.name || "Cari";
+      option.textContent = item.code
+        ? `${item.code} - ${item.name || "Cari"}`
+        : item.name || "Cari";
       paymentCustomerSelect.appendChild(option);
     }
     if (detailCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
-      option.textContent = item.name || "Cari";
+      option.textContent = item.code
+        ? `${item.code} - ${item.name || "Cari"}`
+        : item.name || "Cari";
       detailCustomerSelect.appendChild(option);
     }
   });
@@ -284,7 +290,9 @@ const renderStocks = (items) => {
     if (movementStockSelect) {
       const option = document.createElement("option");
       option.value = item.name || "";
-      option.textContent = item.name || "Malzeme";
+      option.textContent = item.code
+        ? `${item.code} - ${item.name || "Malzeme"}`
+        : item.name || "Malzeme";
       movementStockSelect.appendChild(option);
     }
   });
