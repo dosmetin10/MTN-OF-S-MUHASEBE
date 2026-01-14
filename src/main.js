@@ -194,7 +194,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle("customers:payment", async (_event, payload) => {
     const data = await loadStorage();
-    const { customerId, amount, note } = payload;
+    const { customerId, amount, note, createdAt } = payload;
     const normalizedAmount = Number(amount || 0);
     const customerName = data.customers.find(
       (customer) => customer.id === customerId
@@ -215,6 +215,7 @@ app.whenReady().then(() => {
       type: "gelir",
       amount: normalizedAmount,
       note: note || "Cari Tahsilat",
+      createdAt,
       customerId,
       customerName
     });
@@ -238,12 +239,13 @@ app.whenReady().then(() => {
 
   ipcMain.handle("stocks:movement", async (_event, payload) => {
     const data = await loadStorage();
-    const { stockName, type, quantity, note } = payload;
+    const { stockName, type, quantity, note, createdAt } = payload;
     data.stockMovements = createRecord(data.stockMovements, {
       stockName,
       type,
       quantity: Number(quantity || 0),
-      note
+      note,
+      createdAt
     });
     data.stocks = data.stocks.map((stock) => {
       if (stock.name !== stockName) {

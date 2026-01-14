@@ -18,6 +18,9 @@ const summaryBalanceEl = document.getElementById("summary-balance");
 const summaryAlertsEl = document.getElementById("summary-alerts");
 const customerForm = document.getElementById("customer-form");
 const customerPaymentForm = document.getElementById("customer-payment-form");
+const customerPaymentDateInput = document.getElementById(
+  "customer-payment-date"
+);
 const paymentCustomerSelect = document.getElementById("payment-customer");
 const customersTable = document.getElementById("customers-table");
 const stockForm = document.getElementById("stock-form");
@@ -472,6 +475,9 @@ const setTodayDate = () => {
   if (stockMovementDateInput) {
     stockMovementDateInput.value = today;
   }
+  if (customerPaymentDateInput) {
+    customerPaymentDateInput.value = today;
+  }
 };
 
 const buildLocalCode = (prefix) => {
@@ -746,7 +752,8 @@ if (customerPaymentForm) {
     const result = await window.mtnApp.collectPayment({
       customerId,
       amount: payload.amount,
-      note: payload.note
+      note: payload.note,
+      createdAt: payload.createdAt
     });
     renderCustomers(result.customers || []);
     renderCash(result.cashTransactions || []);
@@ -754,6 +761,7 @@ if (customerPaymentForm) {
     renderCustomerDetail(result);
     reportPathEl.textContent = "Tahsilat kaydedildi.";
     customerPaymentForm.reset();
+    setTodayDate();
   });
 }
 
