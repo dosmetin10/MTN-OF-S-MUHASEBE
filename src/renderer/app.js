@@ -22,11 +22,13 @@ const paymentCustomerSelect = document.getElementById("payment-customer");
 const customersTable = document.getElementById("customers-table");
 const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
+const stocksTotalEl = document.getElementById("stocks-total");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
 const cashEndInput = document.getElementById("cash-end");
 const cashTypeSelect = document.getElementById("cash-type");
+const cashDateInput = document.getElementById("cash-date");
 const salesTable = document.getElementById("sales-table");
 const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
@@ -50,6 +52,7 @@ const autoSyncPathInput = document.getElementById("auto-sync-path");
 const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
+const autoBackupEnabledSelect = document.getElementById("auto-backup-enabled");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
 const firstRunScreen = document.getElementById("first-run-screen");
@@ -97,7 +100,8 @@ const applyBranding = (settings) => {
       brandLogo.src = settings.logoDataUrl;
       brandLogo.style.display = "block";
     } else {
-      brandLogo.style.display = "none";
+      brandLogo.src = "assets/logo.svg";
+      brandLogo.style.display = "block";
     }
   }
 };
@@ -223,6 +227,7 @@ const renderCustomers = (items) => {
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
+      <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
       <td>${item.phone || "-"}</td>
       <td>${item.taxNumber || "-"}</td>
@@ -263,7 +268,9 @@ const renderStocks = (items) => {
   items.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
+      <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
+      <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
       <td>${item.threshold || 0}</td>
@@ -276,6 +283,13 @@ const renderStocks = (items) => {
       movementStockSelect.appendChild(option);
     }
   });
+  if (stocksTotalEl) {
+    const total = items.reduce(
+      (sum, item) => sum + Number(item.quantity || 0),
+      0
+    );
+    stocksTotalEl.textContent = total;
+  }
 };
 
 const renderCash = (items) => {
@@ -448,6 +462,13 @@ const readLogoFile = (file) =>
     reader.readAsDataURL(file);
   });
 
+const setTodayDate = () => {
+  const today = new Date().toISOString().split("T")[0];
+  if (cashDateInput) {
+    cashDateInput.value = today;
+  }
+};
+
 const initApp = async () => {
   if (!window.mtnApp?.getSettings) {
     return;
@@ -473,12 +494,19 @@ const initApp = async () => {
   if (cloudBackupEnabledSelect) {
     cloudBackupEnabledSelect.value = String(settings.enableCloudBackup);
   }
+  if (autoBackupEnabledSelect) {
+    autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
+  }
+  setTodayDate();
 
   if (!settings.hasOnboarded && firstRunScreen) {
     firstRunScreen.classList.remove("first-run--hidden");
     loginScreen.style.display = "none";
     if (logoPreview && settings.logoDataUrl) {
       logoPreview.src = settings.logoDataUrl;
+    }
+    if (logoPreview && !settings.logoDataUrl) {
+      logoPreview.src = "assets/logo.svg";
     }
     if (firstRunForm) {
       firstRunForm.companyName.value = settings.companyName || "";
@@ -590,8 +618,9 @@ const generateReport = async (type) => {
 
   if (type === "customers") {
     title = "Cari Ekstre";
-    headers = ["Ünvan", "Telefon", "Vergi No", "E-posta", "Bakiye"];
+    headers = ["Kod", "Ünvan", "Telefon", "Vergi No", "E-posta", "Bakiye"];
     rows = (data.customers || []).map((item) => [
+      item.code || "-",
       item.name || "-",
       item.phone || "-",
       item.taxNumber || "-",
@@ -602,9 +631,11 @@ const generateReport = async (type) => {
 
   if (type === "stocks") {
     title = "Stok Raporu";
-    headers = ["Malzeme", "Birim", "Stok", "Kritik Seviye"];
+    headers = ["Kod", "Malzeme", "Çap", "Birim", "Stok", "Kritik Seviye"];
     rows = (data.stocks || []).map((item) => [
+      item.code || "-",
       item.name || "-",
+      item.diameter || "-",
       item.unit || "-",
       item.quantity || 0,
       item.threshold || 0
@@ -722,6 +753,7 @@ if (cashForm) {
     renderCash(data.cashTransactions || []);
     renderSummary(data);
     cashForm.reset();
+    setTodayDate();
   });
 }
 
@@ -772,9 +804,13 @@ if (settingsForm) {
       autoSyncPath: autoSyncPathInput?.value || "",
       cloudBackupPath: cloudBackupPathInput?.value || "",
       enableAutoSync: autoSyncEnabledSelect?.value === "true",
-      enableCloudBackup: cloudBackupEnabledSelect?.value === "true"
+      enableCloudBackup: cloudBackupEnabledSelect?.value === "true",
+      enableAutoBackup: autoBackupEnabledSelect?.value === "true"
     };
-    await window.mtnApp.saveSettings(payload);
+    const existingSettings = await window.mtnApp.getSettings();
+    const nextSettings = { ...existingSettings, ...payload };
+    await window.mtnApp.saveSettings(nextSettings);
+    currentSettings = nextSettings;
     settingsStatusEl.textContent = "Ayarlar kaydedildi.";
   });
 }

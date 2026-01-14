@@ -157,6 +157,10 @@
               </div>
               <form class="form-grid" id="customer-form">
                 <label>
+                  Cari Kodu
+                  <input name="code" placeholder="Otomatik" readonly />
+                </label>
+                <label>
                   Ünvan / Ad Soyad
                   <input name="name" required placeholder="Müşteri adı" />
                 </label>
@@ -198,6 +202,7 @@
                 <table>
                   <thead>
                     <tr>
+                      <th>Kod</th>
                       <th>Ünvan</th>
                       <th>Telefon</th>
                       <th>Vergi No</th>
@@ -246,8 +251,16 @@
               </div>
               <form class="form-grid" id="stock-form">
                 <label>
+                  Stok Kodu
+                  <input name="code" placeholder="Otomatik" readonly />
+                </label>
+                <label>
                   Malzeme Adı
                   <input name="name" required placeholder="PEX 20mm Boru" />
+                </label>
+                <label>
+                  Çap
+                  <input name="diameter" placeholder="20 mm" />
                 </label>
                 <label>
                   Birim
@@ -268,7 +281,9 @@
                 <table>
                   <thead>
                     <tr>
+                      <th>Kod</th>
                       <th>Malzeme</th>
+                      <th>Çap</th>
                       <th>Birim</th>
                       <th>Stok</th>
                       <th>Kritik Seviye</th>
@@ -276,6 +291,9 @@
                   </thead>
                   <tbody id="stocks-table"></tbody>
                 </table>
+                <p class="table-total">
+                  Depo Toplamı: <strong id="stocks-total">0</strong>
+                </p>
               </div>
             </section>
 
@@ -414,6 +432,10 @@
               </div>
               <form class="form-grid" id="cash-form">
                 <label>
+                  Tarih
+                  <input name="createdAt" type="date" id="cash-date" readonly />
+                </label>
+                <label>
                   İşlem Türü
                   <select name="type">
                     <option value="gelir">Gelir</option>
@@ -489,6 +511,13 @@
                 <label>
                   Aktif
                   <select id="cloud-backup-enabled">
+                    <option value="false">Hayır</option>
+                    <option value="true">Evet</option>
+                  </select>
+                </label>
+                <label>
+                  Otomatik Yedek
+                  <select id="auto-backup-enabled">
                     <option value="false">Hayır</option>
                     <option value="true">Evet</option>
                   </select>

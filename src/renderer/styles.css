@@ -339,6 +339,12 @@ body {
   border-bottom: 1px solid #edf1fb;
 }
 
+.table-total {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #42516f;
+}
+
 .filter-bar {
   display: flex;
   flex-wrap: wrap;

@@ -48,6 +48,8 @@ const loadSettings = async () => {
     cloudBackupPath: "",
     enableAutoSync: false,
     enableCloudBackup: false,
+    enableAutoBackup: false,
+    lastAutoBackupAt: "",
     hasOnboarded: false,
     companyName: "MTN Enerji",
     taxOffice: "",
@@ -57,6 +59,49 @@ const loadSettings = async () => {
     users: [],
     licenseKey: ""
   };
+};
+
+const getBackupBaseDir = () =>
+  path.join(app.getPath("documents"), "MTN-Muhasebe-Yedekler");
+
+const createBackupEntry = async (payload) => {
+  const baseDir = getBackupBaseDir();
+  await fs.mkdir(baseDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupDir = path.join(baseDir, `Yedek-${timestamp}`);
+  await fs.mkdir(backupDir, { recursive: true });
+  const backupPayload = {
+    createdAt: new Date().toISOString(),
+    ...payload
+  };
+  await fs.writeFile(
+    path.join(backupDir, "yedek.json"),
+    JSON.stringify(backupPayload, null, 2),
+    "utf8"
+  );
+  return { backupDir, createdAt: backupPayload.createdAt };
+};
+
+const maybeAutoBackup = async (data) => {
+  const settings = await loadSettings();
+  if (!settings.enableAutoBackup) {
+    return;
+  }
+  const lastRun = settings.lastAutoBackupAt
+    ? new Date(settings.lastAutoBackupAt)
+    : null;
+  const now = new Date();
+  if (lastRun && now - lastRun < 1000 * 60 * 60) {
+    return;
+  }
+  await createBackupEntry({
+    meta: {
+      module: "auto-backup",
+      appVersion: "0.1.0"
+    },
+    data
+  });
+  await saveSettings({ ...settings, lastAutoBackupAt: now.toISOString() });
 };
 
 const saveSettings = async (settings) => {
@@ -79,14 +124,25 @@ const syncStorageCopies = async (data) => {
   await Promise.allSettled(tasks);
 };
 
-const createRecord = (items, record) => [
-  ...items,
-  {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    createdAt: new Date().toISOString(),
-    ...record
-  }
-];
+const createRecord = (items, record) => {
+  const { createdAt, ...rest } = record;
+  return [
+    ...items,
+    {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      createdAt: createdAt
+        ? new Date(createdAt).toISOString()
+        : new Date().toISOString(),
+      ...rest
+    }
+  ];
+};
+
+const generateCode = (prefix) => {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12);
+  const random = Math.floor(Math.random() * 900 + 100);
+  return `${prefix}-${stamp}-${random}`;
+};
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -105,32 +161,16 @@ const createWindow = () => {
 app.whenReady().then(() => {
   const mainWindow = createWindow();
 
-  ipcMain.handle("backup:create", async (_event, payload) => {
-    const baseDir = path.join(
-      app.getPath("documents"),
-      "MTN-Muhasebe-Yedekler"
-    );
-    await fs.mkdir(baseDir, { recursive: true });
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupDir = path.join(baseDir, `Yedek-${timestamp}`);
-    await fs.mkdir(backupDir, { recursive: true });
-    const backupPayload = {
-      createdAt: new Date().toISOString(),
-      ...payload
-    };
-    await fs.writeFile(
-      path.join(backupDir, "yedek.json"),
-      JSON.stringify(backupPayload, null, 2),
-      "utf8"
-    );
-    return { backupDir, createdAt: backupPayload.createdAt };
-  });
+  ipcMain.handle("backup:create", async (_event, payload) =>
+    createBackupEntry(payload)
+  );
 
   ipcMain.handle("data:get", async () => loadStorage());
   ipcMain.handle("data:reset", async () => {
     const data = getDefaultData();
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
   ipcMain.handle("settings:get", async () => loadSettings());
@@ -142,11 +182,13 @@ app.whenReady().then(() => {
   ipcMain.handle("customers:create", async (_event, payload) => {
     const data = await loadStorage();
     data.customers = createRecord(data.customers, {
+      code: payload.code || generateCode("CAR"),
       balance: 0,
       ...payload
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.customers;
   });
 
@@ -178,14 +220,19 @@ app.whenReady().then(() => {
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.stocks = createRecord(data.stocks, payload);
+    data.stocks = createRecord(data.stocks, {
+      code: payload.code || generateCode("STK"),
+      ...payload
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.stocks;
   });
 
@@ -212,6 +259,7 @@ app.whenReady().then(() => {
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
@@ -220,6 +268,7 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, payload);
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.cashTransactions;
   });
 
@@ -269,6 +318,7 @@ app.whenReady().then(() => {
 
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
