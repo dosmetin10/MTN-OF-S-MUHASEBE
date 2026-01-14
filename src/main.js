@@ -8,6 +8,7 @@ const settingsFileName = "mtn-settings.json";
 const getDefaultData = () => ({
   customers: [],
   customerDebts: [],
+  customerJobs: [],
   stocks: [],
   cashTransactions: [],
   sales: [],
@@ -19,6 +20,7 @@ const normalizeData = (data) => ({
   ...data,
   customers: data.customers || [],
   customerDebts: data.customerDebts || [],
+  customerJobs: data.customerJobs || [],
   stocks: data.stocks || [],
   cashTransactions: data.cashTransactions || [],
   sales: data.sales || [],
@@ -282,6 +284,48 @@ app.whenReady().then(() => {
       amount: normalizedAmount,
       note: note || "Cari Borç",
       createdAt
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("customers:job", async (_event, payload) => {
+    const data = await loadStorage();
+    const {
+      customerId,
+      title,
+      quantity,
+      unit,
+      unitPrice,
+      total,
+      note,
+      createdAt
+    } = payload;
+    const normalizedTotal = normalizeNumber(total);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
+    data.customerJobs = createRecord(data.customerJobs, {
+      customerId,
+      customerName,
+      title,
+      quantity: normalizeNumber(quantity),
+      unit,
+      unitPrice: normalizeNumber(unitPrice),
+      total: normalizedTotal,
+      note,
+      createdAt
+    });
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        balance: Number(customer.balance || 0) + normalizedTotal
+      };
     });
     await saveStorage(data);
     await syncStorageCopies(data);

@@ -260,6 +260,54 @@
                 <button class="primary" id="detail-report">Ekstre PDF</button>
               </div>
               <div class="detail-summary" id="detail-summary"></div>
+              <form class="form-grid" id="customer-job-form">
+                <label>
+                  Tarih
+                  <input name="createdAt" type="date" id="customer-job-date" readonly />
+                </label>
+                <label>
+                  İş Kalemi
+                  <input name="title" placeholder="Hizmet / İş kalemi" />
+                </label>
+                <label>
+                  Miktar
+                  <input name="quantity" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Birim
+                  <input name="unit" placeholder="adet / m" />
+                </label>
+                <label>
+                  Birim Fiyat
+                  <input name="unitPrice" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  Tutar
+                  <input name="total" type="number" min="0" step="0.01" readonly />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="note" placeholder="İş kalemi açıklaması" />
+                </label>
+                <button class="primary" type="submit">İş Kalemi Ekle</button>
+              </form>
+              <div class="table-card table-card--sheet">
+                <h3>İş Kalemleri</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>İş Kalemi</th>
+                      <th>Miktar</th>
+                      <th>Birim</th>
+                      <th>Birim Fiyat</th>
+                      <th>Tutar</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customer-jobs-table"></tbody>
+                </table>
+              </div>
               <div class="table-card">
                 <table>
                   <thead>

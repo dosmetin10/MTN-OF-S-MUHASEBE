@@ -20,6 +20,8 @@ const customerForm = document.getElementById("customer-form");
 const customerDebtForm = document.getElementById("customer-debt-form");
 const customerPaymentForm = document.getElementById("customer-payment-form");
 const customerDebtDateInput = document.getElementById("customer-debt-date");
+const customerJobForm = document.getElementById("customer-job-form");
+const customerJobDateInput = document.getElementById("customer-job-date");
 const customerPaymentDateInput = document.getElementById(
   "customer-payment-date"
 );
@@ -58,6 +60,7 @@ const detailCustomerSelect = document.getElementById("detail-customer");
 const detailTable = document.getElementById("detail-table");
 const detailReportButton = document.getElementById("detail-report");
 const detailSummaryEl = document.getElementById("detail-summary");
+const customerJobsTable = document.getElementById("customer-jobs-table");
 const loginScreen = document.getElementById("login-screen");
 const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
@@ -110,6 +113,9 @@ let cachedCustomers = [];
 let cachedStocks = [];
 let cachedStockMovements = [];
 let cachedCustomerDebts = [];
+let cachedCustomerJobs = [];
+let cachedCashTransactions = [];
+let cachedSales = [];
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -304,6 +310,7 @@ const renderCustomers = (items) => {
   }
   filtered.forEach((item) => {
     const row = document.createElement("tr");
+    row.dataset.customerId = item.id || "";
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
@@ -312,6 +319,20 @@ const renderCustomers = (items) => {
       <td>${item.email || "-"}</td>
       <td>${formatCurrency(Number(item.balance) || 0)}</td>
     `;
+    row.addEventListener("dblclick", () => {
+      if (detailCustomerSelect && item.id) {
+        detailCustomerSelect.value = item.id;
+      }
+      renderCustomerDetail({
+        customers: cachedCustomers,
+        customerDebts: cachedCustomerDebts,
+        customerJobs: cachedCustomerJobs,
+        cashTransactions: cachedCashTransactions,
+        sales: cachedSales
+      });
+      const detailModule = document.getElementById("customer-detail-module");
+      detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     customersTable.appendChild(row);
   });
   items.forEach((item) => {
@@ -449,7 +470,31 @@ const renderStockMovements = (items) => {
   });
 };
 
+const renderCustomerJobs = (items, customerId) => {
+  if (!customerJobsTable) {
+    return;
+  }
+  customerJobsTable.innerHTML = "";
+  const filtered = (items || []).filter(
+    (job) => job.customerId === customerId
+  );
+  filtered.forEach((job) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(job.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${job.title || "-"}</td>
+      <td>${Number(job.quantity || 0)}</td>
+      <td>${job.unit || "-"}</td>
+      <td>${formatCurrency(Number(job.unitPrice || 0))}</td>
+      <td>${formatCurrency(Number(job.total || 0))}</td>
+      <td>${job.note || "-"}</td>
+    `;
+    customerJobsTable.appendChild(row);
+  });
+};
+
 const renderCash = (items) => {
+  cachedCashTransactions = items;
   let filtered = items;
   const startValue = cashStartInput?.value;
   const endValue = cashEndInput?.value;
@@ -487,6 +532,7 @@ const renderCash = (items) => {
 };
 
 const renderSales = (items) => {
+  cachedSales = items;
   if (!salesTable) {
     return;
   }
@@ -524,6 +570,9 @@ const renderCustomerDetail = (data) => {
   const debts = (data.customerDebts || []).filter(
     (entry) => entry.customerId === customerId
   );
+  const jobs = (data.customerJobs || []).filter(
+    (entry) => entry.customerId === customerId
+  );
   const customer = (data.customers || []).find(
     (item) => item.id === customerId
   );
@@ -537,6 +586,10 @@ const renderCustomerDetail = (data) => {
   );
   const totalDebts = debts.reduce(
     (sum, debt) => sum + Number(debt.amount || 0),
+    0
+  );
+  const totalJobs = jobs.reduce(
+    (sum, job) => sum + Number(job.total || 0),
     0
   );
   const totalItems = sales.reduce((sum, sale) => {
@@ -604,8 +657,13 @@ const renderCustomerDetail = (data) => {
         Açılış + Ek Borç
         <strong>${formatCurrency(totalDebts)}</strong>
       </div>
+      <div>
+        İş Kalemleri Toplamı
+        <strong>${formatCurrency(totalJobs)}</strong>
+      </div>
     `;
   }
+  renderCustomerJobs(data.customerJobs || [], customerId);
 };
 
 const renderSummary = (data) => {
@@ -672,6 +730,7 @@ const loadInitialData = async () => {
   renderSales(data.sales || []);
   renderStockMovements(data.stockMovements || []);
   cachedCustomerDebts = data.customerDebts || [];
+  cachedCustomerJobs = data.customerJobs || [];
   renderSummary(data);
   renderCustomerDetail(data);
 };
@@ -697,6 +756,9 @@ const setTodayDate = () => {
   }
   if (customerDebtDateInput) {
     customerDebtDateInput.value = today;
+  }
+  if (customerJobDateInput) {
+    customerJobDateInput.value = today;
   }
   if (customerPaymentDateInput) {
     customerPaymentDateInput.value = today;
@@ -875,6 +937,69 @@ const buildInvoiceHtml = (title, rows) => {
   `;
 };
 
+const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
+  const rowHtml = jobs
+    .map(
+      (job) =>
+        `<tr>
+          <td>${escapeHtml(job.title)}</td>
+          <td>${escapeHtml(job.quantity)}</td>
+          <td>${escapeHtml(job.unit)}</td>
+          <td>${escapeHtml(job.unitPrice)}</td>
+          <td>${escapeHtml(job.total)}</td>
+        </tr>`
+    )
+    .join("");
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
+  const logoSrc = currentSettings.logoDataUrl || "";
+  const logoHtml = logoSrc
+    ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
+    : `<div class="report-logo">MTN</div>`;
+  const watermark = logoSrc
+    ? `<div class="report-watermark"><img src="${logoSrc}" alt="Firma logosu" /></div>`
+    : `<div class="report-watermark">${escapeHtml(companyName)}</div>`;
+  return `
+    <div class="report-header">
+      <div>
+        <h1>${escapeHtml(customerName)} - Cari Ekstre</h1>
+        <p>${escapeHtml(companyName)}</p>
+        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+          taxNumber
+        )}</p>
+      </div>
+      ${logoHtml}
+    </div>
+    ${watermark}
+    <table>
+      <thead>
+        <tr>
+          <th>İş Kalemi</th>
+          <th>Miktar</th>
+          <th>Birim</th>
+          <th>Birim Fiyat</th>
+          <th>Tutar</th>
+        </tr>
+      </thead>
+      <tbody>${rowHtml}</tbody>
+    </table>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+      <table style="width:260px;border-collapse:collapse;">
+        <tr><td>İş Kalemleri Toplamı</td><td style="text-align:right;">${escapeHtml(
+          totals.jobsTotal
+        )}</td></tr>
+        <tr><td>Tahsilat Toplamı</td><td style="text-align:right;">${escapeHtml(
+          totals.paymentsTotal
+        )}</td></tr>
+        <tr><td><strong>Genel Bakiye</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+          totals.balanceTotal
+        )}</strong></td></tr>
+      </table>
+    </div>
+  `;
+};
+
 const generateReport = async (type) => {
   if (!window.mtnApp?.getData || !window.mtnApp?.generateReport) {
     reportPathEl.textContent = "Rapor servisi hazır değil.";
@@ -1028,6 +1153,57 @@ if (customerDebtForm) {
     renderCustomerDetail(result);
     reportPathEl.textContent = "Borç kaydedildi.";
     customerDebtForm.reset();
+    setTodayDate();
+  });
+}
+
+const updateJobTotal = () => {
+  if (!customerJobForm) {
+    return;
+  }
+  const quantity = Number(customerJobForm.elements.quantity?.value || 0);
+  const unitPrice = Number(customerJobForm.elements.unitPrice?.value || 0);
+  if (customerJobForm.elements.total) {
+    customerJobForm.elements.total.value = (quantity * unitPrice || 0).toFixed(
+      2
+    );
+  }
+};
+
+if (customerJobForm) {
+  ["quantity", "unitPrice"].forEach((field) => {
+    customerJobForm.elements[field]?.addEventListener("input", updateJobTotal);
+  });
+  customerJobForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.addCustomerJob) {
+      reportPathEl.textContent = "İş kalemi servisi hazır değil.";
+      return;
+    }
+    const customerId = detailCustomerSelect?.value || "";
+    if (!customerId) {
+      reportPathEl.textContent = "Lütfen cari seçin.";
+      return;
+    }
+    updateJobTotal();
+    const formData = new FormData(customerJobForm);
+    const payload = Object.fromEntries(formData.entries());
+    const result = await window.mtnApp.addCustomerJob({
+      customerId,
+      title: payload.title,
+      quantity: payload.quantity,
+      unit: payload.unit,
+      unitPrice: payload.unitPrice,
+      total: payload.total,
+      note: payload.note,
+      createdAt: payload.createdAt
+    });
+    cachedCustomerJobs = result.customerJobs || [];
+    renderCustomers(result.customers || []);
+    renderSummary(result);
+    renderCustomerDetail(result);
+    reportPathEl.textContent = "İş kalemi kaydedildi.";
+    customerJobForm.reset();
     setTodayDate();
   });
 }
@@ -1187,6 +1363,7 @@ if (resetDataButton) {
     renderSales(data.sales || []);
     renderStockMovements(data.stockMovements || []);
     cachedCustomerDebts = data.customerDebts || [];
+    cachedCustomerJobs = data.customerJobs || [];
     renderSummary(data);
     renderCustomerDetail(data);
     settingsStatusEl.textContent = "Tüm veriler sıfırlandı.";
@@ -1401,6 +1578,41 @@ if (detailReportButton) {
     const debts = (data.customerDebts || []).filter(
       (entry) => entry.customerId === customerId
     );
+    const jobs = (data.customerJobs || []).filter(
+      (entry) => entry.customerId === customerId
+    );
+    if (jobs.length) {
+      const jobRows = jobs.map((job) => ({
+        title: job.title || "-",
+        quantity: Number(job.quantity || 0),
+        unit: job.unit || "-",
+        unitPrice: formatCurrency(Number(job.unitPrice || 0)),
+        total: formatCurrency(Number(job.total || 0))
+      }));
+      const totals = {
+        jobsTotal: formatCurrency(
+          jobs.reduce((sum, job) => sum + Number(job.total || 0), 0)
+        ),
+        paymentsTotal: formatCurrency(
+          payments.reduce((sum, item) => sum + Number(item.amount || 0), 0)
+        ),
+        balanceTotal: formatCurrency(
+          (data.customers || []).find((item) => item.id === customerId)
+            ?.balance || 0
+        )
+      };
+      const html = buildCustomerJobsInvoiceHtml(
+        customerName,
+        jobRows,
+        totals
+      );
+      const result = await window.mtnApp.generateReport({
+        title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
+        html
+      });
+      reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+      return;
+    }
     const rows = [
       ...sales.map((sale) => ({
         createdAt: sale.createdAt,
