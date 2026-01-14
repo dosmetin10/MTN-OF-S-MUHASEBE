@@ -66,6 +66,11 @@ const reportStockMovementsButton = document.getElementById(
 );
 const reportCashSummaryButton = document.getElementById("report-cash-summary");
 const reportPathEl = document.getElementById("report-path");
+const assistantDailyEl = document.getElementById("assistant-daily");
+const assistantRemindersEl = document.getElementById("assistant-reminders");
+const assistantSuggestionsEl = document.getElementById("assistant-suggestions");
+const assistantRefreshButton = document.getElementById("assistant-refresh");
+const assistantStatusEl = document.getElementById("assistant-status");
 const detailCustomerSelect = document.getElementById("detail-customer");
 const detailTable = document.getElementById("detail-table");
 const detailReportButton = document.getElementById("detail-report");
@@ -708,6 +713,7 @@ const renderSummary = (data) => {
   summaryCollectionsEl.textContent = formatCurrency(totalCollections);
   summaryCashEl.textContent = formatCurrency(cashBalance);
   summaryBalanceEl.textContent = formatCurrency(totalBalance);
+  renderAssistant(data);
 
   if (summaryAlertsEl) {
     summaryAlertsEl.innerHTML = "";
@@ -738,6 +744,94 @@ const renderSummary = (data) => {
       li.textContent = "Yeni hatırlatıcı yok.";
       summaryAlertsEl.appendChild(li);
     }
+  }
+};
+
+const renderAssistantList = (el, items) => {
+  if (!el) {
+    return;
+  }
+  el.innerHTML = "";
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.textContent = "Henüz veri yok.";
+    el.appendChild(li);
+    return;
+  }
+  items.forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    el.appendChild(li);
+  });
+};
+
+const renderAssistant = (data) => {
+  if (!assistantDailyEl || !assistantRemindersEl || !assistantSuggestionsEl) {
+    return;
+  }
+  const cashTransactions = data.cashTransactions || [];
+  const totalIncome = cashTransactions
+    .filter((item) => item.type === "gelir")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalExpense = cashTransactions
+    .filter((item) => item.type === "gider")
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const cashBalance = totalIncome - totalExpense;
+  const totalCustomers = (data.customers || []).length;
+  const totalStocks = (data.stocks || []).length;
+  const totalStockQty = (data.stocks || []).reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  const daily = [
+    `Kasa neti: ${formatCurrency(cashBalance)}`,
+    `Toplam cari: ${totalCustomers}`,
+    `Toplam stok kartı: ${totalStocks}`,
+    `Depo toplam adedi: ${totalStockQty}`
+  ];
+
+  const lowStocks = (data.stocks || []).filter((item) => {
+    const threshold = Number(item.threshold || 0);
+    return threshold > 0 && Number(item.quantity || 0) <= threshold;
+  });
+  const pendingBalances = (data.customers || [])
+    .filter((item) => Number(item.balance || 0) > 0)
+    .slice(0, 5);
+
+  const reminders = [
+    ...lowStocks.slice(0, 5).map(
+      (item) => `Kritik stok: ${item.name} (${item.quantity || 0})`
+    ),
+    ...pendingBalances.map(
+      (item) => `Tahsilat bekleyen cari: ${item.name} (${formatCurrency(
+        Number(item.balance || 0)
+      )})`
+    )
+  ];
+
+  const suggestions = [];
+  if (!currentSettings.enableAutoBackup) {
+    suggestions.push("Otomatik yedeklemeyi aktif ederek veri güvenliğini artırın.");
+  }
+  if (!lowStocks.length && totalStocks > 0) {
+    suggestions.push("Kritik stok yok, periyodik sayım raporu almayı unutmayın.");
+  }
+  if (totalCustomers === 0) {
+    suggestions.push("Cari kartlarınızı ekleyerek tahsilat akışını yönetin.");
+  }
+  if (!suggestions.length) {
+    suggestions.push("Tüm modüller güncel görünüyor. Raporları düzenli alın.");
+  }
+
+  renderAssistantList(assistantDailyEl, daily);
+  renderAssistantList(assistantRemindersEl, reminders);
+  renderAssistantList(assistantSuggestionsEl, suggestions);
+
+  if (assistantStatusEl) {
+    assistantStatusEl.textContent = `Son güncelleme: ${new Date().toLocaleString(
+      "tr-TR"
+    )}`;
   }
 };
 
@@ -1643,6 +1737,19 @@ if (reportCashSummaryButton) {
   reportCashSummaryButton.addEventListener("click", () =>
     generateReport("cash-summary")
   );
+}
+
+if (assistantRefreshButton) {
+  assistantRefreshButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.getData) {
+      if (assistantStatusEl) {
+        assistantStatusEl.textContent = "Veri servisi hazır değil.";
+      }
+      return;
+    }
+    const data = await window.mtnApp.getData();
+    renderAssistant(data);
+  });
 }
 
 if (detailCustomerSelect) {

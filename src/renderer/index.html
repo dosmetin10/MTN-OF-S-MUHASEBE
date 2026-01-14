@@ -95,6 +95,7 @@
           <button class="menu__item" data-panel="sales-panel" data-title="Teklif & Sipariş">Teklif & Sipariş</button>
           <button class="menu__item" data-panel="cash-panel" data-title="Kasa & Banka">Kasa & Banka</button>
           <button class="menu__item" data-panel="reports-panel" data-title="Raporlar">Raporlar</button>
+          <button class="menu__item" data-panel="assistant-panel" data-title="Muhasebe Asistanı">Muhasebe Asistanı</button>
           <button class="menu__item" data-panel="settings-panel" data-title="Ayarlar">Ayarlar</button>
         </nav>
         <div class="sidebar__footer">
@@ -631,6 +632,33 @@
                 <button class="primary" id="report-cash-summary">Kasa Özet Raporu</button>
               </div>
               <p class="report-path" id="report-path"></p>
+            </section>
+          </section>
+
+          <section class="panel" id="assistant-panel">
+            <section class="module">
+              <div class="module__header">
+                <h2>Muhasebe Asistanı</h2>
+                <p>Özetler, hatırlatmalar ve öneriler burada.</p>
+              </div>
+              <div class="assistant-grid">
+                <article class="card">
+                  <h3>Günlük Özet</h3>
+                  <ul id="assistant-daily"></ul>
+                </article>
+                <article class="card">
+                  <h3>Hatırlatmalar</h3>
+                  <ul id="assistant-reminders"></ul>
+                </article>
+                <article class="card">
+                  <h3>Öneriler</h3>
+                  <ul id="assistant-suggestions"></ul>
+                </article>
+              </div>
+              <div class="assistant-actions">
+                <button class="primary" id="assistant-refresh">Özetleri Güncelle</button>
+                <p class="assistant-status" id="assistant-status"></p>
+              </div>
             </section>
           </section>
 
