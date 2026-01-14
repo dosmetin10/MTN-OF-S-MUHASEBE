@@ -356,7 +356,37 @@
                   <input name="threshold" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
                 <button class="primary" type="submit">Stok Kaydet</button>
+                <button class="ghost" type="button" id="stock-receipt-toggle">
+                  Fiş Ekle
+                </button>
               </form>
+              <div class="table-card is-hidden" id="stock-receipt-card">
+                <div class="table-actions">
+                  <h3>Malzeme Fişi</h3>
+                  <button class="ghost" id="stock-receipt-add-row">+ Satır</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Malzeme</th>
+                      <th>Çap</th>
+                      <th>Birim</th>
+                      <th>Adet</th>
+                      <th>Kritik</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stock-receipt-body"></tbody>
+                </table>
+                <div class="table-actions">
+                  <label>
+                    Fiş Notu
+                    <input id="stock-receipt-note" placeholder="Malzemeci fiş notu" />
+                  </label>
+                  <button class="primary" id="stock-receipt-submit">
+                    Depoya Aktar
+                  </button>
+                </div>
+              </div>
               <div class="table-card table-card--sheet">
                 <h3>Stok Listesi</h3>
                 <div class="table-actions">

@@ -36,6 +36,12 @@ const customerSearchSuggestion = document.getElementById(
 const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
 const stocksTotalEl = document.getElementById("stocks-total");
+const stockReceiptToggle = document.getElementById("stock-receipt-toggle");
+const stockReceiptCard = document.getElementById("stock-receipt-card");
+const stockReceiptBody = document.getElementById("stock-receipt-body");
+const stockReceiptAddRow = document.getElementById("stock-receipt-add-row");
+const stockReceiptSubmit = document.getElementById("stock-receipt-submit");
+const stockReceiptNote = document.getElementById("stock-receipt-note");
 const stockSearchInput = document.getElementById("stock-search");
 const stockSearchButton = document.getElementById("stock-search-btn");
 const stockSearchSuggestion = document.getElementById("stock-search-suggestion");
@@ -468,6 +474,18 @@ const renderStockMovements = (items) => {
     `;
     stockMovementsTable.appendChild(row);
   });
+};
+
+const createReceiptRow = () => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input data-field="name" placeholder="Malzeme adı" /></td>
+    <td><input data-field="diameter" placeholder="Çap" /></td>
+    <td><input data-field="unit" placeholder="Birim" /></td>
+    <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="threshold" type="number" min="0" step="1" /></td>
+  `;
+  return row;
 };
 
 const renderCustomerJobs = (items, customerId) => {
@@ -1228,6 +1246,66 @@ if (stockForm) {
     }
     event.preventDefault();
     stockForm.requestSubmit();
+  });
+}
+
+if (stockReceiptToggle && stockReceiptCard) {
+  stockReceiptToggle.addEventListener("click", () => {
+    stockReceiptCard.classList.toggle("is-hidden");
+    if (!stockReceiptCard.classList.contains("is-hidden") && stockReceiptBody) {
+      if (!stockReceiptBody.children.length) {
+        stockReceiptBody.appendChild(createReceiptRow());
+      }
+    }
+  });
+}
+
+if (stockReceiptAddRow && stockReceiptBody) {
+  stockReceiptAddRow.addEventListener("click", (event) => {
+    event.preventDefault();
+    stockReceiptBody.appendChild(createReceiptRow());
+  });
+}
+
+if (stockReceiptSubmit && stockReceiptBody) {
+  stockReceiptSubmit.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createStockReceipt) {
+      reportPathEl.textContent = "Fiş servisi hazır değil.";
+      return;
+    }
+    const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
+      (row) => ({
+        name: row.querySelector("[data-field='name']")?.value || "",
+        diameter: row.querySelector("[data-field='diameter']")?.value || "",
+        unit: row.querySelector("[data-field='unit']")?.value || "",
+        quantity: row.querySelector("[data-field='quantity']")?.value || "",
+        threshold: row.querySelector("[data-field='threshold']")?.value || ""
+      })
+    );
+    const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
+    if (!items.length) {
+      reportPathEl.textContent = "Fiş için en az bir malzeme girin.";
+      return;
+    }
+    const approved = window.confirm("Fiş depoya aktarılsın mı?");
+    if (!approved) {
+      return;
+    }
+    const result = await window.mtnApp.createStockReceipt({
+      items,
+      note: stockReceiptNote?.value || "",
+      createdAt: new Date().toISOString()
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderSummary(result);
+    reportPathEl.textContent = "Fiş depoya aktarıldı.";
+    stockReceiptBody.innerHTML = "";
+    stockReceiptBody.appendChild(createReceiptRow());
+    if (stockReceiptNote) {
+      stockReceiptNote.value = "";
+    }
   });
 }
 

@@ -169,6 +169,49 @@ const generateCode = (prefix) => {
   return `${prefix}-${stamp}-${random}`;
 };
 
+const upsertStockEntry = (data, payload, meta = {}) => {
+  const incomingName = (payload.name || "").trim();
+  const incomingQuantity = normalizeNumber(payload.quantity);
+  if (!incomingName || incomingQuantity <= 0) {
+    return;
+  }
+  // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
+  const existingIndex = data.stocks.findIndex(
+    (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
+  );
+  const threshold =
+    payload.threshold === "" || payload.threshold === undefined
+      ? getAutoThreshold(incomingQuantity)
+      : normalizeNumber(payload.threshold);
+  if (existingIndex >= 0) {
+    const existing = data.stocks[existingIndex];
+    data.stocks[existingIndex] = {
+      ...existing,
+      name: incomingName || existing.name,
+      diameter: payload.diameter || existing.diameter,
+      unit: payload.unit || existing.unit,
+      quantity: normalizeNumber(existing.quantity) + incomingQuantity,
+      threshold,
+      updatedAt: new Date().toISOString()
+    };
+  } else {
+    data.stocks = createRecord(data.stocks, {
+      code: payload.code || generateCode("STK"),
+      ...payload,
+      name: incomingName,
+      quantity: incomingQuantity,
+      threshold
+    });
+  }
+  data.stockMovements = createRecord(data.stockMovements, {
+    stockName: incomingName,
+    type: "giris",
+    quantity: incomingQuantity,
+    note: meta.note || "Fiş girişi",
+    createdAt: meta.createdAt || payload.createdAt
+  });
+};
+
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -335,49 +378,26 @@ app.whenReady().then(() => {
 
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    const incomingName = (payload.name || "").trim();
-    const incomingQuantity = normalizeNumber(payload.quantity);
-    // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
-    const existingIndex = data.stocks.findIndex(
-      (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
-    );
-    const threshold =
-      payload.threshold === "" || payload.threshold === undefined
-        ? getAutoThreshold(incomingQuantity)
-        : normalizeNumber(payload.threshold);
-    if (existingIndex >= 0) {
-      const existing = data.stocks[existingIndex];
-      data.stocks[existingIndex] = {
-        ...existing,
-        name: incomingName || existing.name,
-        diameter: payload.diameter || existing.diameter,
-        unit: payload.unit || existing.unit,
-        quantity: normalizeNumber(existing.quantity) + incomingQuantity,
-        threshold,
-        updatedAt: new Date().toISOString()
-      };
-    } else {
-      data.stocks = createRecord(data.stocks, {
-        code: payload.code || generateCode("STK"),
-        ...payload,
-        name: incomingName,
-        quantity: incomingQuantity,
-        threshold
-      });
-    }
-    if (incomingName && incomingQuantity > 0) {
-      data.stockMovements = createRecord(data.stockMovements, {
-        stockName: incomingName,
-        type: "giris",
-        quantity: incomingQuantity,
-        note: "Stok kartı girişi",
-        createdAt: payload.createdAt
-      });
-    }
+    upsertStockEntry(data, payload, { note: "Stok kartı girişi" });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
     return data.stocks;
+  });
+
+  ipcMain.handle("stocks:receipt", async (_event, payload) => {
+    const data = await loadStorage();
+    const { items = [], createdAt, note } = payload || {};
+    items.forEach((item) => {
+      upsertStockEntry(data, item, {
+        note: note || "Fiş girişi",
+        createdAt
+      });
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
   });
 
   ipcMain.handle("stocks:movement", async (_event, payload) => {
