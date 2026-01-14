@@ -42,6 +42,10 @@ const stockReceiptBody = document.getElementById("stock-receipt-body");
 const stockReceiptAddRow = document.getElementById("stock-receipt-add-row");
 const stockReceiptSubmit = document.getElementById("stock-receipt-submit");
 const stockReceiptNote = document.getElementById("stock-receipt-note");
+const stockReceiptDateInput = document.getElementById("stock-receipt-date");
+const stockReceiptSupplierInput = document.getElementById(
+  "stock-receipt-supplier"
+);
 const stockSearchInput = document.getElementById("stock-search");
 const stockSearchButton = document.getElementById("stock-search-btn");
 const stockSearchSuggestion = document.getElementById("stock-search-suggestion");
@@ -772,6 +776,9 @@ const setTodayDate = () => {
   if (stockMovementDateInput) {
     stockMovementDateInput.value = today;
   }
+  if (stockReceiptDateInput) {
+    stockReceiptDateInput.value = today;
+  }
   if (customerDebtDateInput) {
     customerDebtDateInput.value = today;
   }
@@ -1292,10 +1299,19 @@ if (stockReceiptSubmit && stockReceiptBody) {
     if (!approved) {
       return;
     }
+    const supplierName = stockReceiptSupplierInput?.value?.trim();
+    const noteParts = [];
+    if (supplierName) {
+      noteParts.push(`Malzemeci: ${supplierName}`);
+    }
+    if (stockReceiptNote?.value) {
+      noteParts.push(stockReceiptNote.value);
+    }
     const result = await window.mtnApp.createStockReceipt({
       items,
-      note: stockReceiptNote?.value || "",
-      createdAt: new Date().toISOString()
+      note: noteParts.join(" • "),
+      createdAt:
+        stockReceiptDateInput?.value || new Date().toISOString().split("T")[0]
     });
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
@@ -1305,6 +1321,9 @@ if (stockReceiptSubmit && stockReceiptBody) {
     stockReceiptBody.appendChild(createReceiptRow());
     if (stockReceiptNote) {
       stockReceiptNote.value = "";
+    }
+    if (stockReceiptSupplierInput) {
+      stockReceiptSupplierInput.value = "";
     }
   });
 }
