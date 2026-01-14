@@ -89,13 +89,13 @@
           <span class="brand__subtitle">Kurumsal Yönetim</span>
         </div>
         <nav class="menu">
-          <button class="menu__item menu__item--active">Ana Panel</button>
-          <button class="menu__item">Cari Yönetimi</button>
-          <button class="menu__item">Stok & Depo</button>
-          <button class="menu__item">Teklif & Sipariş</button>
-          <button class="menu__item">Kasa & Banka</button>
-          <button class="menu__item">Raporlar</button>
-          <button class="menu__item">Ayarlar</button>
+          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana Panel">Ana Panel</button>
+          <button class="menu__item" data-panel="customers-panel" data-title="Cari Yönetimi">Cari Yönetimi</button>
+          <button class="menu__item" data-panel="stocks-panel" data-title="Stok & Depo">Stok & Depo</button>
+          <button class="menu__item" data-panel="sales-panel" data-title="Teklif & Sipariş">Teklif & Sipariş</button>
+          <button class="menu__item" data-panel="cash-panel" data-title="Kasa & Banka">Kasa & Banka</button>
+          <button class="menu__item" data-panel="reports-panel" data-title="Raporlar">Raporlar</button>
+          <button class="menu__item" data-panel="settings-panel" data-title="Ayarlar">Ayarlar</button>
         </nav>
         <div class="sidebar__footer">
           <p>Offline mod: <strong class="status status--online">Hazır</strong></p>
@@ -106,7 +106,7 @@
       <main class="content">
         <header class="topbar">
           <div>
-            <h1>Ana Panel</h1>
+            <h1 id="panel-title">Ana Panel</h1>
             <p>
               Hoş geldin <span id="user-name">Metin</span>,
               bugün tüm operasyonlar kontrol altında.

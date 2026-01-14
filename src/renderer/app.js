@@ -1040,42 +1040,39 @@ if (loginForm) {
 const menuItems = document.querySelectorAll(".menu__item");
 const panels = document.querySelectorAll(".panel");
 const quickActionButtons = document.querySelectorAll(".quick-actions button");
-const panelMap = {
-  0: "dashboard-panel",
-  1: "customers-panel",
-  2: "stocks-panel",
-  3: "sales-panel",
-  4: "cash-panel",
-  5: "reports-panel",
-  6: "settings-panel"
-};
+const panelTitleEl = document.getElementById("panel-title");
 
-const showPanel = (panelId) => {
+const showPanel = (panelId, title) => {
   panels.forEach((panel) => panel.classList.remove("panel--active"));
   const target = document.getElementById(panelId);
   if (target) {
     target.classList.add("panel--active");
   }
+  if (panelTitleEl && title) {
+    panelTitleEl.textContent = title;
+  }
 };
 
 const activateMenuByPanel = (panelId) => {
-  const index = Object.values(panelMap).indexOf(panelId);
-  if (index === -1) {
-    return;
-  }
-  menuItems.forEach((el) => el.classList.remove("menu__item--active"));
-  const activeItem = menuItems[index];
-  if (activeItem) {
-    activeItem.classList.add("menu__item--active");
-  }
+  menuItems.forEach((el) => {
+    if (el.dataset.panel === panelId) {
+      el.classList.add("menu__item--active");
+    } else {
+      el.classList.remove("menu__item--active");
+    }
+  });
 };
 
-menuItems.forEach((item, index) => {
+menuItems.forEach((item) => {
   item.addEventListener("click", (event) => {
     event.preventDefault();
-    menuItems.forEach((el) => el.classList.remove("menu__item--active"));
-    item.classList.add("menu__item--active");
-    showPanel(panelMap[index]);
+    const panelId = item.dataset.panel;
+    const title = item.dataset.title || item.textContent;
+    if (!panelId) {
+      return;
+    }
+    activateMenuByPanel(panelId);
+    showPanel(panelId, title);
   });
 });
 
@@ -1085,10 +1082,13 @@ quickActionButtons.forEach((button) => {
     if (!targetPanel) {
       return;
     }
-    showPanel(targetPanel);
+    const title =
+      document.querySelector(`[data-panel='${targetPanel}']`)?.dataset.title ||
+      "";
+    showPanel(targetPanel, title);
     activateMenuByPanel(targetPanel);
   });
 });
 
-showPanel(panelMap[0]);
+showPanel("dashboard-panel", "Ana Panel");
 initApp().then(loadInitialData);
