@@ -1039,6 +1039,7 @@ if (loginForm) {
 // Menu click handler
 const menuItems = document.querySelectorAll(".menu__item");
 const panels = document.querySelectorAll(".panel");
+const quickActionButtons = document.querySelectorAll(".quick-actions button");
 const panelMap = {
   0: "dashboard-panel",
   1: "customers-panel",
@@ -1057,12 +1058,35 @@ const showPanel = (panelId) => {
   }
 };
 
+const activateMenuByPanel = (panelId) => {
+  const index = Object.values(panelMap).indexOf(panelId);
+  if (index === -1) {
+    return;
+  }
+  menuItems.forEach((el) => el.classList.remove("menu__item--active"));
+  const activeItem = menuItems[index];
+  if (activeItem) {
+    activeItem.classList.add("menu__item--active");
+  }
+};
+
 menuItems.forEach((item, index) => {
   item.addEventListener("click", (event) => {
     event.preventDefault();
     menuItems.forEach((el) => el.classList.remove("menu__item--active"));
     item.classList.add("menu__item--active");
     showPanel(panelMap[index]);
+  });
+});
+
+quickActionButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const targetPanel = button.dataset.panel;
+    if (!targetPanel) {
+      return;
+    }
+    showPanel(targetPanel);
+    activateMenuByPanel(targetPanel);
   });
 });
 
