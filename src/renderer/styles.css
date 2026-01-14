@@ -201,6 +201,15 @@ body {
   padding-right: 6px;
 }
 
+.panel {
+  display: none;
+  gap: 16px;
+}
+
+.panel--active {
+  display: grid;
+}
+
 .topbar {
   display: flex;
   align-items: center;

@@ -1038,28 +1038,22 @@ if (loginForm) {
 
 // Menu click handler
 const menuItems = document.querySelectorAll(".menu__item");
-const modules = {
-  0: "customers-module",
-  1: "stocks-module",
-  2: "sales-module",
-  3: "offer",
-  4: "cash-module",
-  5: "reports-module",
-  6: "settings-module"
+const panels = document.querySelectorAll(".panel");
+const panelMap = {
+  0: "dashboard-panel",
+  1: "customers-panel",
+  2: "stocks-panel",
+  3: "sales-panel",
+  4: "cash-panel",
+  5: "reports-panel",
+  6: "settings-panel"
 };
 
-const showModule = (moduleId) => {
-  document.querySelectorAll(".module, .offer").forEach((el) => {
-    el.style.display = "none";
-  });
-  document.querySelectorAll(".menu__item").forEach((el) => {
-    el.classList.remove("menu__item--active");
-  });
-  if (modules[moduleId]) {
-    const target = document.getElementById(modules[moduleId]);
-    if (target) {
-      target.style.display = "";
-    }
+const showPanel = (panelId) => {
+  panels.forEach((panel) => panel.classList.remove("panel--active"));
+  const target = document.getElementById(panelId);
+  if (target) {
+    target.classList.add("panel--active");
   }
 };
 
@@ -1068,20 +1062,9 @@ menuItems.forEach((item, index) => {
     event.preventDefault();
     menuItems.forEach((el) => el.classList.remove("menu__item--active"));
     item.classList.add("menu__item--active");
-    if (index === 0) {
-      document.querySelectorAll(".cards, .quick-actions").forEach((el) => {
-        el.style.display = "";
-      });
-      document.querySelectorAll(".module, .offer").forEach((el) => {
-        el.style.display = "none";
-      });
-    } else {
-      document.querySelectorAll(".cards, .quick-actions").forEach((el) => {
-        el.style.display = "none";
-      });
-      showModule(index);
-    }
+    showPanel(panelMap[index]);
   });
 });
 
+showPanel(panelMap[0]);
 initApp().then(loadInitialData);

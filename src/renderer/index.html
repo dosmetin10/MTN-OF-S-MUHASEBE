@@ -119,395 +119,409 @@
           </div>
         </header>
         <div class="content__scroll">
-          <section class="quick-actions">
-            <button>➕ Yeni Cari</button>
-            <button>📦 Stok Girişi</button>
-            <button>💰 Tahsilat Yap</button>
-            <button>🧾 Yeni Teklif</button>
-            <button>📊 Raporlar</button>
+          <section class="panel panel--active" id="dashboard-panel">
+            <section class="quick-actions">
+              <button>➕ Yeni Cari</button>
+              <button>📦 Stok Girişi</button>
+              <button>💰 Tahsilat Yap</button>
+              <button>🧾 Yeni Teklif</button>
+              <button>📊 Raporlar</button>
+            </section>
+
+            <section class="cards">
+              <article class="card">
+                <h3>Günlük Durum</h3>
+                <p>Toplam tahsilat: <strong id="summary-collections">₺0,00</strong></p>
+                <p>Kasa bakiyesi: <strong id="summary-cash">₺0,00</strong></p>
+                <p>Bekleyen borç: <strong id="summary-balance">₺0,00</strong></p>
+              </article>
+              <article class="card">
+                <h3>Hatırlatıcılar</h3>
+                <ul id="summary-alerts"></ul>
+              </article>
+              <article class="card">
+                <h3>Yedekleme</h3>
+                <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
+                <p>Bulut senkron: <strong>Opsiyonel</strong></p>
+                <button class="ghost" id="backup-now">Flash'a Yedekle</button>
+                <p class="backup-path" id="backup-path"></p>
+              </article>
+            </section>
           </section>
 
-          <section class="cards">
-            <article class="card">
-              <h3>Günlük Durum</h3>
-              <p>Toplam tahsilat: <strong id="summary-collections">₺0,00</strong></p>
-              <p>Kasa bakiyesi: <strong id="summary-cash">₺0,00</strong></p>
-              <p>Bekleyen borç: <strong id="summary-balance">₺0,00</strong></p>
-            </article>
-            <article class="card">
-              <h3>Hatırlatıcılar</h3>
-              <ul id="summary-alerts"></ul>
-            </article>
-            <article class="card">
-              <h3>Yedekleme</h3>
-              <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
-              <p>Bulut senkron: <strong>Opsiyonel</strong></p>
-              <button class="ghost" id="backup-now">Flash'a Yedekle</button>
-              <p class="backup-path" id="backup-path"></p>
-            </article>
+          <section class="panel" id="customers-panel">
+            <section class="module" id="customers-module">
+              <div class="module__header">
+                <h2>Cari Yönetimi</h2>
+                <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
+              </div>
+              <form class="form-grid" id="customer-form">
+                <label>
+                  Ünvan / Ad Soyad
+                  <input name="name" required placeholder="Müşteri adı" />
+                </label>
+                <label>
+                  Telefon
+                  <input name="phone" placeholder="05xx xxx xx xx" />
+                </label>
+                <label>
+                  Vergi No
+                  <input name="taxNumber" placeholder="Vergi numarası" />
+                </label>
+                <label>
+                  E-posta
+                  <input name="email" type="email" placeholder="mail@firma.com" />
+                </label>
+                <label class="full-width">
+                  Adres
+                  <input name="address" placeholder="Firma adresi" />
+                </label>
+                <button class="primary" type="submit">Cari Kaydet</button>
+              </form>
+              <form class="form-grid" id="customer-payment-form">
+                <label>
+                  Cari Seç
+                  <select id="payment-customer"></select>
+                </label>
+                <label>
+                  Tahsilat Tutarı
+                  <input name="amount" type="number" min="0" step="0.01" />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="note" placeholder="Tahsilat notu" />
+                </label>
+                <button class="primary" type="submit">Tahsilat Kaydet</button>
+              </form>
+              <div class="table-card">
+                <h3>Mevcut Cariler</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ünvan</th>
+                      <th>Telefon</th>
+                      <th>Vergi No</th>
+                      <th>E-posta</th>
+                      <th>Bakiye</th>
+                    </tr>
+                  </thead>
+                  <tbody id="customers-table"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="module" id="customer-detail-module">
+              <div class="module__header">
+                <h2>Cari Ekstre</h2>
+                <p>Seçili cari için satış ve tahsilat hareketleri.</p>
+              </div>
+              <div class="filter-bar">
+                <label>
+                  Cari Seç
+                  <select id="detail-customer"></select>
+                </label>
+                <button class="primary" id="detail-report">Ekstre PDF</button>
+              </div>
+              <div class="table-card">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Tür</th>
+                      <th>Tutar</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="detail-table"></tbody>
+                </table>
+              </div>
+            </section>
           </section>
 
-          <section class="module" id="customers-module">
-          <div class="module__header">
-            <h2>Cari Yönetimi</h2>
-            <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
-          </div>
-          <form class="form-grid" id="customer-form">
-            <label>
-              Ünvan / Ad Soyad
-              <input name="name" required placeholder="Müşteri adı" />
-            </label>
-            <label>
-              Telefon
-              <input name="phone" placeholder="05xx xxx xx xx" />
-            </label>
-            <label>
-              Vergi No
-              <input name="taxNumber" placeholder="Vergi numarası" />
-            </label>
-            <label>
-              E-posta
-              <input name="email" type="email" placeholder="mail@firma.com" />
-            </label>
-            <label class="full-width">
-              Adres
-              <input name="address" placeholder="Firma adresi" />
-            </label>
-            <button class="primary" type="submit">Cari Kaydet</button>
-          </form>
-          <form class="form-grid" id="customer-payment-form">
-            <label>
-              Cari Seç
-              <select id="payment-customer"></select>
-            </label>
-            <label>
-              Tahsilat Tutarı
-              <input name="amount" type="number" min="0" step="0.01" />
-            </label>
-            <label class="full-width">
-              Açıklama
-              <input name="note" placeholder="Tahsilat notu" />
-            </label>
-            <button class="primary" type="submit">Tahsilat Kaydet</button>
-          </form>
-          <div class="table-card">
-            <h3>Mevcut Cariler</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Ünvan</th>
-                  <th>Telefon</th>
-                  <th>Vergi No</th>
-                  <th>E-posta</th>
-                  <th>Bakiye</th>
-                </tr>
-              </thead>
-              <tbody id="customers-table"></tbody>
-            </table>
-          </div>
-        </section>
-
-          <section class="module" id="stocks-module">
-          <div class="module__header">
-            <h2>Stok & Depo</h2>
-            <p>Malzeme kartları oluşturun ve stok seviyelerini izleyin.</p>
-          </div>
-          <form class="form-grid" id="stock-form">
-            <label>
-              Malzeme Adı
-              <input name="name" required placeholder="PEX 20mm Boru" />
-            </label>
-            <label>
-              Birim
-              <input name="unit" placeholder="m / adet" />
-            </label>
-            <label>
-              Mevcut Stok
-              <input name="quantity" type="number" min="0" step="1" />
-            </label>
-            <label>
-              Kritik Seviye
-              <input name="threshold" type="number" min="0" step="1" />
-            </label>
-            <button class="primary" type="submit">Stok Kaydet</button>
-          </form>
-          <div class="table-card">
-            <h3>Stok Listesi</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Malzeme</th>
-                  <th>Birim</th>
-                  <th>Stok</th>
-                  <th>Kritik Seviye</th>
-                </tr>
-              </thead>
-              <tbody id="stocks-table"></tbody>
-            </table>
-          </div>
-        </section>
-
-          <section class="module" id="cash-module">
-          <div class="module__header">
-            <h2>Kasa & Banka</h2>
-            <p>Gelir ve gider işlemlerini takip edin.</p>
-          </div>
-          <div class="filter-bar">
-            <label>
-              Başlangıç
-              <input type="date" id="cash-start" />
-            </label>
-            <label>
-              Bitiş
-              <input type="date" id="cash-end" />
-            </label>
-            <label>
-              Tür
-              <select id="cash-type">
-                <option value="">Hepsi</option>
-                <option value="gelir">Gelir</option>
-                <option value="gider">Gider</option>
-              </select>
-            </label>
-          </div>
-          <form class="form-grid" id="cash-form">
-            <label>
-              İşlem Türü
-              <select name="type">
-                <option value="gelir">Gelir</option>
-                <option value="gider">Gider</option>
-              </select>
-            </label>
-            <label>
-              Tutar
-              <input name="amount" type="number" min="0" step="0.01" />
-            </label>
-            <label class="full-width">
-              Açıklama
-              <input name="note" placeholder="İşlem açıklaması" />
-            </label>
-            <button class="primary" type="submit">Kasa Kaydet</button>
-          </form>
-          <div class="table-card">
-            <h3>Son Kasa Hareketleri</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Tarih</th>
-                  <th>Tür</th>
-                  <th>Tutar</th>
-                  <th>Açıklama</th>
-                </tr>
-              </thead>
-              <tbody id="cash-table"></tbody>
-            </table>
-          </div>
-        </section>
-
-          <section class="module" id="customer-detail-module">
-          <div class="module__header">
-            <h2>Cari Ekstre</h2>
-            <p>Seçili cari için satış ve tahsilat hareketleri.</p>
-          </div>
-          <div class="filter-bar">
-            <label>
-              Cari Seç
-              <select id="detail-customer"></select>
-            </label>
-            <button class="primary" id="detail-report">Ekstre PDF</button>
-          </div>
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tarih</th>
-                  <th>Tür</th>
-                  <th>Tutar</th>
-                  <th>Açıklama</th>
-                </tr>
-              </thead>
-              <tbody id="detail-table"></tbody>
-            </table>
-          </div>
-        </section>
-
-          <section class="module" id="reports-module">
-          <div class="module__header">
-            <h2>Raporlar</h2>
-            <p>PDF raporlarını tek tıkla oluşturun.</p>
-          </div>
-          <div class="report-actions">
-            <button class="primary" id="report-customers">Cari Ekstre (PDF)</button>
-            <button class="primary" id="report-stocks">Stok Raporu (PDF)</button>
-            <button class="primary" id="report-cash">Satış Raporu (PDF)</button>
-            <button class="primary" id="report-stock-movements">Stok Hareket Raporu</button>
-            <button class="primary" id="report-cash-summary">Kasa Özet Raporu</button>
-          </div>
-          <p class="report-path" id="report-path"></p>
-        </section>
-
-          <section class="module" id="sales-module">
-          <div class="module__header">
-            <h2>Satışlar</h2>
-            <p>Fatura ve satış hareketleri listesi.</p>
-          </div>
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tarih</th>
-                  <th>Cari</th>
-                  <th>Tutar</th>
-                  <th>KDV (%)</th>
-                </tr>
-              </thead>
-              <tbody id="sales-table"></tbody>
-            </table>
-          </div>
-        </section>
-
-          <section class="offer">
-          <div class="offer__header">
-            <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
-            <div class="offer__actions">
-              <button id="add-row">+ Satır Ekle</button>
-              <button class="primary" id="offer-pdf">Fatura PDF</button>
-            </div>
-          </div>
-          <div class="offer__meta">
-            <label>
-              Cari Seç
-              <select id="offer-customer"></select>
-            </label>
-            <label>
-              Ödeme Türü
-              <select id="offer-payment">
-                <option value="nakit">Nakit</option>
-                <option value="eft">EFT</option>
-                <option value="kart">Kart</option>
-              </select>
-            </label>
-            <button class="primary" id="offer-save">Satış Kaydet</button>
-          </div>
-          <table class="offer__table">
-            <thead>
-              <tr>
-                <th>Malzeme</th>
-                <th>Miktar</th>
-                <th>Birim</th>
-                <th>Birim Fiyat</th>
-                <th>Tutar</th>
-              </tr>
-            </thead>
-            <tbody id="offer-body"></tbody>
-          </table>
-          <div class="offer__summary">
-            <label>
-              KDV Oranı (%)
-              <input id="offer-vat" type="number" min="0" step="1" value="20" />
-            </label>
-            <div class="offer__totals">
-              <div>
-                <span>Ara Toplam</span>
-                <strong id="offer-subtotal">₺0,00</strong>
+          <section class="panel" id="stocks-panel">
+            <section class="module" id="stocks-module">
+              <div class="module__header">
+                <h2>Stok & Depo</h2>
+                <p>Malzeme kartları oluşturun ve stok seviyelerini izleyin.</p>
               </div>
-              <div>
-                <span>KDV Toplam</span>
-                <strong id="offer-vat-total">₺0,00</strong>
+              <form class="form-grid" id="stock-form">
+                <label>
+                  Malzeme Adı
+                  <input name="name" required placeholder="PEX 20mm Boru" />
+                </label>
+                <label>
+                  Birim
+                  <input name="unit" placeholder="m / adet" />
+                </label>
+                <label>
+                  Mevcut Stok
+                  <input name="quantity" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Kritik Seviye
+                  <input name="threshold" type="number" min="0" step="1" />
+                </label>
+                <button class="primary" type="submit">Stok Kaydet</button>
+              </form>
+              <div class="table-card">
+                <h3>Stok Listesi</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Malzeme</th>
+                      <th>Birim</th>
+                      <th>Stok</th>
+                      <th>Kritik Seviye</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stocks-table"></tbody>
+                </table>
               </div>
-              <div>
-                <span>Genel Toplam</span>
-                <strong id="offer-total">₺0,00</strong>
+            </section>
+
+            <section class="module" id="stock-movement-module">
+              <div class="module__header">
+                <h2>Stok Hareketi</h2>
+                <p>Stok giriş/çıkış fişi oluşturun.</p>
               </div>
-            </div>
-          </div>
-        </section>
+              <form class="form-grid" id="stock-movement-form">
+                <label>
+                  Malzeme Seç
+                  <select id="movement-stock"></select>
+                </label>
+                <label>
+                  Hareket Türü
+                  <select name="type">
+                    <option value="giris">Giriş</option>
+                    <option value="cikis">Çıkış</option>
+                  </select>
+                </label>
+                <label>
+                  Miktar
+                  <input name="quantity" type="number" min="0" step="1" />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="note" placeholder="Fiş açıklaması" />
+                </label>
+                <button class="primary" type="submit">Hareket Kaydet</button>
+              </form>
+            </section>
+          </section>
 
-          <section class="module" id="stock-movement-module">
-          <div class="module__header">
-            <h2>Stok Hareketi</h2>
-            <p>Stok giriş/çıkış fişi oluşturun.</p>
-          </div>
-          <form class="form-grid" id="stock-movement-form">
-            <label>
-              Malzeme Seç
-              <select id="movement-stock"></select>
-            </label>
-            <label>
-              Hareket Türü
-              <select name="type">
-                <option value="giris">Giriş</option>
-                <option value="cikis">Çıkış</option>
-              </select>
-            </label>
-            <label>
-              Miktar
-              <input name="quantity" type="number" min="0" step="1" />
-            </label>
-            <label class="full-width">
-              Açıklama
-              <input name="note" placeholder="Fiş açıklaması" />
-            </label>
-            <button class="primary" type="submit">Hareket Kaydet</button>
-          </form>
-        </section>
+          <section class="panel" id="sales-panel">
+            <section class="module" id="sales-module">
+              <div class="module__header">
+                <h2>Satışlar</h2>
+                <p>Fatura ve satış hareketleri listesi.</p>
+              </div>
+              <div class="table-card">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Cari</th>
+                      <th>Tutar</th>
+                      <th>KDV (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sales-table"></tbody>
+                </table>
+              </div>
+            </section>
 
-          <section class="module" id="settings-module">
-          <div class="module__header">
-            <h2>Otomatik Yedekleme & Taşıma</h2>
-            <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
-          </div>
-          <form class="form-grid" id="settings-form">
-            <label>
-              Otomatik Taşıma Klasörü
-              <input id="auto-sync-path" placeholder="\\\\SUNUCU\\MTN-YEDEK" />
-            </label>
-            <label>
-              Aktif
-              <select id="auto-sync-enabled">
-                <option value="false">Hayır</option>
-                <option value="true">Evet</option>
-              </select>
-            </label>
-            <label>
-              Bulut Yedek Klasörü
-              <input id="cloud-backup-path" placeholder="C:\\Users\\...\\OneDrive\\MTN" />
-            </label>
-            <label>
-              Aktif
-              <select id="cloud-backup-enabled">
-                <option value="false">Hayır</option>
-                <option value="true">Evet</option>
-              </select>
-            </label>
-            <button class="primary" type="submit">Ayarları Kaydet</button>
-          </form>
-          <div class="table-card">
-            <h3>Lisans</h3>
-            <p class="muted">
-              Lisans kontrolü için altyapı hazırdır. Tek bilgisayar ve tek
-              kullanıcı mantığında çalışır.
-            </p>
-            <div class="license-row">
-              <input
-                id="license-key"
-                placeholder="Lisans anahtarı"
-                readonly
-              />
-              <button class="ghost" id="license-check">Lisans Kontrol</button>
-            </div>
-          </div>
-          <div class="settings-danger">
-            <div>
-              <h3>Tüm Verileri Sıfırla</h3>
-              <p>
-                Bu işlem cari, stok, kasa, satış ve rapor kayıtlarını kalıcı
-                olarak siler.
-              </p>
-            </div>
-            <button class="danger" id="reset-data">Tüm Verileri Sil</button>
-          </div>
-          <p class="report-path" id="settings-status"></p>
+            <section class="offer">
+              <div class="offer__header">
+                <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
+                <div class="offer__actions">
+                  <button id="add-row">+ Satır Ekle</button>
+                  <button class="primary" id="offer-pdf">Fatura PDF</button>
+                </div>
+              </div>
+              <div class="offer__meta">
+                <label>
+                  Cari Seç
+                  <select id="offer-customer"></select>
+                </label>
+                <label>
+                  Ödeme Türü
+                  <select id="offer-payment">
+                    <option value="nakit">Nakit</option>
+                    <option value="eft">EFT</option>
+                    <option value="kart">Kart</option>
+                  </select>
+                </label>
+                <button class="primary" id="offer-save">Satış Kaydet</button>
+              </div>
+              <table class="offer__table">
+                <thead>
+                  <tr>
+                    <th>Malzeme</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th>Birim Fiyat</th>
+                    <th>Tutar</th>
+                  </tr>
+                </thead>
+                <tbody id="offer-body"></tbody>
+              </table>
+              <div class="offer__summary">
+                <label>
+                  KDV Oranı (%)
+                  <input id="offer-vat" type="number" min="0" step="1" value="20" />
+                </label>
+                <div class="offer__totals">
+                  <div>
+                    <span>Ara Toplam</span>
+                    <strong id="offer-subtotal">₺0,00</strong>
+                  </div>
+                  <div>
+                    <span>KDV Toplam</span>
+                    <strong id="offer-vat-total">₺0,00</strong>
+                  </div>
+                  <div>
+                    <span>Genel Toplam</span>
+                    <strong id="offer-total">₺0,00</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel" id="cash-panel">
+            <section class="module" id="cash-module">
+              <div class="module__header">
+                <h2>Kasa & Banka</h2>
+                <p>Gelir ve gider işlemlerini takip edin.</p>
+              </div>
+              <div class="filter-bar">
+                <label>
+                  Başlangıç
+                  <input type="date" id="cash-start" />
+                </label>
+                <label>
+                  Bitiş
+                  <input type="date" id="cash-end" />
+                </label>
+                <label>
+                  Tür
+                  <select id="cash-type">
+                    <option value="">Hepsi</option>
+                    <option value="gelir">Gelir</option>
+                    <option value="gider">Gider</option>
+                  </select>
+                </label>
+              </div>
+              <form class="form-grid" id="cash-form">
+                <label>
+                  İşlem Türü
+                  <select name="type">
+                    <option value="gelir">Gelir</option>
+                    <option value="gider">Gider</option>
+                  </select>
+                </label>
+                <label>
+                  Tutar
+                  <input name="amount" type="number" min="0" step="0.01" />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="note" placeholder="İşlem açıklaması" />
+                </label>
+                <button class="primary" type="submit">Kasa Kaydet</button>
+              </form>
+              <div class="table-card">
+                <h3>Son Kasa Hareketleri</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Tür</th>
+                      <th>Tutar</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cash-table"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel" id="reports-panel">
+            <section class="module" id="reports-module">
+              <div class="module__header">
+                <h2>Raporlar</h2>
+                <p>PDF raporlarını tek tıkla oluşturun.</p>
+              </div>
+              <div class="report-actions">
+                <button class="primary" id="report-customers">Cari Ekstre (PDF)</button>
+                <button class="primary" id="report-stocks">Stok Raporu (PDF)</button>
+                <button class="primary" id="report-cash">Satış Raporu (PDF)</button>
+                <button class="primary" id="report-stock-movements">Stok Hareket Raporu</button>
+                <button class="primary" id="report-cash-summary">Kasa Özet Raporu</button>
+              </div>
+              <p class="report-path" id="report-path"></p>
+            </section>
+          </section>
+
+          <section class="panel" id="settings-panel">
+            <section class="module" id="settings-module">
+              <div class="module__header">
+                <h2>Otomatik Yedekleme & Taşıma</h2>
+                <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
+              </div>
+              <form class="form-grid" id="settings-form">
+                <label>
+                  Otomatik Taşıma Klasörü
+                  <input id="auto-sync-path" placeholder="\\\\SUNUCU\\MTN-YEDEK" />
+                </label>
+                <label>
+                  Aktif
+                  <select id="auto-sync-enabled">
+                    <option value="false">Hayır</option>
+                    <option value="true">Evet</option>
+                  </select>
+                </label>
+                <label>
+                  Bulut Yedek Klasörü
+                  <input id="cloud-backup-path" placeholder="C:\\Users\\...\\OneDrive\\MTN" />
+                </label>
+                <label>
+                  Aktif
+                  <select id="cloud-backup-enabled">
+                    <option value="false">Hayır</option>
+                    <option value="true">Evet</option>
+                  </select>
+                </label>
+                <button class="primary" type="submit">Ayarları Kaydet</button>
+              </form>
+              <div class="table-card">
+                <h3>Lisans</h3>
+                <p class="muted">
+                  Lisans kontrolü için altyapı hazırdır. Tek bilgisayar ve tek
+                  kullanıcı mantığında çalışır.
+                </p>
+                <div class="license-row">
+                  <input
+                    id="license-key"
+                    placeholder="Lisans anahtarı"
+                    readonly
+                  />
+                  <button class="ghost" id="license-check">Lisans Kontrol</button>
+                </div>
+              </div>
+              <div class="settings-danger">
+                <div>
+                  <h3>Tüm Verileri Sıfırla</h3>
+                  <p>
+                    Bu işlem cari, stok, kasa, satış ve rapor kayıtlarını kalıcı
+                    olarak siler.
+                  </p>
+                </div>
+                <button class="danger" id="reset-data">Tüm Verileri Sil</button>
+              </div>
+              <p class="report-path" id="settings-status"></p>
+            </section>
           </section>
         </div>
       </main>
