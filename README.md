@@ -17,6 +17,23 @@ npm install
 npm start
 ```
 
+## Güncel Kurulum ve Çalıştırma (Hiç bilmeyenler için)
+1) **Node.js kurun** (LTS sürümü önerilir).
+2) **Projeyi indirin** ve bir klasöre çıkarın.
+3) **Komut satırını açın** ve proje klasörüne girin:
+```bash
+cd MTN-OF-S-MUHASEBE
+```
+4) **Bağımlılıkları kurun:**
+```bash
+npm install
+```
+5) **Uygulamayı başlatın:**
+```bash
+npm start
+```
+Bu adımlardan sonra uygulama masaüstünde çalışır halde açılır.
+
 ## İnşa Etme
 ```bash
 npm run dist   # Windows NSIS installer oluştur
