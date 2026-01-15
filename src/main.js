@@ -71,7 +71,8 @@ const loadSettings = async () => {
     logoDataUrl: "",
     defaultCashName: "Ana Kasa",
     users: [],
-    licenseKey: ""
+    licenseKey: "",
+    allowNegativeStock: false
   };
 };
 
@@ -403,23 +404,43 @@ app.whenReady().then(() => {
   ipcMain.handle("stocks:movement", async (_event, payload) => {
     const data = await loadStorage();
     const { stockName, type, quantity, note, createdAt } = payload;
+    const settings = await loadSettings();
+    const normalizedQuantity = Number(quantity || 0);
+    const matchedStock = data.stocks.find((stock) => stock.name === stockName);
+    const currentQuantity = Number(matchedStock?.quantity || 0);
+    const nextQuantity =
+      type === "giris"
+        ? currentQuantity + normalizedQuantity
+        : currentQuantity - normalizedQuantity;
+    if (
+      type === "cikis" &&
+      !settings.allowNegativeStock &&
+      nextQuantity < 0
+    ) {
+      return {
+        error: `Yetersiz stok: ${stockName} için mevcut ${currentQuantity}, istenen ${normalizedQuantity}.`
+      };
+    }
     data.stockMovements = createRecord(data.stockMovements, {
       stockName,
       type,
-      quantity: Number(quantity || 0),
+      quantity: normalizedQuantity,
       note,
-      createdAt
+      createdAt,
+      negativeStock: type === "cikis" && nextQuantity < 0
     });
     data.stocks = data.stocks.map((stock) => {
       if (stock.name !== stockName) {
         return stock;
       }
       const current = Number(stock.quantity || 0);
-      const delta = Number(quantity || 0);
+      const delta = normalizedQuantity;
       const nextQuantity = type === "giris" ? current + delta : current - delta;
       return {
         ...stock,
-        quantity: Math.max(nextQuantity, 0)
+        quantity: settings.allowNegativeStock
+          ? nextQuantity
+          : Math.max(nextQuantity, 0)
       };
     });
     await saveStorage(data);
@@ -440,6 +461,35 @@ app.whenReady().then(() => {
   ipcMain.handle("sales:create", async (_event, payload) => {
     const data = await loadStorage();
     const { customerId, customerName, items, total, vatRate } = payload;
+    const settings = await loadSettings();
+    const startingQuantities = new Map(
+      data.stocks.map((stock) => [stock.name, Number(stock.quantity || 0)])
+    );
+    const runningQuantities = new Map(startingQuantities);
+    const shortages = [];
+    (items || []).forEach((item) => {
+      if (!item?.name) {
+        return;
+      }
+      const current = runningQuantities.get(item.name) || 0;
+      const requested = Number(item.quantity || 0);
+      const nextQuantity = current - requested;
+      if (nextQuantity < 0) {
+        shortages.push({ name: item.name, current, requested });
+      }
+      runningQuantities.set(item.name, nextQuantity);
+    });
+    if (shortages.length && !settings.allowNegativeStock) {
+      const details = shortages
+        .map(
+          (item) =>
+            `${item.name} (mevcut ${item.current}, istenen ${item.requested})`
+        )
+        .join(", ");
+      return {
+        error: `Yetersiz stok nedeniyle satış kaydedilemedi: ${details}.`
+      };
+    }
     const saleRecord = {
       customerId,
       customerName,
@@ -470,20 +520,27 @@ app.whenReady().then(() => {
         Number(stock.quantity || 0) - Number(item.quantity || 0);
       return {
         ...stock,
-        quantity: Math.max(nextQuantity, 0)
+        quantity: settings.allowNegativeStock
+          ? nextQuantity
+          : Math.max(nextQuantity, 0)
       };
     });
     data.stocks = updatedStocks;
+    const movementQuantities = new Map(startingQuantities);
     items.forEach((item) => {
       if (!item.name) {
         return;
       }
+      const current = movementQuantities.get(item.name) || 0;
+      const nextQuantity = current - Number(item.quantity || 0);
       data.stockMovements = createRecord(data.stockMovements, {
         stockName: item.name,
         type: "cikis",
         quantity: normalizeNumber(item.quantity),
-        note: `Satış: ${customerName || "Genel"}`
+        note: `Satış: ${customerName || "Genel"}`,
+        negativeStock: nextQuantity < 0
       });
+      movementQuantities.set(item.name, nextQuantity);
     });
 
     data.cashTransactions = createRecord(data.cashTransactions, {
