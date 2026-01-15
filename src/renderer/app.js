@@ -869,6 +869,7 @@ const buildImportPreview = () => {
   const updateMode = stockImportUpdateMode?.value || "update";
   let newCount = 0;
   let updateCount = 0;
+  let skipCount = 0;
   let errorCount = 0;
 
   const rows = importRows.map((row, index) => {
@@ -902,7 +903,7 @@ const buildImportPreview = () => {
 
     if (matchByCode || matchByName) {
       if (updateMode === "skip") {
-        errors.push("Aynı stok var, yeni kayıt açma seçildi.");
+        status = "Atlandı";
       } else {
         status = "Güncelle";
       }
@@ -920,6 +921,8 @@ const buildImportPreview = () => {
       });
     } else if (status === "Güncelle") {
       updateCount += 1;
+    } else if (status === "Atlandı") {
+      skipCount += 1;
     } else {
       newCount += 1;
     }
@@ -948,11 +951,12 @@ const buildImportPreview = () => {
     .join("");
 
   const summaryItems = stockImportSummary.querySelectorAll("strong");
-  if (summaryItems.length >= 4) {
+  if (summaryItems.length >= 5) {
     summaryItems[0].textContent = String(importRows.length);
     summaryItems[1].textContent = String(newCount);
     summaryItems[2].textContent = String(updateCount);
-    summaryItems[3].textContent = String(errorCount);
+    summaryItems[3].textContent = String(skipCount);
+    summaryItems[4].textContent = String(errorCount);
   }
 };
 
