@@ -1,27 +1,50 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
+const XLSX = require("xlsx");
 
 const storageFileName = "mtn-data.json";
 const settingsFileName = "mtn-settings.json";
+
+const getDefaultData = () => ({
+  customers: [],
+  customerDebts: [],
+  customerJobs: [],
+  stocks: [],
+  stockReceipts: [],
+  invoices: [],
+  cashTransactions: [],
+  sales: [],
+  stockMovements: []
+});
+
+const normalizeData = (data) => ({
+  ...getDefaultData(),
+  ...data,
+  customers: data.customers || [],
+  customerDebts: data.customerDebts || [],
+  customerJobs: data.customerJobs || [],
+  stocks: data.stocks || [],
+  stockReceipts: data.stockReceipts || [],
+  invoices: data.invoices || [],
+  cashTransactions: data.cashTransactions || [],
+  sales: data.sales || [],
+  stockMovements: data.stockMovements || []
+});
 
 const loadStorage = async () => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
   try {
     const raw = await fs.readFile(filePath, "utf8");
-    return JSON.parse(raw);
+    return normalizeData(JSON.parse(raw));
   } catch (error) {
     if (error.code !== "ENOENT") {
       throw error;
     }
   }
-  return {
-    customers: [],
-    stocks: [],
-    cashTransactions: [],
-    sales: [],
-    stockMovements: []
-  };
+  const data = getDefaultData();
+  await saveStorage(data);
+  return data;
 };
 
 const saveStorage = async (data) => {
@@ -43,8 +66,75 @@ const loadSettings = async () => {
     autoSyncPath: "",
     cloudBackupPath: "",
     enableAutoSync: false,
-    enableCloudBackup: false
+    enableCloudBackup: false,
+    enableAutoBackup: false,
+    lastAutoBackupAt: "",
+    hasOnboarded: false,
+    companyName: "MTN Enerji",
+    taxOffice: "",
+    taxNumber: "",
+    logoDataUrl: "",
+    defaultCashName: "Ana Kasa",
+    users: [],
+    licenseKey: ""
   };
+};
+
+const getBackupBaseDir = () =>
+  path.join(app.getPath("documents"), "MTN-Muhasebe-Yedekler");
+const getAttachmentsDir = () =>
+  path.join(app.getPath("userData"), "attachments");
+
+const createBackupEntry = async (payload) => {
+  const baseDir = getBackupBaseDir();
+  await fs.mkdir(baseDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupDir = path.join(baseDir, `Yedek-${timestamp}`);
+  await fs.mkdir(backupDir, { recursive: true });
+  const backupPayload = {
+    createdAt: new Date().toISOString(),
+    ...payload
+  };
+  await fs.writeFile(
+    path.join(backupDir, "yedek.json"),
+    JSON.stringify(backupPayload, null, 2),
+    "utf8"
+  );
+  return { backupDir, createdAt: backupPayload.createdAt };
+};
+
+const saveStockAttachment = async ({ name, bytes }) => {
+  const dir = getAttachmentsDir();
+  await fs.mkdir(dir, { recursive: true });
+  const safeName = name
+    ? name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    : `dosya-${Date.now()}`;
+  const fileName = `${Date.now()}-${safeName}`;
+  const filePath = path.join(dir, fileName);
+  await fs.writeFile(filePath, Buffer.from(bytes || []));
+  return filePath;
+};
+
+const maybeAutoBackup = async (data) => {
+  const settings = await loadSettings();
+  if (!settings.enableAutoBackup) {
+    return;
+  }
+  const lastRun = settings.lastAutoBackupAt
+    ? new Date(settings.lastAutoBackupAt)
+    : null;
+  const now = new Date();
+  if (lastRun && now - lastRun < 1000 * 60 * 60) {
+    return;
+  }
+  await createBackupEntry({
+    meta: {
+      module: "auto-backup",
+      appVersion: "0.1.0"
+    },
+    data
+  });
+  await saveSettings({ ...settings, lastAutoBackupAt: now.toISOString() });
 };
 
 const saveSettings = async (settings) => {
@@ -67,14 +157,141 @@ const syncStorageCopies = async (data) => {
   await Promise.allSettled(tasks);
 };
 
-const createRecord = (items, record) => [
-  ...items,
-  {
-    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    createdAt: new Date().toISOString(),
-    ...record
+const createRecord = (items, record) => {
+  const { createdAt, ...rest } = record;
+  return [
+    ...items,
+    {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      createdAt: createdAt
+        ? new Date(createdAt).toISOString()
+        : new Date().toISOString(),
+      ...rest
+    }
+  ];
+};
+
+const normalizeNumber = (value) => Number(value || 0);
+
+const normalizeStockName = (value) => {
+  if (!value) {
+    return "";
   }
-];
+  let normalized = String(value).toUpperCase();
+  normalized = normalized
+    .replace(/İ/g, "I")
+    .replace(/Ğ/g, "G")
+    .replace(/Ü/g, "U")
+    .replace(/Ş/g, "S")
+    .replace(/Ö/g, "O")
+    .replace(/Ç/g, "C");
+  const replacements = [
+    [/\bMANSON\b/g, "MANSON"],
+    [/\bMANŞON\b/g, "MANSON"],
+    [/\bKOLLEKTOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKTÖR\b/g, "KOLLEKTOR"]
+  ];
+  replacements.forEach(([pattern, next]) => {
+    normalized = normalized.replace(pattern, next);
+  });
+  normalized = normalized
+    .replace(/[’']/g, " ")
+    .replace(/\bLIK\b/g, "LIK")
+    .replace(/\bLİK\b/g, "LIK");
+  normalized = normalized.replace(/\bQ?\s*(\d+)\s*LIK\b/g, "Q$1 LIK");
+  normalized = normalized.replace(/3\"4/g, "3/4\"");
+  normalized = normalized.replace(/1\"1\"4/g, "1 1/4\"");
+  const inchMap = {
+    "1/2": "20",
+    "3/4": "25",
+    "1": "32",
+    "1 1/4": "40",
+    "1 1/2": "50",
+    "2": "63"
+  };
+  Object.entries(inchMap).forEach(([inch, qValue]) => {
+    normalized = normalized.replace(new RegExp(`${inch}\"`, "g"), `Q${qValue}`);
+  });
+  if (normalized.includes("INÇ") || normalized.includes("\"")) {
+    normalized = normalized.replace(/INÇ/g, "").replace(/\"/g, "");
+    if (!normalized.includes("PPRC")) {
+      normalized = `${normalized.trim()} PPRC`;
+    }
+  }
+  normalized = normalized.replace(/\s+/g, " ").trim();
+  return normalized;
+};
+
+// Varsayım: kritik seviye girilmezse miktarın %10'u (en az 1) kritik eşik kabul edilir.
+const getAutoThreshold = (quantity) => {
+  const normalized = normalizeNumber(quantity);
+  if (normalized <= 0) {
+    return 0;
+  }
+  return Math.max(1, Math.round(normalized * 0.1));
+};
+
+const generateCode = (prefix) => {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 12);
+  const random = Math.floor(Math.random() * 900 + 100);
+  return `${prefix}-${stamp}-${random}`;
+};
+
+const upsertStockEntry = (data, payload, meta = {}) => {
+  const incomingName = normalizeStockName(payload.name || "");
+  const incomingQuantity = normalizeNumber(payload.quantity);
+  if (!incomingName || (incomingQuantity <= 0 && !meta.allowZero)) {
+    return;
+  }
+  // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
+  const normalizedCode = (payload.code || "").trim();
+  const existingIndex = normalizedCode
+    ? data.stocks.findIndex((stock) => stock.code === normalizedCode)
+    : data.stocks.findIndex(
+        (stock) => normalizeStockName(stock.name) === incomingName
+      );
+  const threshold =
+    payload.threshold === "" || payload.threshold === undefined
+      ? getAutoThreshold(incomingQuantity)
+      : normalizeNumber(payload.threshold);
+  if (existingIndex >= 0) {
+    const existing = data.stocks[existingIndex];
+    data.stocks[existingIndex] = {
+      ...existing,
+      name: incomingName || existing.name,
+      diameter: payload.diameter || existing.diameter,
+      unit: payload.unit || existing.unit,
+      quantity: normalizeNumber(existing.quantity) + incomingQuantity,
+      threshold,
+      warehouse: payload.warehouse || existing.warehouse,
+      attachments: [
+        ...(existing.attachments || []),
+        ...((payload.attachments || []).filter(Boolean))
+      ],
+      updatedAt: new Date().toISOString()
+    };
+  } else {
+    data.stocks = createRecord(data.stocks, {
+      code: normalizedCode || generateCode("STK"),
+      ...payload,
+      name: incomingName,
+      quantity: meta.allowZero ? incomingQuantity : incomingQuantity,
+      warehouse: payload.warehouse || "Ana Depo",
+      attachments: payload.attachments || [],
+      threshold
+    });
+  }
+  if (incomingQuantity > 0) {
+    data.stockMovements = createRecord(data.stockMovements, {
+      stockName: incomingName,
+      type: "giris",
+      quantity: incomingQuantity,
+      note: meta.note || "Fiş girişi",
+      createdAt: meta.createdAt || payload.createdAt
+    });
+  }
+};
 
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
@@ -93,48 +310,118 @@ const createWindow = () => {
 app.whenReady().then(() => {
   const mainWindow = createWindow();
 
-  ipcMain.handle("backup:create", async (_event, payload) => {
-    const baseDir = path.join(
-      app.getPath("documents"),
-      "MTN-Muhasebe-Yedekler"
-    );
-    await fs.mkdir(baseDir, { recursive: true });
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupDir = path.join(baseDir, `Yedek-${timestamp}`);
-    await fs.mkdir(backupDir, { recursive: true });
-    const backupPayload = {
-      createdAt: new Date().toISOString(),
-      ...payload
-    };
-    await fs.writeFile(
-      path.join(backupDir, "yedek.json"),
-      JSON.stringify(backupPayload, null, 2),
-      "utf8"
-    );
-    return { backupDir, createdAt: backupPayload.createdAt };
-  });
+  ipcMain.handle("backup:create", async (_event, payload) =>
+    createBackupEntry(payload)
+  );
 
   ipcMain.handle("data:get", async () => loadStorage());
+  ipcMain.handle("data:reset", async () => {
+    const data = getDefaultData();
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
   ipcMain.handle("settings:get", async () => loadSettings());
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
     return payload;
   });
 
-  ipcMain.handle("customers:create", async (_event, payload) => {
+  ipcMain.handle("stocks:import:parse", async (_event, payload) => {
+    try {
+      const bytes = payload?.bytes || [];
+      const workbook = XLSX.read(Buffer.from(bytes), { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      const headers = rows.length ? Object.keys(rows[0]) : [];
+      return { headers, rows };
+    } catch (error) {
+      return {
+        headers: [],
+        rows: [],
+        error: error?.message || "Dosya okunamadı."
+      };
+    }
+  });
+
+  ipcMain.handle("stocks:attachment:save", async (_event, payload) => {
+    const filePath = await saveStockAttachment(payload || {});
+    return {
+      name: payload?.name || "dosya",
+      type: payload?.type || "",
+      size: payload?.size || 0,
+      path: filePath
+    };
+  });
+
+  ipcMain.handle("invoices:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.customers = createRecord(data.customers, {
-      balance: 0,
-      ...payload
+    const filePath = await saveStockAttachment(payload || {});
+    data.invoices = createRecord(data.invoices, {
+      name: payload?.name || "fatura",
+      type: payload?.type || "",
+      size: payload?.size || 0,
+      note: payload?.note || "",
+      path: filePath
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("customers:create", async (_event, payload) => {
+    const data = await loadStorage();
+    const { openingDebt, ...rest } = payload;
+    const normalizedOpeningDebt = normalizeNumber(openingDebt);
+    data.customers = createRecord(data.customers, {
+      code: payload.code || generateCode("CAR"),
+      balance: normalizedOpeningDebt,
+      ...rest
+    });
+    if (normalizedOpeningDebt > 0) {
+      const latestCustomer = data.customers.at(-1);
+      data.customerDebts = createRecord(data.customerDebts, {
+        customerId: latestCustomer?.id || "",
+        customerName: latestCustomer?.name || "",
+        amount: normalizedOpeningDebt,
+        note: "Açılış borcu",
+        createdAt: payload.createdAt
+      });
+    }
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.customers;
+  });
+
+  ipcMain.handle("customers:update", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, ...updates } = payload || {};
+    if (!customerId) {
+      return data.customers;
+    }
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.customers;
   });
 
   ipcMain.handle("customers:payment", async (_event, payload) => {
     const data = await loadStorage();
-    const { customerId, amount, note } = payload;
+    const { customerId, amount, note, createdAt, currency } = payload;
     const normalizedAmount = Number(amount || 0);
     const customerName = data.customers.find(
       (customer) => customer.id === customerId
@@ -155,30 +442,265 @@ app.whenReady().then(() => {
       type: "gelir",
       amount: normalizedAmount,
       note: note || "Cari Tahsilat",
+      createdAt,
       customerId,
-      customerName
+      customerName,
+      currency: currency || "TRY"
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("customers:debt", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, amount, note, createdAt, currency } = payload;
+    const normalizedAmount = normalizeNumber(amount);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        balance: Number(customer.balance || 0) + normalizedAmount
+      };
+    });
+    data.customerDebts = createRecord(data.customerDebts, {
+      customerId,
+      customerName,
+      amount: normalizedAmount,
+      note: note || "Cari Borç",
+      createdAt,
+      currency: currency || "TRY"
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("customers:job", async (_event, payload) => {
+    const data = await loadStorage();
+    const {
+      customerId,
+      title,
+      quantity,
+      unit,
+      unitPrice,
+      total,
+      note,
+      createdAt,
+      currency
+    } = payload;
+    const normalizedTotal = normalizeNumber(total);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
+    data.customerJobs = createRecord(data.customerJobs, {
+      customerId,
+      customerName,
+      title,
+      quantity: normalizeNumber(quantity),
+      unit,
+      unitPrice: normalizeNumber(unitPrice),
+      total: normalizedTotal,
+      note,
+      createdAt,
+      currency: currency || "TRY"
+    });
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        balance: Number(customer.balance || 0) + normalizedTotal
+      };
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.stocks = createRecord(data.stocks, payload);
+    upsertStockEntry(data, payload, {
+      note: payload?.note || "Stok kartı girişi",
+      allowZero: true
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.stocks;
+  });
+
+  ipcMain.handle("stocks:receipt", async (_event, payload) => {
+    const data = await loadStorage();
+    const { items = [], createdAt, note, supplierName } = payload || {};
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
+    const receiptEntry = {
+      createdAt: createdAt || new Date().toISOString(),
+      note: note || "",
+      supplierName: supplierName || "",
+      items: normalizedItems,
+      transferredAt: new Date().toISOString()
+    };
+    data.stockReceipts = createRecord(data.stockReceipts, receiptEntry);
+    normalizedItems.forEach((item) => {
+      upsertStockEntry(data, item, {
+        note: note || "Fiş girişi",
+        createdAt
+      });
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("stocks:receipt:save", async (_event, payload) => {
+    const data = await loadStorage();
+    const { items = [], createdAt, note, supplierName } = payload || {};
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
+    data.stockReceipts = createRecord(data.stockReceipts, {
+      createdAt: createdAt || new Date().toISOString(),
+      note: note || "",
+      supplierName: supplierName || "",
+      items: normalizedItems,
+      transferredAt: null
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
+  ipcMain.handle("stocks:receipt:transfer", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId, warehouse } = payload || {};
+    const receipt = data.stockReceipts.find((item) => item.id === receiptId);
+    if (!receipt) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (receipt.transferredAt) {
+      return { ok: false, message: "Bu fiş daha önce depoya aktarıldı." };
+    }
+    let created = 0;
+    let updated = 0;
+    const items = Array.isArray(receipt.items) ? receipt.items : [];
+    items.forEach((item) => {
+      const normalizedName = normalizeStockName(item.name || "");
+      const normalizedPayload = {
+        ...item,
+        name: normalizedName,
+        warehouse: warehouse || receipt.warehouse || "Ana Depo"
+      };
+      const matchByCode = normalizedPayload.code
+        ? data.stocks.find((stock) => stock.code === normalizedPayload.code)
+        : null;
+      const matchByName = normalizedName
+        ? data.stocks.find(
+            (stock) => normalizeStockName(stock.name) === normalizedName
+          )
+        : null;
+      if (matchByCode || matchByName) {
+        updated += 1;
+      } else {
+        created += 1;
+      }
+      upsertStockEntry(data, normalizedPayload, {
+        note: "Fiş aktarımı",
+        createdAt: receipt.createdAt
+      });
+    });
+    receipt.transferredAt = new Date().toISOString();
+    receipt.warehouse = warehouse || receipt.warehouse || "Ana Depo";
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, created, updated, data };
+  });
+
+  ipcMain.handle("stocks:receipt:update", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId, items = [], createdAt, note, supplierName } =
+      payload || {};
+    const receiptIndex = data.stockReceipts.findIndex(
+      (item) => item.id === receiptId
+    );
+    if (receiptIndex < 0) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (data.stockReceipts[receiptIndex].transferredAt) {
+      return {
+        ok: false,
+        message: "Depoya aktarılan fişler düzenlenemez."
+      };
+    }
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
+    if (!normalizedItems.length) {
+      return { ok: false, message: "Fiş için en az bir malzeme girin." };
+    }
+    data.stockReceipts[receiptIndex] = {
+      ...data.stockReceipts[receiptIndex],
+      createdAt:
+        createdAt || data.stockReceipts[receiptIndex].createdAt || "",
+      note: note || "",
+      supplierName: supplierName || "",
+      items: normalizedItems,
+      updatedAt: new Date().toISOString()
+    };
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, data };
+  });
+
+  ipcMain.handle("stocks:receipt:delete", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId } = payload || {};
+    const receiptIndex = data.stockReceipts.findIndex(
+      (item) => item.id === receiptId
+    );
+    if (receiptIndex < 0) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (data.stockReceipts[receiptIndex].transferredAt) {
+      return {
+        ok: false,
+        message: "Depoya aktarılan fişler silinemez."
+      };
+    }
+    data.stockReceipts.splice(receiptIndex, 1);
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, data };
   });
 
   ipcMain.handle("stocks:movement", async (_event, payload) => {
     const data = await loadStorage();
-    const { stockName, type, quantity, note } = payload;
+    const { stockName, type, quantity, note, createdAt } = payload;
     data.stockMovements = createRecord(data.stockMovements, {
       stockName,
       type,
       quantity: Number(quantity || 0),
-      note
+      note,
+      createdAt
     });
     data.stocks = data.stocks.map((stock) => {
       if (stock.name !== stockName) {
@@ -194,6 +716,7 @@ app.whenReady().then(() => {
     });
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
@@ -202,6 +725,7 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, payload);
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data.cashTransactions;
   });
 
@@ -242,6 +766,17 @@ app.whenReady().then(() => {
       };
     });
     data.stocks = updatedStocks;
+    items.forEach((item) => {
+      if (!item.name) {
+        return;
+      }
+      data.stockMovements = createRecord(data.stockMovements, {
+        stockName: item.name,
+        type: "cikis",
+        quantity: normalizeNumber(item.quantity),
+        note: `Satış: ${customerName || "Genel"}`
+      });
+    });
 
     data.cashTransactions = createRecord(data.cashTransactions, {
       type: "gelir",
@@ -251,6 +786,7 @@ app.whenReady().then(() => {
 
     await saveStorage(data);
     await syncStorageCopies(data);
+    await maybeAutoBackup(data);
     return data;
   });
 
@@ -269,7 +805,7 @@ app.whenReady().then(() => {
         sandbox: false
       }
     });
-    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:140px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
     await reportWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
     );
@@ -277,6 +813,14 @@ app.whenReady().then(() => {
     await fs.writeFile(reportFile, pdfBuffer);
     reportWindow.close();
     return { reportFile };
+  });
+
+  ipcMain.handle("file:open", async (_event, filePath) => {
+    if (!filePath) {
+      return false;
+    }
+    await shell.openPath(filePath);
+    return true;
   });
 
   app.on("activate", () => {
