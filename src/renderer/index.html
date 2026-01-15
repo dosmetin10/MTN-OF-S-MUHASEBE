@@ -466,6 +466,7 @@
                       <th>Malzeme</th>
                       <th>Tür</th>
                       <th>Miktar</th>
+                      <th>Negatif</th>
                       <th>Açıklama</th>
                     </tr>
                   </thead>
@@ -694,6 +695,13 @@
                 <label>
                   Otomatik Yedek
                   <select id="auto-backup-enabled">
+                    <option value="false">Hayır</option>
+                    <option value="true">Evet</option>
+                  </select>
+                </label>
+                <label>
+                  Negatif Stok İzni
+                  <select id="allow-negative-stock">
                     <option value="false">Hayır</option>
                     <option value="true">Evet</option>
                   </select>
