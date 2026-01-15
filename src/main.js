@@ -12,6 +12,7 @@ const getDefaultData = () => ({
   customerJobs: [],
   stocks: [],
   stockReceipts: [],
+  invoices: [],
   cashTransactions: [],
   sales: [],
   stockMovements: []
@@ -25,6 +26,7 @@ const normalizeData = (data) => ({
   customerJobs: data.customerJobs || [],
   stocks: data.stocks || [],
   stockReceipts: data.stockReceipts || [],
+  invoices: data.invoices || [],
   cashTransactions: data.cashTransactions || [],
   sales: data.sales || [],
   stockMovements: data.stockMovements || []
@@ -212,6 +214,7 @@ const upsertStockEntry = (data, payload, meta = {}) => {
       unit: payload.unit || existing.unit,
       quantity: normalizeNumber(existing.quantity) + incomingQuantity,
       threshold,
+      warehouse: payload.warehouse || existing.warehouse,
       attachments: [
         ...(existing.attachments || []),
         ...((payload.attachments || []).filter(Boolean))
@@ -224,6 +227,7 @@ const upsertStockEntry = (data, payload, meta = {}) => {
       ...payload,
       name: incomingName,
       quantity: meta.allowZero ? incomingQuantity : incomingQuantity,
+      warehouse: payload.warehouse || "Ana Depo",
       attachments: payload.attachments || [],
       threshold
     });
@@ -300,6 +304,22 @@ app.whenReady().then(() => {
       size: payload?.size || 0,
       path: filePath
     };
+  });
+
+  ipcMain.handle("invoices:create", async (_event, payload) => {
+    const data = await loadStorage();
+    const filePath = await saveStockAttachment(payload || {});
+    data.invoices = createRecord(data.invoices, {
+      name: payload?.name || "fatura",
+      type: payload?.type || "",
+      size: payload?.size || 0,
+      note: payload?.note || "",
+      path: filePath
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
   });
 
   ipcMain.handle("customers:create", async (_event, payload) => {
@@ -476,7 +496,8 @@ app.whenReady().then(() => {
       createdAt: createdAt || new Date().toISOString(),
       note: note || "",
       supplierName: supplierName || "",
-      items
+      items,
+      transferredAt: new Date().toISOString()
     };
     data.stockReceipts = createRecord(data.stockReceipts, receiptEntry);
     items.forEach((item) => {
@@ -498,12 +519,59 @@ app.whenReady().then(() => {
       createdAt: createdAt || new Date().toISOString(),
       note: note || "",
       supplierName: supplierName || "",
-      items
+      items,
+      transferredAt: null
     });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
     return data;
+  });
+
+  ipcMain.handle("stocks:receipt:transfer", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId, warehouse } = payload || {};
+    const receipt = data.stockReceipts.find((item) => item.id === receiptId);
+    if (!receipt) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (receipt.transferredAt) {
+      return { ok: false, message: "Bu fiş daha önce depoya aktarıldı." };
+    }
+    let created = 0;
+    let updated = 0;
+    const items = Array.isArray(receipt.items) ? receipt.items : [];
+    items.forEach((item) => {
+      const normalizedPayload = {
+        ...item,
+        warehouse: warehouse || receipt.warehouse || "Ana Depo"
+      };
+      const matchByCode = normalizedPayload.code
+        ? data.stocks.find((stock) => stock.code === normalizedPayload.code)
+        : null;
+      const matchByName = normalizedPayload.name
+        ? data.stocks.find(
+            (stock) =>
+              stock.name?.toLowerCase() ===
+              normalizedPayload.name?.toLowerCase()
+          )
+        : null;
+      if (matchByCode || matchByName) {
+        updated += 1;
+      } else {
+        created += 1;
+      }
+      upsertStockEntry(data, normalizedPayload, {
+        note: "Fiş aktarımı",
+        createdAt: receipt.createdAt
+      });
+    });
+    receipt.transferredAt = new Date().toISOString();
+    receipt.warehouse = warehouse || receipt.warehouse || "Ana Depo";
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, created, updated, data };
   });
 
   ipcMain.handle("stocks:movement", async (_event, payload) => {

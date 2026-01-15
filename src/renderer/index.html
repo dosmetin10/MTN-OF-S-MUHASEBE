@@ -88,16 +88,18 @@
           <span class="brand__title" id="brand-title">MTN MUHASEBE</span>
           <span class="brand__subtitle">Kurumsal Yönetim</span>
         </div>
-        <nav class="menu">
-          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana Panel">Ana Panel</button>
-          <button class="menu__item" data-panel="customers-panel" data-title="Cari Yönetimi">Cari Yönetimi</button>
-          <button class="menu__item" data-panel="stocks-panel" data-title="Stok & Depo">Stok & Depo</button>
-          <button class="menu__item" data-panel="sales-panel" data-title="Teklif & Sipariş">Teklif & Sipariş</button>
-          <button class="menu__item" data-panel="cash-panel" data-title="Kasa & Banka">Kasa & Banka</button>
-          <button class="menu__item" data-panel="reports-panel" data-title="Raporlar">Raporlar</button>
-          <button class="menu__item" data-panel="assistant-panel" data-title="Muhasebe Asistanı">Muhasebe Asistanı</button>
-          <button class="menu__item" data-panel="settings-panel" data-title="Ayarlar">Ayarlar</button>
-        </nav>
+          <nav class="menu">
+            <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana Panel">Ana Panel</button>
+            <button class="menu__item" data-panel="customers-panel" data-title="Cari Yönetimi">Cari Yönetimi</button>
+            <button class="menu__item" data-panel="stocks-panel" data-title="Stok & Depo">Stok & Depo</button>
+            <button class="menu__item" data-panel="stock-list-panel" data-title="Malzeme Stok Listesi">Malzeme Stok Listesi</button>
+            <button class="menu__item" data-panel="sales-panel" data-title="Teklif & Sipariş">Teklif & Sipariş</button>
+            <button class="menu__item" data-panel="cash-panel" data-title="Kasa & Banka">Kasa & Banka</button>
+            <button class="menu__item" data-panel="reports-panel" data-title="Raporlar">Raporlar</button>
+            <button class="menu__item" data-panel="invoices-panel" data-title="Faturalarım">Faturalarım</button>
+            <button class="menu__item" data-panel="assistant-panel" data-title="Muhasebe Asistanı">Muhasebe Asistanı</button>
+            <button class="menu__item" data-panel="settings-panel" data-title="Ayarlar">Ayarlar</button>
+          </nav>
         <div class="sidebar__footer">
           <p>Offline mod: <strong class="status status--online">Hazır</strong></p>
           <p>Versiyon: <span id="app-version">0.1.0</span></p>
@@ -432,11 +434,6 @@
                   Kritik Seviye
                   <input name="threshold" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
-                <label class="full-width">
-                  Dosya Ekle (PDF/JPG/PNG)
-                  <input id="stock-attachments" type="file" accept=".pdf,image/png,image/jpeg" multiple />
-                </label>
-                <div class="full-width" id="stock-attachment-list"></div>
                 <button class="primary" type="submit">Stok Kaydet</button>
                 <button class="ghost" type="button" id="stock-receipt-toggle">
                   Fiş Ekle
@@ -486,15 +483,20 @@
                 <h3>Kayıtlı Fişler</h3>
                 <div class="table-actions">
                   <input id="stock-receipt-search" class="search" placeholder="Fiş ara..." />
+                  <input id="stock-receipt-start" type="date" />
+                  <input id="stock-receipt-end" type="date" />
+                  <button class="primary" id="stock-receipt-transfer">Depoya Aktar</button>
                 </div>
                 <p class="search-hint" id="stock-receipt-search-hint"></p>
                 <table>
                   <thead>
                     <tr>
+                      <th></th>
                       <th>Tarih</th>
                       <th>Malzemeci</th>
                       <th>Kalem</th>
                       <th>Not</th>
+                      <th>Durum</th>
                     </tr>
                   </thead>
                   <tbody id="stock-receipts-table"></tbody>
@@ -508,7 +510,7 @@
                   <button class="ghost" id="stock-export-csv">Excel (CSV)</button>
                   <button class="ghost" id="stock-export-pdf">PDF</button>
                   <button class="primary" id="stock-import-open">İçe Aktar</button>
-                  <input id="stock-import-file" type="file" accept=".csv,.xlsx" hidden />
+                  <input id="stock-import-file" type="file" accept=".csv,.xlsx,.pdf" hidden />
                 </div>
                 <p class="search-hint" id="stock-search-suggestion"></p>
                 <table>
@@ -520,7 +522,6 @@
                       <th>Birim</th>
                       <th>Adet</th>
                       <th>Kritik Seviye</th>
-                      <th>Dosyalar</th>
                     </tr>
                   </thead>
                   <tbody id="stocks-table"></tbody>
@@ -655,6 +656,69 @@
                     <strong id="offer-total">₺0,00</strong>
                   </div>
                 </div>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel" id="stock-list-panel">
+            <section class="module" id="stock-list-module">
+              <div class="module__header">
+                <h2>Malzeme Stok Listesi</h2>
+                <p>Depo stoklarını sade bir listede görüntüleyin.</p>
+              </div>
+              <div class="table-card table-card--sheet">
+                <div class="table-actions">
+                  <input id="stock-master-search" class="search" placeholder="Stok adı / kod / Q arayın..." />
+                  <button class="ghost" id="stock-master-search-btn">Ara</button>
+                </div>
+                <p class="search-hint" id="stock-master-search-hint"></p>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Stok Kodu</th>
+                      <th>Stok Adı</th>
+                      <th>Depo</th>
+                      <th>Mevcut Adet</th>
+                      <th>Birim</th>
+                      <th>Son Güncelleme</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stock-master-table"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
+
+          <section class="panel" id="invoices-panel">
+            <section class="module" id="invoices-module">
+              <div class="module__header">
+                <h2>Faturalarım</h2>
+                <p>Fatura dosyalarını buradan yükleyip görüntüleyin.</p>
+              </div>
+              <div class="form-grid">
+                <label class="full-width">
+                  PDF/JPG/PNG Yükle
+                  <input id="invoice-file" type="file" accept=".pdf,image/png,image/jpeg" />
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input id="invoice-note" placeholder="Fatura notu" />
+                </label>
+                <button class="primary" id="invoice-save">Faturayı Kaydet</button>
+              </div>
+              <div class="table-card table-card--sheet">
+                <h3>Kayıtlı Faturalar</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Dosya</th>
+                      <th>Not</th>
+                      <th>İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="invoices-table"></tbody>
+                </table>
               </div>
             </section>
           </section>
@@ -857,15 +921,6 @@
           <button class="ghost" id="stock-receipt-close">Kapat</button>
         </div>
         <div id="stock-receipt-modal-body"></div>
-      </div>
-    </div>
-    <div class="modal" id="stock-attachments-modal" aria-hidden="true">
-      <div class="modal__content">
-        <div class="modal__header">
-          <h3 id="stock-attachments-modal-title">Stok Dosyaları</h3>
-          <button class="ghost" id="stock-attachments-close">Kapat</button>
-        </div>
-        <div id="stock-attachments-modal-body"></div>
       </div>
     </div>
     <div class="modal" id="stock-import-modal" aria-hidden="true">

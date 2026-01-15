@@ -124,14 +124,25 @@ const stockMovementForm = document.getElementById("stock-movement-form");
 const movementStockSelect = document.getElementById("movement-stock");
 const stockMovementDateInput = document.getElementById("stock-movement-date");
 const stockMovementsTable = document.getElementById("stock-movements-table");
-const stockAttachmentsInput = document.getElementById("stock-attachments");
-const stockAttachmentList = document.getElementById("stock-attachment-list");
 const stockReceiptSearchInput = document.getElementById(
   "stock-receipt-search"
 );
 const stockReceiptSearchHint = document.getElementById(
   "stock-receipt-search-hint"
 );
+const stockReceiptStartInput = document.getElementById("stock-receipt-start");
+const stockReceiptEndInput = document.getElementById("stock-receipt-end");
+const stockReceiptTransferButton = document.getElementById(
+  "stock-receipt-transfer"
+);
+const stockMasterTable = document.getElementById("stock-master-table");
+const stockMasterSearchInput = document.getElementById("stock-master-search");
+const stockMasterSearchButton = document.getElementById("stock-master-search-btn");
+const stockMasterSearchHint = document.getElementById("stock-master-search-hint");
+const invoiceFileInput = document.getElementById("invoice-file");
+const invoiceNoteInput = document.getElementById("invoice-note");
+const invoiceSaveButton = document.getElementById("invoice-save");
+const invoicesTable = document.getElementById("invoices-table");
 const settingsForm = document.getElementById("settings-form");
 const autoSyncPathInput = document.getElementById("auto-sync-path");
 const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
@@ -167,18 +178,6 @@ const stockReceiptModalBody = document.getElementById(
   "stock-receipt-modal-body"
 );
 const stockReceiptModalClose = document.getElementById("stock-receipt-close");
-const stockAttachmentsModal = document.getElementById(
-  "stock-attachments-modal"
-);
-const stockAttachmentsModalTitle = document.getElementById(
-  "stock-attachments-modal-title"
-);
-const stockAttachmentsModalBody = document.getElementById(
-  "stock-attachments-modal-body"
-);
-const stockAttachmentsModalClose = document.getElementById(
-  "stock-attachments-close"
-);
 
 const formatCurrency = (value, currency = "TRY") =>
   new Intl.NumberFormat("tr-TR", {
@@ -227,6 +226,51 @@ const normalizeHeader = (value) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const normalizeStockName = (value) => {
+  if (!value) {
+    return "";
+  }
+  let normalized = String(value).toUpperCase();
+  normalized = normalized
+    .replace(/İ/g, "I")
+    .replace(/Ğ/g, "G")
+    .replace(/Ü/g, "U")
+    .replace(/Ş/g, "S")
+    .replace(/Ö/g, "O")
+    .replace(/Ç/g, "C");
+  const replacements = [
+    [/\bMANSON\b/g, "MANSON"],
+    [/\bMANŞON\b/g, "MANSON"],
+    [/\bKOLLEKTOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKTÖR\b/g, "KOLLEKTOR"]
+  ];
+  replacements.forEach(([pattern, next]) => {
+    normalized = normalized.replace(pattern, next);
+  });
+  normalized = normalized.replace(/3\"4/g, "3/4\"");
+  normalized = normalized.replace(/1\"1\"4/g, "1 1/4\"");
+  const inchMap = {
+    "1/2": "20",
+    "3/4": "25",
+    "1": "32",
+    "1 1/4": "40",
+    "1 1/2": "50",
+    "2": "63"
+  };
+  Object.entries(inchMap).forEach(([inch, qValue]) => {
+    normalized = normalized.replace(new RegExp(`${inch}\"`, "g"), `Q${qValue}`);
+  });
+  if (normalized.includes("INÇ") || normalized.includes("\"")) {
+    normalized = normalized.replace(/INÇ/g, "").replace(/\"/g, "");
+    if (!normalized.includes("PPRC")) {
+      normalized = `${normalized.trim()} PPRC`;
+    }
+  }
+  normalized = normalized.replace(/\s+/g, " ").trim();
+  return normalized;
+};
+
 let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
@@ -240,7 +284,6 @@ let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
 let cachedStockReceipts = [];
-let pendingStockAttachments = [];
 const customerTabs = new Map();
 let importHeaders = [];
 let importRows = [];
@@ -567,7 +610,6 @@ const renderStocks = (items) => {
   }
   filtered.forEach((item) => {
     const row = document.createElement("tr");
-    const attachments = Array.isArray(item.attachments) ? item.attachments : [];
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
@@ -575,18 +617,7 @@ const renderStocks = (items) => {
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
       <td>${item.threshold || 0}</td>
-      <td>
-        <button class="ghost stock-attachment-btn">
-          ${attachments.length ? `Dosyalar (${attachments.length})` : "Yok"}
-        </button>
-      </td>
     `;
-    const attachmentButton = row.querySelector(".stock-attachment-btn");
-    if (attachmentButton) {
-      attachmentButton.addEventListener("click", () => {
-        openStockAttachmentsModal(item);
-      });
-    }
     stocksTable.appendChild(row);
   });
   items.forEach((item) => {
@@ -619,6 +650,41 @@ const renderStocks = (items) => {
     } else {
       stockSearchSuggestion.textContent = "";
     }
+  }
+  renderStockMasterList(items);
+};
+
+const renderStockMasterList = (items) => {
+  if (!stockMasterTable) {
+    return;
+  }
+  const term = normalizeText(stockMasterSearchInput?.value);
+  const filtered = term
+    ? items.filter((item) => {
+        const name = normalizeText(item.name);
+        const code = normalizeText(item.code);
+        return name.includes(term) || code.includes(term);
+      })
+    : items;
+  stockMasterTable.innerHTML = "";
+  filtered.forEach((item) => {
+    const row = document.createElement("tr");
+    const lastUpdated = item.updatedAt || item.createdAt;
+    row.innerHTML = `
+      <td>${item.code || "-"}</td>
+      <td>${item.name || "-"}</td>
+      <td>${item.warehouse || "Ana Depo"}</td>
+      <td>${item.quantity || 0}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${lastUpdated ? new Date(lastUpdated).toLocaleDateString("tr-TR") : "-"}</td>
+    `;
+    stockMasterTable.appendChild(row);
+  });
+  if (stockMasterSearchHint) {
+    stockMasterSearchHint.textContent =
+      term && !filtered.length
+        ? "Aradığınız kriterlere uygun stok bulunamadı."
+        : "";
   }
 };
 
@@ -657,6 +723,8 @@ const renderStockReceipts = (items) => {
   }
   stockReceiptsTable.innerHTML = "";
   const term = normalizeText(stockReceiptSearchInput?.value);
+  const startValue = stockReceiptStartInput?.value;
+  const endValue = stockReceiptEndInput?.value;
   const filtered = term
     ? items.filter((receipt) => {
         const supplier = normalizeText(receipt.supplierName);
@@ -671,13 +739,36 @@ const renderStockReceipts = (items) => {
         );
       })
     : items;
-  filtered.forEach((receipt) => {
+  const dateFiltered = filtered.filter((receipt) => {
+    if (!startValue && !endValue) {
+      return true;
+    }
+    const receiptDate = new Date(receipt.createdAt);
+    if (startValue) {
+      const startDate = new Date(startValue);
+      if (receiptDate < startDate) {
+        return false;
+      }
+    }
+    if (endValue) {
+      const endDate = new Date(endValue);
+      endDate.setHours(23, 59, 59, 999);
+      if (receiptDate > endDate) {
+        return false;
+      }
+    }
+    return true;
+  });
+  dateFiltered.forEach((receipt) => {
     const row = document.createElement("tr");
+    const isTransferred = Boolean(receipt.transferredAt);
     row.innerHTML = `
+      <td><input type="checkbox" data-receipt-id="${receipt.id || ""}" ${isTransferred ? "disabled" : ""} /></td>
       <td>${new Date(receipt.createdAt).toLocaleDateString("tr-TR")}</td>
       <td>${receipt.supplierName || "-"}</td>
       <td>${Array.isArray(receipt.items) ? receipt.items.length : 0}</td>
       <td>${receipt.note || "-"}</td>
+      <td>${isTransferred ? "Aktarıldı" : "Bekliyor"}</td>
     `;
     row.addEventListener("dblclick", () => {
       openStockReceiptModal(receipt);
@@ -686,39 +777,31 @@ const renderStockReceipts = (items) => {
   });
   if (stockReceiptSearchHint) {
     stockReceiptSearchHint.textContent =
-      term && !filtered.length
+      term && !dateFiltered.length
         ? "Aradığınız kriterlere uygun kayıt bulunamadı."
         : "";
   }
 };
 
-const renderStockAttachmentList = () => {
-  if (!stockAttachmentList) {
+const renderInvoices = (items) => {
+  if (!invoicesTable) {
     return;
   }
-  if (!pendingStockAttachments.length) {
-    stockAttachmentList.innerHTML = "";
-    return;
-  }
-  const rows = pendingStockAttachments
-    .map(
-      (file, index) => `
-      <div class="attachment-row">
-        <span>${escapeHtml(file.name || "dosya")}</span>
-        <button class="ghost" data-index="${index}">Kaldır</button>
-      </div>
-    `
-    )
-    .join("");
-  stockAttachmentList.innerHTML = rows;
-  stockAttachmentList.querySelectorAll("button[data-index]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const index = Number(btn.getAttribute("data-index"));
-      if (Number.isInteger(index)) {
-        pendingStockAttachments.splice(index, 1);
-        renderStockAttachmentList();
-      }
+  invoicesTable.innerHTML = "";
+  (items || []).forEach((invoice) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(invoice.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${escapeHtml(invoice.name || "-")}</td>
+      <td>${escapeHtml(invoice.note || "-")}</td>
+      <td><button class="ghost" data-path="${escapeHtml(
+        invoice.path || ""
+      )}">Aç</button></td>
+    `;
+    row.querySelector("button")?.addEventListener("click", async () => {
+      await window.mtnApp?.openFile?.(invoice.path);
     });
+    invoicesTable.appendChild(row);
   });
 };
 
@@ -789,7 +872,7 @@ const buildImportPreview = () => {
   let errorCount = 0;
 
   const rows = importRows.map((row, index) => {
-    const name = row[mapName] ?? "";
+    const name = normalizeStockName(row[mapName] ?? "");
     const code = row[mapCode] ?? "";
     const qtyRaw = row[mapQty];
     const quantity = Number(String(qtyRaw || "").replace(",", "."));
@@ -1386,60 +1469,6 @@ const openStockReceiptModal = (receipt) => {
   stockReceiptModal.setAttribute("aria-hidden", "false");
 };
 
-const openStockAttachmentsModal = (stock) => {
-  if (!stockAttachmentsModal || !stockAttachmentsModalBody) {
-    return;
-  }
-  const attachments = Array.isArray(stock.attachments)
-    ? stock.attachments
-    : [];
-  const rows = attachments
-    .map(
-      (file) => `
-      <tr>
-        <td>${escapeHtml(file.name || "-")}</td>
-        <td>${escapeHtml(file.type || "-")}</td>
-        <td>${file.size ? `${Math.round(file.size / 1024)} KB` : "-"}</td>
-        <td><button class="ghost" data-path="${escapeHtml(
-          file.path || ""
-        )}">Aç</button></td>
-      </tr>
-    `
-    )
-    .join("");
-  stockAttachmentsModalBody.innerHTML = `
-    <div class="table-card table-card--sheet">
-      <h3>${escapeHtml(stock.name || "Stok")} - Dosyalar</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Dosya</th>
-            <th>Tür</th>
-            <th>Boyut</th>
-            <th>İşlem</th>
-          </tr>
-        </thead>
-        <tbody>${rows || "<tr><td colspan='4'>Dosya yok.</td></tr>"}</tbody>
-      </table>
-    </div>
-  `;
-  stockAttachmentsModalBody
-    .querySelectorAll("button[data-path]")
-    .forEach((button) => {
-      button.addEventListener("click", async () => {
-        const path = button.getAttribute("data-path");
-        if (path) {
-          await window.mtnApp?.openFile?.(path);
-        }
-      });
-    });
-  if (stockAttachmentsModalTitle) {
-    stockAttachmentsModalTitle.textContent = "Stok Dosyaları";
-  }
-  stockAttachmentsModal.classList.add("modal--open");
-  stockAttachmentsModal.setAttribute("aria-hidden", "false");
-};
-
 const openStockImportModal = () => {
   if (!stockImportModal) {
     return;
@@ -1644,15 +1673,16 @@ const loadInitialData = async () => {
   const data = await window.mtnApp.getData();
   renderCustomers(data.customers || []);
   renderStocks(data.stocks || []);
+  renderStockMasterList(data.stocks || []);
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
   renderStockMovements(data.stockMovements || []);
   cachedCustomerDebts = data.customerDebts || [];
   cachedCustomerJobs = data.customerJobs || [];
   renderStockReceipts(data.stockReceipts || []);
+  renderInvoices(data.invoices || []);
   renderSummary(data);
   renderCustomerDetail(data);
-  renderStockAttachmentList();
 };
 
 const readLogoFile = (file) =>
@@ -2210,17 +2240,14 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
-    if (pendingStockAttachments.length) {
-      payload.attachments = pendingStockAttachments;
-    }
+    payload.name = normalizeStockName(payload.name);
     await window.mtnApp.createStock(payload);
     const data = await window.mtnApp.getData();
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
+    renderStockMasterList(data.stocks || []);
     renderSummary(data);
     stockForm.reset();
-    pendingStockAttachments = [];
-    renderStockAttachmentList();
     setAutoCodes();
   });
 
@@ -2233,36 +2260,34 @@ if (stockForm) {
   });
 }
 
-if (stockAttachmentsInput) {
-  stockAttachmentsInput.addEventListener("change", async () => {
-    if (!window.mtnApp?.saveStockAttachment) {
-      reportPathEl.textContent = "Dosya servisi hazır değil.";
+if (invoiceSaveButton) {
+  invoiceSaveButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.createInvoice) {
+      reportPathEl.textContent = "Fatura servisi hazır değil.";
       return;
     }
-    const files = Array.from(stockAttachmentsInput.files || []);
-    if (!files.length) {
+    const file = invoiceFileInput?.files?.[0];
+    if (!file) {
+      reportPathEl.textContent = "Lütfen fatura dosyası seçin.";
       return;
     }
-    for (const file of files) {
-      if (
-        file.type !== "application/pdf" &&
-        file.type !== "image/png" &&
-        file.type !== "image/jpeg"
-      ) {
-        continue;
-      }
-      const buffer = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buffer));
-      const saved = await window.mtnApp.saveStockAttachment({
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        bytes
-      });
-      pendingStockAttachments.push(saved);
+    const buffer = await file.arrayBuffer();
+    const bytes = Array.from(new Uint8Array(buffer));
+    const result = await window.mtnApp.createInvoice({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      note: invoiceNoteInput?.value || "",
+      bytes
+    });
+    renderInvoices(result.invoices || []);
+    if (invoiceFileInput) {
+      invoiceFileInput.value = "";
     }
-    renderStockAttachmentList();
-    stockAttachmentsInput.value = "";
+    if (invoiceNoteInput) {
+      invoiceNoteInput.value = "";
+    }
+    reportPathEl.textContent = "Fatura kaydedildi.";
   });
 }
 
@@ -2324,7 +2349,9 @@ if (stockReceiptSubmit && stockReceiptBody) {
     }
     const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
       (row) => ({
-        name: row.querySelector("[data-field='name']")?.value || "",
+        name: normalizeStockName(
+          row.querySelector("[data-field='name']")?.value || ""
+        ),
         diameter: row.querySelector("[data-field='diameter']")?.value || "",
         unit: row.querySelector("[data-field='unit']")?.value || "",
         quantity: row.querySelector("[data-field='quantity']")?.value || "",
@@ -2380,7 +2407,9 @@ if (stockReceiptSave && stockReceiptBody) {
     }
     const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
       (row) => ({
-        name: row.querySelector("[data-field='name']")?.value || "",
+        name: normalizeStockName(
+          row.querySelector("[data-field='name']")?.value || ""
+        ),
         diameter: row.querySelector("[data-field='diameter']")?.value || "",
         unit: row.querySelector("[data-field='unit']")?.value || "",
         quantity: row.querySelector("[data-field='quantity']")?.value || "",
@@ -2457,6 +2486,7 @@ if (customerSearchButton) {
 
 const handleStockSearch = () => {
   renderStocks(cachedStocks);
+  renderStockMasterList(cachedStocks);
 };
 
 if (stockSearchInput) {
@@ -2470,8 +2500,33 @@ if (stockSearchButton) {
   });
 }
 
+if (stockMasterSearchInput) {
+  stockMasterSearchInput.addEventListener("input", () => {
+    renderStockMasterList(cachedStocks);
+  });
+}
+
+if (stockMasterSearchButton) {
+  stockMasterSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderStockMasterList(cachedStocks);
+  });
+}
+
 if (stockReceiptSearchInput) {
   stockReceiptSearchInput.addEventListener("input", () => {
+    renderStockReceipts(cachedStockReceipts);
+  });
+}
+
+if (stockReceiptStartInput) {
+  stockReceiptStartInput.addEventListener("input", () => {
+    renderStockReceipts(cachedStockReceipts);
+  });
+}
+
+if (stockReceiptEndInput) {
+  stockReceiptEndInput.addEventListener("input", () => {
     renderStockReceipts(cachedStockReceipts);
   });
 }
@@ -2498,6 +2553,11 @@ if (stockImportFileInput) {
     }
     const file = stockImportFileInput.files?.[0];
     if (!file) {
+      return;
+    }
+    if (file.name.toLowerCase().endsWith(".pdf")) {
+      stockImportStatus.textContent =
+        "PDF içe aktarımı için OCR desteği gerekir. Bu sürümde yalnızca CSV/XLSX desteklenir.";
       return;
     }
     if (stockImportFileName) {
@@ -2575,7 +2635,7 @@ if (stockImportConfirmButton) {
     let updated = 0;
     let skipped = 0;
     for (const row of importRows) {
-      const name = row[mapName] ?? "";
+      const name = normalizeStockName(row[mapName] ?? "");
       const code = row[mapCode] ?? "";
       const qtyRaw = row[mapQty];
       const quantity = Number(String(qtyRaw || "").replace(",", "."));
@@ -2599,6 +2659,7 @@ if (stockImportConfirmButton) {
         code: code || "",
         name,
         quantity,
+        warehouse: depot,
         note: `İçe aktarım (${depot})`
       });
       if (matchByCode || matchByName) {
@@ -2612,6 +2673,50 @@ if (stockImportConfirmButton) {
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
     stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan/Hatalı: ${skipped}.`;
+  });
+}
+
+if (stockReceiptTransferButton) {
+  stockReceiptTransferButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.transferStockReceipt) {
+      reportPathEl.textContent = "Fiş aktarım servisi hazır değil.";
+      return;
+    }
+    const selected = Array.from(
+      stockReceiptsTable?.querySelectorAll("input[type='checkbox']:checked") ||
+        []
+    ).map((input) => input.getAttribute("data-receipt-id"));
+    if (!selected.length) {
+      reportPathEl.textContent = "Lütfen aktarılacak fiş seçin.";
+      return;
+    }
+    let processed = 0;
+    let skipped = 0;
+    let updated = 0;
+    let created = 0;
+    for (const receiptId of selected) {
+      if (!receiptId) {
+        continue;
+      }
+      const result = await window.mtnApp.transferStockReceipt({
+        receiptId,
+        warehouse: "Ana Depo"
+      });
+      if (!result.ok) {
+        skipped += 1;
+        continue;
+      }
+      processed += 1;
+      updated += result.updated || 0;
+      created += result.created || 0;
+    }
+    const data = await window.mtnApp.getData();
+    renderStocks(data.stocks || []);
+    renderStockMovements(data.stockMovements || []);
+    renderStockReceipts(data.stockReceipts || []);
+    renderStockMasterList(data.stocks || []);
+    renderSummary(data);
+    reportPathEl.textContent = `Depoya aktarıldı. İşlenen: ${processed}, Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}.`;
   });
 }
 
@@ -2716,11 +2821,13 @@ if (resetDataButton) {
     const data = await window.mtnApp.resetData();
     renderCustomers(data.customers || []);
     renderStocks(data.stocks || []);
+    renderStockMasterList(data.stocks || []);
     renderCash(data.cashTransactions || []);
     renderSales(data.sales || []);
     renderStockMovements(data.stockMovements || []);
     cachedCustomerDebts = data.customerDebts || [];
     cachedCustomerJobs = data.customerJobs || [];
+    renderInvoices(data.invoices || []);
     renderSummary(data);
     renderCustomerDetail(data);
     settingsStatusEl.textContent = "Tüm veriler sıfırlandı.";
@@ -3159,19 +3266,6 @@ if (stockReceiptModalClose && stockReceiptModal) {
     if (event.target === stockReceiptModal) {
       stockReceiptModal.classList.remove("modal--open");
       stockReceiptModal.setAttribute("aria-hidden", "true");
-    }
-  });
-}
-
-if (stockAttachmentsModalClose && stockAttachmentsModal) {
-  stockAttachmentsModalClose.addEventListener("click", () => {
-    stockAttachmentsModal.classList.remove("modal--open");
-    stockAttachmentsModal.setAttribute("aria-hidden", "true");
-  });
-  stockAttachmentsModal.addEventListener("click", (event) => {
-    if (event.target === stockAttachmentsModal) {
-      stockAttachmentsModal.classList.remove("modal--open");
-      stockAttachmentsModal.setAttribute("aria-hidden", "true");
     }
   });
 }
