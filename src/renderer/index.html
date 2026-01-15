@@ -169,6 +169,10 @@
                   <input name="code" placeholder="Otomatik" readonly />
                 </label>
                 <label>
+                  Tarih
+                  <input name="createdAt" type="date" id="customer-create-date" />
+                </label>
+                <label>
                   Ünvan / Ad Soyad
                   <input name="name" required placeholder="Müşteri adı" />
                 </label>
@@ -309,8 +313,21 @@
                   Cari Seç
                   <select id="detail-customer"></select>
                 </label>
+                <label>
+                  KDV
+                  <select id="detail-vat-mode">
+                    <option value="exclude">KDV Hariç</option>
+                    <option value="include">KDV Dahil</option>
+                  </select>
+                </label>
+                <label>
+                  KDV Oranı (%)
+                  <input id="detail-vat-rate" type="number" min="0" step="1" value="20" />
+                </label>
                 <button class="primary" id="detail-report">Ekstre PDF</button>
               </div>
+              <div class="tab-bar" id="customer-tabs"></div>
+              <div class="tab-content" id="customer-tab-panels"></div>
               <div class="detail-summary" id="detail-summary"></div>
               <form class="form-grid" id="customer-job-form">
                 <label>
@@ -409,12 +426,17 @@
                 </label>
                 <label>
                   Adet
-                  <input name="quantity" type="number" min="0" step="1" />
+                  <input name="quantity" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
                 <label>
                   Kritik Seviye
                   <input name="threshold" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
+                <label class="full-width">
+                  Dosya Ekle (PDF/JPG/PNG)
+                  <input id="stock-attachments" type="file" accept=".pdf,image/png,image/jpeg" multiple />
+                </label>
+                <div class="full-width" id="stock-attachment-list"></div>
                 <button class="primary" type="submit">Stok Kaydet</button>
                 <button class="ghost" type="button" id="stock-receipt-toggle">
                   Fiş Ekle
@@ -462,6 +484,10 @@
               </div>
               <div class="table-card table-card--sheet">
                 <h3>Kayıtlı Fişler</h3>
+                <div class="table-actions">
+                  <input id="stock-receipt-search" class="search" placeholder="Fiş ara..." />
+                </div>
+                <p class="search-hint" id="stock-receipt-search-hint"></p>
                 <table>
                   <thead>
                     <tr>
@@ -492,6 +518,7 @@
                       <th>Birim</th>
                       <th>Adet</th>
                       <th>Kritik Seviye</th>
+                      <th>Dosyalar</th>
                     </tr>
                   </thead>
                   <tbody id="stocks-table"></tbody>
@@ -819,6 +846,24 @@
           <button class="ghost" id="customer-detail-close">Kapat</button>
         </div>
         <div id="customer-detail-modal-body"></div>
+      </div>
+    </div>
+    <div class="modal" id="stock-receipt-modal" aria-hidden="true">
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3 id="stock-receipt-modal-title">Fiş Detay</h3>
+          <button class="ghost" id="stock-receipt-close">Kapat</button>
+        </div>
+        <div id="stock-receipt-modal-body"></div>
+      </div>
+    </div>
+    <div class="modal" id="stock-attachments-modal" aria-hidden="true">
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3 id="stock-attachments-modal-title">Stok Dosyaları</h3>
+          <button class="ghost" id="stock-attachments-close">Kapat</button>
+        </div>
+        <div id="stock-attachments-modal-body"></div>
       </div>
     </div>
   </body>

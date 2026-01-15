@@ -19,6 +19,7 @@ const summaryAlertsEl = document.getElementById("summary-alerts");
 const customerForm = document.getElementById("customer-form");
 const customerDebtForm = document.getElementById("customer-debt-form");
 const customerPaymentForm = document.getElementById("customer-payment-form");
+const customerCreateDateInput = document.getElementById("customer-create-date");
 const customerDebtDateInput = document.getElementById("customer-debt-date");
 const customerJobForm = document.getElementById("customer-job-form");
 const customerJobDateInput = document.getElementById("customer-job-date");
@@ -79,6 +80,10 @@ const detailCustomerSelect = document.getElementById("detail-customer");
 const detailTable = document.getElementById("detail-table");
 const detailReportButton = document.getElementById("detail-report");
 const detailSummaryEl = document.getElementById("detail-summary");
+const detailVatModeSelect = document.getElementById("detail-vat-mode");
+const detailVatRateInput = document.getElementById("detail-vat-rate");
+const customerTabsEl = document.getElementById("customer-tabs");
+const customerTabPanelsEl = document.getElementById("customer-tab-panels");
 const customerJobsTable = document.getElementById("customer-jobs-table");
 const customerEditForm = document.getElementById("customer-edit-form");
 const customerEditSelect = document.getElementById("customer-edit-select");
@@ -93,6 +98,14 @@ const stockMovementForm = document.getElementById("stock-movement-form");
 const movementStockSelect = document.getElementById("movement-stock");
 const stockMovementDateInput = document.getElementById("stock-movement-date");
 const stockMovementsTable = document.getElementById("stock-movements-table");
+const stockAttachmentsInput = document.getElementById("stock-attachments");
+const stockAttachmentList = document.getElementById("stock-attachment-list");
+const stockReceiptSearchInput = document.getElementById(
+  "stock-receipt-search"
+);
+const stockReceiptSearchHint = document.getElementById(
+  "stock-receipt-search-hint"
+);
 const settingsForm = document.getElementById("settings-form");
 const autoSyncPathInput = document.getElementById("auto-sync-path");
 const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
@@ -119,6 +132,26 @@ const customerDetailModalBody = document.getElementById(
 );
 const customerDetailModalTitle = document.getElementById(
   "customer-detail-modal-title"
+);
+const stockReceiptModal = document.getElementById("stock-receipt-modal");
+const stockReceiptModalTitle = document.getElementById(
+  "stock-receipt-modal-title"
+);
+const stockReceiptModalBody = document.getElementById(
+  "stock-receipt-modal-body"
+);
+const stockReceiptModalClose = document.getElementById("stock-receipt-close");
+const stockAttachmentsModal = document.getElementById(
+  "stock-attachments-modal"
+);
+const stockAttachmentsModalTitle = document.getElementById(
+  "stock-attachments-modal-title"
+);
+const stockAttachmentsModalBody = document.getElementById(
+  "stock-attachments-modal-body"
+);
+const stockAttachmentsModalClose = document.getElementById(
+  "stock-attachments-close"
 );
 
 const formatCurrency = (value, currency = "TRY") =>
@@ -150,6 +183,18 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const calculateVatTotals = (amount, vatRate, vatMode) => {
+  const normalizedAmount = Number(amount || 0);
+  const normalizedRate = Number(vatRate || 0) / 100;
+  if (vatMode === "include" && normalizedRate > 0) {
+    const base = normalizedAmount / (1 + normalizedRate);
+    const vat = normalizedAmount - base;
+    return { base, vat, total: normalizedAmount };
+  }
+  const vat = normalizedAmount * normalizedRate;
+  return { base: normalizedAmount, vat, total: normalizedAmount + vat };
+};
+
 let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
@@ -163,6 +208,8 @@ let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
 let cachedStockReceipts = [];
+let pendingStockAttachments = [];
+const customerTabs = new Map();
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -373,6 +420,14 @@ const renderCustomers = (items) => {
       <td>${item.email || "-"}</td>
       <td>${formatCurrency(Number(item.balance) || 0)}</td>
     `;
+    const nameCell = row.querySelectorAll("td")[1];
+    if (nameCell) {
+      nameCell.classList.add("link-cell");
+      nameCell.addEventListener("click", async () => {
+        const data = await window.mtnApp.getData();
+        openCustomerTab(data, item);
+      });
+    }
     row.addEventListener("dblclick", () => {
       if (detailCustomerSelect && item.id) {
         detailCustomerSelect.value = item.id;
@@ -447,10 +502,13 @@ const renderCustomers = (items) => {
       items,
       (item) => item.name || ""
     );
-    customerSearchSuggestion.textContent =
-      searchTerm && !filtered.length && suggestion
+    if (searchTerm && !filtered.length) {
+      customerSearchSuggestion.textContent = suggestion
         ? `Şunu mu demek istediniz: ${suggestion}`
-        : "";
+        : "Aradığınız kriterlere uygun kayıt bulunamadı.";
+    } else {
+      customerSearchSuggestion.textContent = "";
+    }
   }
 };
 
@@ -474,6 +532,7 @@ const renderStocks = (items) => {
   }
   filtered.forEach((item) => {
     const row = document.createElement("tr");
+    const attachments = Array.isArray(item.attachments) ? item.attachments : [];
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
@@ -481,7 +540,18 @@ const renderStocks = (items) => {
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
       <td>${item.threshold || 0}</td>
+      <td>
+        <button class="ghost stock-attachment-btn">
+          ${attachments.length ? `Dosyalar (${attachments.length})` : "Yok"}
+        </button>
+      </td>
     `;
+    const attachmentButton = row.querySelector(".stock-attachment-btn");
+    if (attachmentButton) {
+      attachmentButton.addEventListener("click", () => {
+        openStockAttachmentsModal(item);
+      });
+    }
     stocksTable.appendChild(row);
   });
   items.forEach((item) => {
@@ -507,10 +577,13 @@ const renderStocks = (items) => {
       items,
       (item) => item.name || ""
     );
-    stockSearchSuggestion.textContent =
-      searchTerm && !filtered.length && suggestion
+    if (searchTerm && !filtered.length) {
+      stockSearchSuggestion.textContent = suggestion
         ? `Şunu mu demek istediniz: ${suggestion}`
-        : "";
+        : "Aradığınız kriterlere uygun kayıt bulunamadı.";
+    } else {
+      stockSearchSuggestion.textContent = "";
+    }
   }
 };
 
@@ -548,7 +621,22 @@ const renderStockReceipts = (items) => {
     return;
   }
   stockReceiptsTable.innerHTML = "";
-  items.forEach((receipt) => {
+  const term = normalizeText(stockReceiptSearchInput?.value);
+  const filtered = term
+    ? items.filter((receipt) => {
+        const supplier = normalizeText(receipt.supplierName);
+        const note = normalizeText(receipt.note);
+        const dateLabel = new Date(receipt.createdAt)
+          .toLocaleDateString("tr-TR")
+          .toLowerCase();
+        return (
+          supplier.includes(term) ||
+          note.includes(term) ||
+          dateLabel.includes(term)
+        );
+      })
+    : items;
+  filtered.forEach((receipt) => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${new Date(receipt.createdAt).toLocaleDateString("tr-TR")}</td>
@@ -556,7 +644,46 @@ const renderStockReceipts = (items) => {
       <td>${Array.isArray(receipt.items) ? receipt.items.length : 0}</td>
       <td>${receipt.note || "-"}</td>
     `;
+    row.addEventListener("dblclick", () => {
+      openStockReceiptModal(receipt);
+    });
     stockReceiptsTable.appendChild(row);
+  });
+  if (stockReceiptSearchHint) {
+    stockReceiptSearchHint.textContent =
+      term && !filtered.length
+        ? "Aradığınız kriterlere uygun kayıt bulunamadı."
+        : "";
+  }
+};
+
+const renderStockAttachmentList = () => {
+  if (!stockAttachmentList) {
+    return;
+  }
+  if (!pendingStockAttachments.length) {
+    stockAttachmentList.innerHTML = "";
+    return;
+  }
+  const rows = pendingStockAttachments
+    .map(
+      (file, index) => `
+      <div class="attachment-row">
+        <span>${escapeHtml(file.name || "dosya")}</span>
+        <button class="ghost" data-index="${index}">Kaldır</button>
+      </div>
+    `
+    )
+    .join("");
+  stockAttachmentList.innerHTML = rows;
+  stockAttachmentList.querySelectorAll("button[data-index]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.getAttribute("data-index"));
+      if (Number.isInteger(index)) {
+        pendingStockAttachments.splice(index, 1);
+        renderStockAttachmentList();
+      }
+    });
   });
 };
 
@@ -661,6 +788,7 @@ const renderCustomerDetail = (data) => {
     if (detailSummaryEl) {
       detailSummaryEl.innerHTML = "";
     }
+    refreshCustomerTabs(data);
     return;
   }
   const sales = (data.sales || []).filter(
@@ -768,6 +896,189 @@ const renderCustomerDetail = (data) => {
     `;
   }
   renderCustomerJobs(data.customerJobs || [], customerId);
+  refreshCustomerTabs(data);
+};
+
+const buildCustomerTabContent = (data, customerId) => {
+  const sales = (data.sales || []).filter((sale) => sale.customerId === customerId);
+  const payments = (data.cashTransactions || []).filter(
+    (entry) => entry.customerId === customerId
+  );
+  const debts = (data.customerDebts || []).filter(
+    (entry) => entry.customerId === customerId
+  );
+  const jobs = (data.customerJobs || []).filter(
+    (entry) => entry.customerId === customerId
+  );
+  const totalSales = sales.reduce(
+    (sum, sale) => sum + Number(sale.total || 0),
+    0
+  );
+  const totalPayments = payments.reduce(
+    (sum, payment) => sum + Number(payment.amount || 0),
+    0
+  );
+  const totalDebts = debts.reduce(
+    (sum, debt) => sum + Number(debt.amount || 0),
+    0
+  );
+  const totalJobs = jobs.reduce(
+    (sum, job) => sum + Number(job.total || 0),
+    0
+  );
+  const summaryHtml = `
+    <div class="detail-summary">
+      <div>Toplam Satış <strong>${formatCurrency(totalSales)}</strong></div>
+      <div>Tahsilat <strong>${formatCurrency(totalPayments)}</strong></div>
+      <div>Açılış + Ek Borç <strong>${formatCurrency(totalDebts)}</strong></div>
+      <div>İş Kalemleri Toplamı <strong>${formatCurrency(totalJobs)}</strong></div>
+    </div>
+  `;
+  const jobRows = jobs
+    .map(
+      (job) => `
+      <tr>
+        <td>${new Date(job.createdAt).toLocaleDateString("tr-TR")}</td>
+        <td>${job.title || "-"}</td>
+        <td>${Number(job.quantity || 0)}</td>
+        <td>${job.unit || "-"}</td>
+        <td>${formatCurrency(Number(job.total || 0), job.currency || "TRY")}</td>
+        <td>${job.note || "-"}</td>
+      </tr>
+    `
+    )
+    .join("");
+  const entries = [
+    ...sales.map((sale) => ({
+      createdAt: sale.createdAt,
+      type: "Satış",
+      amount: Number(sale.total || 0),
+      note: "Satış faturası"
+    })),
+    ...debts.map((debt) => ({
+      createdAt: debt.createdAt,
+      type: "Borç",
+      amount: Number(debt.amount || 0),
+      currency: debt.currency || "TRY",
+      note: debt.note || "Cari Borç"
+    })),
+    ...payments.map((payment) => ({
+      createdAt: payment.createdAt,
+      type: "Tahsilat",
+      amount: Number(payment.amount || 0),
+      currency: payment.currency || "TRY",
+      note: payment.note || "Cari Tahsilat"
+    }))
+  ].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const entryRows = entries
+    .map(
+      (entry) => `
+      <tr>
+        <td>${new Date(entry.createdAt).toLocaleDateString("tr-TR")}</td>
+        <td>${entry.type}</td>
+        <td>${formatCurrency(Number(entry.amount || 0), entry.currency || "TRY")}</td>
+        <td>${entry.note}</td>
+      </tr>
+    `
+    )
+    .join("");
+  return `
+    ${summaryHtml}
+    <div class="table-card table-card--sheet">
+      <h3>İş Kalemleri</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>İş Kalemi</th>
+            <th>Miktar</th>
+            <th>Birim</th>
+            <th>Tutar</th>
+            <th>Açıklama</th>
+          </tr>
+        </thead>
+        <tbody>${jobRows || "<tr><td colspan='6'>Kayıt yok.</td></tr>"}</tbody>
+      </table>
+    </div>
+    <div class="table-card">
+      <h3>Hareketler</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tarih</th>
+            <th>Tür</th>
+            <th>Tutar</th>
+            <th>Açıklama</th>
+          </tr>
+        </thead>
+        <tbody>${entryRows || "<tr><td colspan='4'>Kayıt yok.</td></tr>"}</tbody>
+      </table>
+    </div>
+  `;
+};
+
+const activateCustomerTab = (customerId) => {
+  if (!customerTabsEl || !customerTabPanelsEl) {
+    return;
+  }
+  const tabButtons = customerTabsEl.querySelectorAll(".tab");
+  const tabPanels = customerTabPanelsEl.querySelectorAll(".tab-panel");
+  tabButtons.forEach((tab) =>
+    tab.classList.toggle("tab--active", tab.dataset.customerId === customerId)
+  );
+  tabPanels.forEach((panel) =>
+    panel.classList.toggle(
+      "tab-panel--active",
+      panel.dataset.customerId === customerId
+    )
+  );
+};
+
+const openCustomerTab = (data, customer) => {
+  if (!customerTabsEl || !customerTabPanelsEl || !customer?.id) {
+    return;
+  }
+  const customerId = customer.id;
+  if (customerTabs.has(customerId)) {
+    activateCustomerTab(customerId);
+    return;
+  }
+  const tabButton = document.createElement("button");
+  tabButton.className = "tab";
+  tabButton.dataset.customerId = customerId;
+  tabButton.innerHTML = `
+    <span>${escapeHtml(customer.name || "Cari")}</span>
+    <span class="tab__close" aria-label="Kapat">✕</span>
+  `;
+  tabButton.addEventListener("click", (event) => {
+    if (event.target?.classList?.contains("tab__close")) {
+      event.stopPropagation();
+      const panel = customerTabs.get(customerId);
+      panel?.remove();
+      tabButton.remove();
+      customerTabs.delete(customerId);
+      const firstTab = customerTabsEl.querySelector(".tab");
+      if (firstTab) {
+        activateCustomerTab(firstTab.dataset.customerId);
+      }
+      return;
+    }
+    activateCustomerTab(customerId);
+  });
+  const panel = document.createElement("div");
+  panel.className = "tab-panel";
+  panel.dataset.customerId = customerId;
+  panel.innerHTML = buildCustomerTabContent(data, customerId);
+  customerTabsEl.appendChild(tabButton);
+  customerTabPanelsEl.appendChild(panel);
+  customerTabs.set(customerId, panel);
+  activateCustomerTab(customerId);
+};
+
+const refreshCustomerTabs = (data) => {
+  customerTabs.forEach((panel, customerId) => {
+    panel.innerHTML = buildCustomerTabContent(data, customerId);
+  });
 };
 
 const openCustomerDetailModal = (data, customer) => {
@@ -838,6 +1149,109 @@ const openCustomerDetailModal = (data, customer) => {
   }
   customerDetailModal.classList.add("modal--open");
   customerDetailModal.setAttribute("aria-hidden", "false");
+};
+
+const openStockReceiptModal = (receipt) => {
+  if (!stockReceiptModal || !stockReceiptModalBody) {
+    return;
+  }
+  const items = Array.isArray(receipt.items) ? receipt.items : [];
+  const rows = items
+    .map(
+      (item) => `
+      <tr>
+        <td>${escapeHtml(item.name || "-")}</td>
+        <td>${escapeHtml(item.diameter || "-")}</td>
+        <td>${escapeHtml(item.unit || "-")}</td>
+        <td>${Number(item.quantity || 0)}</td>
+        <td>${Number(item.threshold || 0)}</td>
+      </tr>
+    `
+    )
+    .join("");
+  stockReceiptModalBody.innerHTML = `
+    <div class="detail-summary">
+      <div>Tarih <strong>${new Date(receipt.createdAt).toLocaleDateString(
+        "tr-TR"
+      )}</strong></div>
+      <div>Malzemeci <strong>${escapeHtml(receipt.supplierName || "-")}</strong></div>
+      <div>Not <strong>${escapeHtml(receipt.note || "-")}</strong></div>
+    </div>
+    <div class="table-card table-card--sheet">
+      <h3>Fiş Kalemleri</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Malzeme</th>
+            <th>Çap</th>
+            <th>Birim</th>
+            <th>Adet</th>
+            <th>Kritik</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td colspan='5'>Kayıt yok.</td></tr>"}</tbody>
+      </table>
+    </div>
+  `;
+  if (stockReceiptModalTitle) {
+    stockReceiptModalTitle.textContent = "Fiş Detay";
+  }
+  stockReceiptModal.classList.add("modal--open");
+  stockReceiptModal.setAttribute("aria-hidden", "false");
+};
+
+const openStockAttachmentsModal = (stock) => {
+  if (!stockAttachmentsModal || !stockAttachmentsModalBody) {
+    return;
+  }
+  const attachments = Array.isArray(stock.attachments)
+    ? stock.attachments
+    : [];
+  const rows = attachments
+    .map(
+      (file) => `
+      <tr>
+        <td>${escapeHtml(file.name || "-")}</td>
+        <td>${escapeHtml(file.type || "-")}</td>
+        <td>${file.size ? `${Math.round(file.size / 1024)} KB` : "-"}</td>
+        <td><button class="ghost" data-path="${escapeHtml(
+          file.path || ""
+        )}">Aç</button></td>
+      </tr>
+    `
+    )
+    .join("");
+  stockAttachmentsModalBody.innerHTML = `
+    <div class="table-card table-card--sheet">
+      <h3>${escapeHtml(stock.name || "Stok")} - Dosyalar</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Dosya</th>
+            <th>Tür</th>
+            <th>Boyut</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody>${rows || "<tr><td colspan='4'>Dosya yok.</td></tr>"}</tbody>
+      </table>
+    </div>
+  `;
+  stockAttachmentsModalBody
+    .querySelectorAll("button[data-path]")
+    .forEach((button) => {
+      button.addEventListener("click", async () => {
+        const path = button.getAttribute("data-path");
+        if (path) {
+          await window.mtnApp?.openFile?.(path);
+        }
+      });
+    });
+  if (stockAttachmentsModalTitle) {
+    stockAttachmentsModalTitle.textContent = "Stok Dosyaları";
+  }
+  stockAttachmentsModal.classList.add("modal--open");
+  stockAttachmentsModal.setAttribute("aria-hidden", "false");
 };
 
 const renderSummary = (data) => {
@@ -1035,6 +1449,7 @@ const loadInitialData = async () => {
   renderStockReceipts(data.stockReceipts || []);
   renderSummary(data);
   renderCustomerDetail(data);
+  renderStockAttachmentList();
 };
 
 const readLogoFile = (file) =>
@@ -1058,6 +1473,9 @@ const setTodayDate = () => {
   }
   if (stockReceiptDateInput) {
     stockReceiptDateInput.value = today;
+  }
+  if (customerCreateDateInput) {
+    customerCreateDateInput.value = today;
   }
   if (customerDebtDateInput) {
     customerDebtDateInput.value = today;
@@ -1181,6 +1599,7 @@ const buildReportTable = (title, headers, rows, options = {}) => {
       <thead><tr>${headerCells}</tr></thead>
       <tbody>${rowHtml}</tbody>
     </table>
+    ${options.footerHtml || ""}
   `;
 };
 
@@ -1242,7 +1661,7 @@ const buildInvoiceHtml = (title, rows) => {
   `;
 };
 
-const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
+const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals, vatSummary) => {
   const rowHtml = jobs
     .map(
       (job) =>
@@ -1294,11 +1713,14 @@ const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
         <tr><td>İş Kalemleri Toplamı</td><td style="text-align:right;">${escapeHtml(
           totals.jobsTotal
         )}</td></tr>
+        <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+          vatSummary?.vat || formatCurrency(0)
+        )}</td></tr>
         <tr><td>Tahsilat Toplamı</td><td style="text-align:right;">${escapeHtml(
           totals.paymentsTotal
         )}</td></tr>
-        <tr><td><strong>Genel Bakiye</strong></td><td style="text-align:right;"><strong>${escapeHtml(
-          totals.balanceTotal
+        <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+          vatSummary?.total || totals.balanceTotal
         )}</strong></td></tr>
       </table>
     </div>
@@ -1393,6 +1815,20 @@ if (customerForm) {
     event.preventDefault();
     const formData = new FormData(customerForm);
     const payload = Object.fromEntries(formData.entries());
+    const normalizedName = normalizeText(payload.name);
+    if (
+      normalizedName &&
+      cachedCustomers.some(
+        (customer) => normalizeText(customer.name) === normalizedName
+      )
+    ) {
+      reportPathEl.textContent =
+        "Bu isimde bir cari zaten var. Lütfen farklı bir isim girin.";
+      return;
+    }
+    if (!payload.createdAt) {
+      payload.createdAt = new Date().toISOString().split("T")[0];
+    }
     await window.mtnApp.createCustomer(payload);
     const data = await window.mtnApp.getData();
     renderCustomers(data.customers || []);
@@ -1571,12 +2007,17 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
+    if (pendingStockAttachments.length) {
+      payload.attachments = pendingStockAttachments;
+    }
     await window.mtnApp.createStock(payload);
     const data = await window.mtnApp.getData();
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
     stockForm.reset();
+    pendingStockAttachments = [];
+    renderStockAttachmentList();
     setAutoCodes();
   });
 
@@ -1586,6 +2027,39 @@ if (stockForm) {
     }
     event.preventDefault();
     stockForm.requestSubmit();
+  });
+}
+
+if (stockAttachmentsInput) {
+  stockAttachmentsInput.addEventListener("change", async () => {
+    if (!window.mtnApp?.saveStockAttachment) {
+      reportPathEl.textContent = "Dosya servisi hazır değil.";
+      return;
+    }
+    const files = Array.from(stockAttachmentsInput.files || []);
+    if (!files.length) {
+      return;
+    }
+    for (const file of files) {
+      if (
+        file.type !== "application/pdf" &&
+        file.type !== "image/png" &&
+        file.type !== "image/jpeg"
+      ) {
+        continue;
+      }
+      const buffer = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buffer));
+      const saved = await window.mtnApp.saveStockAttachment({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        bytes
+      });
+      pendingStockAttachments.push(saved);
+    }
+    renderStockAttachmentList();
+    stockAttachmentsInput.value = "";
   });
 }
 
@@ -1790,6 +2264,12 @@ if (stockSearchButton) {
   stockSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleStockSearch();
+  });
+}
+
+if (stockReceiptSearchInput) {
+  stockReceiptSearchInput.addEventListener("input", () => {
+    renderStockReceipts(cachedStockReceipts);
   });
 }
 
@@ -2129,6 +2609,8 @@ if (detailReportButton) {
     const jobs = (data.customerJobs || []).filter(
       (entry) => entry.customerId === customerId
     );
+    const vatMode = detailVatModeSelect?.value || "exclude";
+    const vatRate = Number(detailVatRateInput?.value || 0);
     if (jobs.length) {
       const jobRows = jobs.map((job) => ({
         title: job.title || "-",
@@ -2137,6 +2619,11 @@ if (detailReportButton) {
         unitPrice: formatCurrency(Number(job.unitPrice || 0)),
         total: formatCurrency(Number(job.total || 0))
       }));
+      const baseTotal = jobs.reduce(
+        (sum, job) => sum + Number(job.total || 0),
+        0
+      );
+      const vatTotals = calculateVatTotals(baseTotal, vatRate, vatMode);
       const totals = {
         jobsTotal: formatCurrency(
           jobs.reduce((sum, job) => sum + Number(job.total || 0), 0)
@@ -2152,7 +2639,11 @@ if (detailReportButton) {
       const html = buildCustomerJobsInvoiceHtml(
         customerName,
         jobRows,
-        totals
+        totals,
+        {
+          vat: formatCurrency(vatTotals.vat),
+          total: formatCurrency(vatTotals.total)
+        }
       );
       const result = await window.mtnApp.generateReport({
         title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
@@ -2193,11 +2684,31 @@ if (detailReportButton) {
     ]
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
       .map((entry) => entry.row);
+    const salesTotal = sales.reduce(
+      (sum, sale) => sum + Number(sale.total || 0),
+      0
+    );
+    const vatTotals = calculateVatTotals(salesTotal, vatRate, vatMode);
+    const footerHtml = `
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+            formatCurrency(vatTotals.base)
+          )}</td></tr>
+          <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+            formatCurrency(vatTotals.vat)
+          )}</td></tr>
+          <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+            formatCurrency(vatTotals.total)
+          )}</strong></td></tr>
+        </table>
+      </div>
+    `;
     const html = buildReportTable(
       `Cari Ekstre - ${customerName}`,
       ["Tarih", "Tür", "Tutar", "Açıklama"],
       rows,
-      { includeWatermark: true }
+      { includeWatermark: true, footerHtml }
     );
     const result = await window.mtnApp.generateReport({
       title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
@@ -2293,6 +2804,32 @@ if (customerDetailClose && customerDetailModal) {
     if (event.target === customerDetailModal) {
       customerDetailModal.classList.remove("modal--open");
       customerDetailModal.setAttribute("aria-hidden", "true");
+    }
+  });
+}
+
+if (stockReceiptModalClose && stockReceiptModal) {
+  stockReceiptModalClose.addEventListener("click", () => {
+    stockReceiptModal.classList.remove("modal--open");
+    stockReceiptModal.setAttribute("aria-hidden", "true");
+  });
+  stockReceiptModal.addEventListener("click", (event) => {
+    if (event.target === stockReceiptModal) {
+      stockReceiptModal.classList.remove("modal--open");
+      stockReceiptModal.setAttribute("aria-hidden", "true");
+    }
+  });
+}
+
+if (stockAttachmentsModalClose && stockAttachmentsModal) {
+  stockAttachmentsModalClose.addEventListener("click", () => {
+    stockAttachmentsModal.classList.remove("modal--open");
+    stockAttachmentsModal.setAttribute("aria-hidden", "true");
+  });
+  stockAttachmentsModal.addEventListener("click", (event) => {
+    if (event.target === stockAttachmentsModal) {
+      stockAttachmentsModal.classList.remove("modal--open");
+      stockAttachmentsModal.setAttribute("aria-hidden", "true");
     }
   });
 }

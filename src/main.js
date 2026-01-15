@@ -79,6 +79,8 @@ const loadSettings = async () => {
 
 const getBackupBaseDir = () =>
   path.join(app.getPath("documents"), "MTN-Muhasebe-Yedekler");
+const getAttachmentsDir = () =>
+  path.join(app.getPath("userData"), "attachments");
 
 const createBackupEntry = async (payload) => {
   const baseDir = getBackupBaseDir();
@@ -96,6 +98,18 @@ const createBackupEntry = async (payload) => {
     "utf8"
   );
   return { backupDir, createdAt: backupPayload.createdAt };
+};
+
+const saveStockAttachment = async ({ name, bytes }) => {
+  const dir = getAttachmentsDir();
+  await fs.mkdir(dir, { recursive: true });
+  const safeName = name
+    ? name.replace(/[^a-zA-Z0-9._-]/g, "_")
+    : `dosya-${Date.now()}`;
+  const fileName = `${Date.now()}-${safeName}`;
+  const filePath = path.join(dir, fileName);
+  await fs.writeFile(filePath, Buffer.from(bytes || []));
+  return filePath;
 };
 
 const maybeAutoBackup = async (data) => {
@@ -174,7 +188,7 @@ const generateCode = (prefix) => {
 const upsertStockEntry = (data, payload, meta = {}) => {
   const incomingName = (payload.name || "").trim();
   const incomingQuantity = normalizeNumber(payload.quantity);
-  if (!incomingName || incomingQuantity <= 0) {
+  if (!incomingName || (incomingQuantity <= 0 && !meta.allowZero)) {
     return;
   }
   // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
@@ -194,6 +208,10 @@ const upsertStockEntry = (data, payload, meta = {}) => {
       unit: payload.unit || existing.unit,
       quantity: normalizeNumber(existing.quantity) + incomingQuantity,
       threshold,
+      attachments: [
+        ...(existing.attachments || []),
+        ...((payload.attachments || []).filter(Boolean))
+      ],
       updatedAt: new Date().toISOString()
     };
   } else {
@@ -201,17 +219,20 @@ const upsertStockEntry = (data, payload, meta = {}) => {
       code: payload.code || generateCode("STK"),
       ...payload,
       name: incomingName,
-      quantity: incomingQuantity,
+      quantity: meta.allowZero ? incomingQuantity : incomingQuantity,
+      attachments: payload.attachments || [],
       threshold
     });
   }
-  data.stockMovements = createRecord(data.stockMovements, {
-    stockName: incomingName,
-    type: "giris",
-    quantity: incomingQuantity,
-    note: meta.note || "Fiş girişi",
-    createdAt: meta.createdAt || payload.createdAt
-  });
+  if (incomingQuantity > 0) {
+    data.stockMovements = createRecord(data.stockMovements, {
+      stockName: incomingName,
+      type: "giris",
+      quantity: incomingQuantity,
+      note: meta.note || "Fiş girişi",
+      createdAt: meta.createdAt || payload.createdAt
+    });
+  }
 };
 
 const createWindow = () => {
@@ -247,6 +268,16 @@ app.whenReady().then(() => {
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
     return payload;
+  });
+
+  ipcMain.handle("stocks:attachment:save", async (_event, payload) => {
+    const filePath = await saveStockAttachment(payload || {});
+    return {
+      name: payload?.name || "dosya",
+      type: payload?.type || "",
+      size: payload?.size || 0,
+      path: filePath
+    };
   });
 
   ipcMain.handle("customers:create", async (_event, payload) => {
@@ -406,7 +437,10 @@ app.whenReady().then(() => {
 
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    upsertStockEntry(data, payload, { note: "Stok kartı girişi" });
+    upsertStockEntry(data, payload, {
+      note: "Stok kartı girişi",
+      allowZero: true
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);

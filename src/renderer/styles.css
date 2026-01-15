@@ -404,6 +404,62 @@ body {
   color: #42516f;
 }
 
+.link-cell {
+  color: #0b5ed7;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.tab {
+  border: 1px solid #d7deef;
+  background: #f3f6ff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tab--active {
+  background: #0b5ed7;
+  color: #fff;
+  border-color: #0b5ed7;
+}
+
+.tab__close {
+  font-weight: 700;
+}
+
+.tab-content {
+  margin-bottom: 16px;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel--active {
+  display: block;
+}
+
+.attachment-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e4e9f5;
+  font-size: 13px;
+}
+
 .detail-summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
