@@ -17,6 +17,28 @@ npm install
 npm start
 ```
 
+## Stok İçe Aktarma (CSV/XLSX)
+Stok listesini Excel (.xlsx) veya CSV dosyasından içe aktarabilirsiniz.
+
+**Gerekli kolonlar**
+- **Stok Adı** (zorunlu)
+- **Adet** (zorunlu)
+- **Stok Kodu** (opsiyonel)
+
+> Dosyanızda **“Stok Kodu (öneri)”** kolon adı varsa sistem bunu da **Stok Kodu** olarak kabul eder.
+
+**Örnek CSV formatı**
+```csv
+Stok Kodu,Stok Adı,Adet
+STK-0001,PEX 20mm Boru,120
+STK-0002,Dirsek 90° 20mm,45
+```
+
+İçe aktarma sırasında:
+- **Kolon eşleştirme** ekranı ile alanları seçebilirsiniz.
+- Aynı stok varsa **güncelle** veya **yeni oluşturma** seçenekleri kullanılır.
+- Hatalı satırlar için **CSV hata raporu** indirilebilir.
+
 ## Güncel Kurulum ve Çalıştırma (Hiç bilmeyenler için)
 1) **Node.js kurun** (LTS sürümü önerilir).
 2) **Projeyi indirin** ve bir klasöre çıkarın.

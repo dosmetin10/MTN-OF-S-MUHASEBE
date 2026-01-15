@@ -54,6 +54,32 @@ const stockSearchButton = document.getElementById("stock-search-btn");
 const stockSearchSuggestion = document.getElementById("stock-search-suggestion");
 const stockExportCsvButton = document.getElementById("stock-export-csv");
 const stockExportPdfButton = document.getElementById("stock-export-pdf");
+const stockImportOpenButton = document.getElementById("stock-import-open");
+const stockImportFileInput = document.getElementById("stock-import-file");
+const stockImportModal = document.getElementById("stock-import-modal");
+const stockImportCloseButton = document.getElementById("stock-import-close");
+const stockImportPickButton = document.getElementById("stock-import-pick");
+const stockImportFileName = document.getElementById("stock-import-file-name");
+const stockImportWarehouseSelect = document.getElementById(
+  "stock-import-warehouse"
+);
+const stockImportUpdateMode = document.getElementById(
+  "stock-import-update-mode"
+);
+const stockImportMapCode = document.getElementById("stock-import-map-code");
+const stockImportMapName = document.getElementById("stock-import-map-name");
+const stockImportMapQty = document.getElementById("stock-import-map-qty");
+const stockImportPreviewBody = document.getElementById(
+  "stock-import-preview"
+);
+const stockImportSummary = document.getElementById("stock-import-summary");
+const stockImportConfirmButton = document.getElementById(
+  "stock-import-confirm"
+);
+const stockImportExportErrors = document.getElementById(
+  "stock-import-export-errors"
+);
+const stockImportStatus = document.getElementById("stock-import-status");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
@@ -195,6 +221,12 @@ const calculateVatTotals = (amount, vatRate, vatMode) => {
   return { base: normalizedAmount, vat, total: normalizedAmount + vat };
 };
 
+const normalizeHeader = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
 let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
@@ -210,6 +242,9 @@ let cachedSales = [];
 let cachedStockReceipts = [];
 let pendingStockAttachments = [];
 const customerTabs = new Map();
+let importHeaders = [];
+let importRows = [];
+let importErrors = [];
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -685,6 +720,157 @@ const renderStockAttachmentList = () => {
       }
     });
   });
+};
+
+const renderImportMappingOptions = () => {
+  if (!stockImportMapName || !stockImportMapQty || !stockImportMapCode) {
+    return;
+  }
+  const createOptions = (select) => {
+    select.innerHTML = "";
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "Seçiniz";
+    select.appendChild(blank);
+    importHeaders.forEach((header) => {
+      const option = document.createElement("option");
+      option.value = header;
+      option.textContent = header;
+      select.appendChild(option);
+    });
+  };
+  createOptions(stockImportMapCode);
+  createOptions(stockImportMapName);
+  createOptions(stockImportMapQty);
+
+  const normalized = importHeaders.reduce((acc, header) => {
+    acc[normalizeHeader(header)] = header;
+    return acc;
+  }, {});
+  const nameHeader =
+    normalized["stok adı"] ||
+    normalized["stok adi"] ||
+    normalized["malzeme"] ||
+    normalized["ürün"] ||
+    normalized["urun"];
+  const qtyHeader =
+    normalized["adet"] ||
+    normalized["miktar"] ||
+    normalized["stok adet"] ||
+    normalized["stok adedi"];
+  const codeHeader =
+    normalized["stok kodu"] ||
+    normalized["stok kodu (öneri)"] ||
+    normalized["stok kodu (oneri)"] ||
+    normalized["kod"];
+
+  if (nameHeader) {
+    stockImportMapName.value = nameHeader;
+  }
+  if (qtyHeader) {
+    stockImportMapQty.value = qtyHeader;
+  }
+  if (codeHeader) {
+    stockImportMapCode.value = codeHeader;
+  }
+};
+
+const buildImportPreview = () => {
+  if (!stockImportPreviewBody || !stockImportSummary) {
+    return;
+  }
+  const mapName = stockImportMapName?.value || "";
+  const mapQty = stockImportMapQty?.value || "";
+  const mapCode = stockImportMapCode?.value || "";
+  importErrors = [];
+  const updateMode = stockImportUpdateMode?.value || "update";
+  let newCount = 0;
+  let updateCount = 0;
+  let errorCount = 0;
+
+  const rows = importRows.map((row, index) => {
+    const name = row[mapName] ?? "";
+    const code = row[mapCode] ?? "";
+    const qtyRaw = row[mapQty];
+    const quantity = Number(String(qtyRaw || "").replace(",", "."));
+    const errors = [];
+    if (!mapName || !mapQty) {
+      errors.push("Zorunlu alan eşleştirme eksik.");
+    }
+    if (!name) {
+      errors.push("Stok adı yok.");
+    }
+    if (Number.isNaN(quantity)) {
+      errors.push("Adet sayı değil.");
+    }
+    if (!Number.isNaN(quantity) && quantity < 0) {
+      errors.push("Adet negatif olamaz.");
+    }
+
+    let status = "Yeni";
+    const matchByCode = code
+      ? cachedStocks.find((item) => item.code === code)
+      : null;
+    const matchByName = name
+      ? cachedStocks.find(
+          (item) => normalizeText(item.name) === normalizeText(name)
+        )
+      : null;
+
+    if (matchByCode || matchByName) {
+      if (updateMode === "skip") {
+        errors.push("Aynı stok var, yeni kayıt açma seçildi.");
+      } else {
+        status = "Güncelle";
+      }
+    }
+
+    if (errors.length) {
+      status = "Hatalı";
+      errorCount += 1;
+      importErrors.push({
+        index: index + 1,
+        code,
+        name,
+        quantity: qtyRaw,
+        errors: errors.join(" | ")
+      });
+    } else if (status === "Güncelle") {
+      updateCount += 1;
+    } else {
+      newCount += 1;
+    }
+
+    return {
+      index,
+      code,
+      name,
+      quantity: Number.isNaN(quantity) ? qtyRaw : quantity,
+      status
+    };
+  });
+
+  stockImportPreviewBody.innerHTML = rows
+    .slice(0, 50)
+    .map(
+      (row) => `
+      <tr>
+        <td>${escapeHtml(row.code || "-")}</td>
+        <td>${escapeHtml(row.name || "-")}</td>
+        <td>${escapeHtml(row.quantity || "-")}</td>
+        <td>${escapeHtml(row.status)}</td>
+      </tr>
+    `
+    )
+    .join("");
+
+  const summaryItems = stockImportSummary.querySelectorAll("strong");
+  if (summaryItems.length >= 4) {
+    summaryItems[0].textContent = String(importRows.length);
+    summaryItems[1].textContent = String(newCount);
+    summaryItems[2].textContent = String(updateCount);
+    summaryItems[3].textContent = String(errorCount);
+  }
 };
 
 const createReceiptRow = () => {
@@ -1252,6 +1438,23 @@ const openStockAttachmentsModal = (stock) => {
   }
   stockAttachmentsModal.classList.add("modal--open");
   stockAttachmentsModal.setAttribute("aria-hidden", "false");
+};
+
+const openStockImportModal = () => {
+  if (!stockImportModal) {
+    return;
+  }
+  stockImportModal.classList.add("modal--open");
+  stockImportModal.setAttribute("aria-hidden", "false");
+  buildImportPreview();
+};
+
+const closeStockImportModal = () => {
+  if (!stockImportModal) {
+    return;
+  }
+  stockImportModal.classList.remove("modal--open");
+  stockImportModal.setAttribute("aria-hidden", "true");
 };
 
 const renderSummary = (data) => {
@@ -2273,6 +2476,145 @@ if (stockReceiptSearchInput) {
   });
 }
 
+if (stockImportMapCode) {
+  [stockImportMapCode, stockImportMapName, stockImportMapQty].forEach(
+    (select) => {
+      select?.addEventListener("change", buildImportPreview);
+    }
+  );
+}
+
+if (stockImportUpdateMode) {
+  stockImportUpdateMode.addEventListener("change", buildImportPreview);
+}
+
+if (stockImportFileInput) {
+  stockImportFileInput.addEventListener("change", async () => {
+    if (!window.mtnApp?.parseStockImportFile) {
+      if (stockImportStatus) {
+        stockImportStatus.textContent = "Dosya servisi hazır değil.";
+      }
+      return;
+    }
+    const file = stockImportFileInput.files?.[0];
+    if (!file) {
+      return;
+    }
+    if (stockImportFileName) {
+      stockImportFileName.textContent = file.name;
+    }
+    const buffer = await file.arrayBuffer();
+    const bytes = Array.from(new Uint8Array(buffer));
+    const result = await window.mtnApp.parseStockImportFile({
+      name: file.name,
+      bytes
+    });
+    if (result?.error) {
+      importHeaders = [];
+      importRows = [];
+      renderImportMappingOptions();
+      buildImportPreview();
+      if (stockImportStatus) {
+        stockImportStatus.textContent = `Dosya okunamadı: ${result.error}`;
+      }
+      return;
+    }
+    importHeaders = result.headers || [];
+    importRows = result.rows || [];
+    renderImportMappingOptions();
+    buildImportPreview();
+    if (stockImportStatus) {
+      stockImportStatus.textContent = "";
+    }
+  });
+}
+
+if (stockImportExportErrors) {
+  stockImportExportErrors.addEventListener("click", () => {
+    if (!importErrors.length) {
+      if (stockImportStatus) {
+        stockImportStatus.textContent = "Hata listesi bulunamadı.";
+      }
+      return;
+    }
+    const header = "Satır,Stok Kodu,Stok Adı,Adet,Hata\n";
+    const rows = importErrors
+      .map(
+        (row) =>
+          `${row.index},"${row.code || ""}","${row.name || ""}","${
+            row.quantity || ""
+          }","${row.errors}"`
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "stok-import-hatalar.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+if (stockImportConfirmButton) {
+  stockImportConfirmButton.addEventListener("click", async () => {
+    if (!importRows.length) {
+      stockImportStatus.textContent = "İçe aktarım için dosya seçin.";
+      return;
+    }
+    const mapName = stockImportMapName?.value || "";
+    const mapQty = stockImportMapQty?.value || "";
+    const mapCode = stockImportMapCode?.value || "";
+    if (!mapName || !mapQty) {
+      stockImportStatus.textContent = "Stok adı ve adet eşleştirmesi zorunlu.";
+      return;
+    }
+    const updateMode = stockImportUpdateMode?.value || "update";
+    const depot = stockImportWarehouseSelect?.value || "Ana Depo";
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+    for (const row of importRows) {
+      const name = row[mapName] ?? "";
+      const code = row[mapCode] ?? "";
+      const qtyRaw = row[mapQty];
+      const quantity = Number(String(qtyRaw || "").replace(",", "."));
+      if (!name || Number.isNaN(quantity) || quantity < 0) {
+        skipped += 1;
+        continue;
+      }
+      const matchByCode = code
+        ? cachedStocks.find((item) => item.code === code)
+        : null;
+      const matchByName = name
+        ? cachedStocks.find(
+            (item) => normalizeText(item.name) === normalizeText(name)
+          )
+        : null;
+      if ((matchByCode || matchByName) && updateMode === "skip") {
+        skipped += 1;
+        continue;
+      }
+      await window.mtnApp.createStock({
+        code: code || "",
+        name,
+        quantity,
+        note: `İçe aktarım (${depot})`
+      });
+      if (matchByCode || matchByName) {
+        updated += 1;
+      } else {
+        created += 1;
+      }
+    }
+    const data = await window.mtnApp.getData();
+    renderStocks(data.stocks || []);
+    renderStockMovements(data.stockMovements || []);
+    renderSummary(data);
+    stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan/Hatalı: ${skipped}.`;
+  });
+}
+
 if (stockMovementForm) {
   stockMovementForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -2831,6 +3173,29 @@ if (stockAttachmentsModalClose && stockAttachmentsModal) {
       stockAttachmentsModal.classList.remove("modal--open");
       stockAttachmentsModal.setAttribute("aria-hidden", "true");
     }
+  });
+}
+
+if (stockImportOpenButton) {
+  stockImportOpenButton.addEventListener("click", () => {
+    openStockImportModal();
+  });
+}
+
+if (stockImportCloseButton && stockImportModal) {
+  stockImportCloseButton.addEventListener("click", () => {
+    closeStockImportModal();
+  });
+  stockImportModal.addEventListener("click", (event) => {
+    if (event.target === stockImportModal) {
+      closeStockImportModal();
+    }
+  });
+}
+
+if (stockImportPickButton && stockImportFileInput) {
+  stockImportPickButton.addEventListener("click", () => {
+    stockImportFileInput.click();
   });
 }
 

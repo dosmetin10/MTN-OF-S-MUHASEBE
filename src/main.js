@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
+const XLSX = require("xlsx");
 
 const storageFileName = "mtn-data.json";
 const settingsFileName = "mtn-settings.json";
@@ -192,9 +193,12 @@ const upsertStockEntry = (data, payload, meta = {}) => {
     return;
   }
   // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
-  const existingIndex = data.stocks.findIndex(
-    (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
-  );
+  const normalizedCode = (payload.code || "").trim();
+  const existingIndex = normalizedCode
+    ? data.stocks.findIndex((stock) => stock.code === normalizedCode)
+    : data.stocks.findIndex(
+        (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
+      );
   const threshold =
     payload.threshold === "" || payload.threshold === undefined
       ? getAutoThreshold(incomingQuantity)
@@ -216,7 +220,7 @@ const upsertStockEntry = (data, payload, meta = {}) => {
     };
   } else {
     data.stocks = createRecord(data.stocks, {
-      code: payload.code || generateCode("STK"),
+      code: normalizedCode || generateCode("STK"),
       ...payload,
       name: incomingName,
       quantity: meta.allowZero ? incomingQuantity : incomingQuantity,
@@ -268,6 +272,24 @@ app.whenReady().then(() => {
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
     return payload;
+  });
+
+  ipcMain.handle("stocks:import:parse", async (_event, payload) => {
+    try {
+      const bytes = payload?.bytes || [];
+      const workbook = XLSX.read(Buffer.from(bytes), { type: "buffer" });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      const headers = rows.length ? Object.keys(rows[0]) : [];
+      return { headers, rows };
+    } catch (error) {
+      return {
+        headers: [],
+        rows: [],
+        error: error?.message || "Dosya okunamadı."
+      };
+    }
   });
 
   ipcMain.handle("stocks:attachment:save", async (_event, payload) => {
@@ -438,7 +460,7 @@ app.whenReady().then(() => {
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
     upsertStockEntry(data, payload, {
-      note: "Stok kartı girişi",
+      note: payload?.note || "Stok kartı girişi",
       allowZero: true
     });
     await saveStorage(data);

@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("mtnApp", {
   addCustomerJob: (payload) => ipcRenderer.invoke("customers:job", payload),
   updateCustomer: (payload) => ipcRenderer.invoke("customers:update", payload),
   createStock: (payload) => ipcRenderer.invoke("stocks:create", payload),
+  parseStockImportFile: (payload) =>
+    ipcRenderer.invoke("stocks:import:parse", payload),
   saveStockAttachment: (payload) =>
     ipcRenderer.invoke("stocks:attachment:save", payload),
   createStockReceipt: (payload) => ipcRenderer.invoke("stocks:receipt", payload),

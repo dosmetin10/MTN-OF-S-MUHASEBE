@@ -507,6 +507,8 @@
                   <button class="ghost" id="stock-search-btn">Ara</button>
                   <button class="ghost" id="stock-export-csv">Excel (CSV)</button>
                   <button class="ghost" id="stock-export-pdf">PDF</button>
+                  <button class="primary" id="stock-import-open">İçe Aktar</button>
+                  <input id="stock-import-file" type="file" accept=".csv,.xlsx" hidden />
                 </div>
                 <p class="search-hint" id="stock-search-suggestion"></p>
                 <table>
@@ -864,6 +866,76 @@
           <button class="ghost" id="stock-attachments-close">Kapat</button>
         </div>
         <div id="stock-attachments-modal-body"></div>
+      </div>
+    </div>
+    <div class="modal" id="stock-import-modal" aria-hidden="true">
+      <div class="modal__content modal__content--wide">
+        <div class="modal__header">
+          <h3>Stok İçe Aktarma</h3>
+          <button class="ghost" id="stock-import-close">Kapat</button>
+        </div>
+        <div class="import-grid">
+          <div class="import-card">
+            <h4>1) Dosya ve Depo</h4>
+            <p class="muted" id="stock-import-file-name">Dosya seçilmedi.</p>
+            <label>
+              Depo
+              <select id="stock-import-warehouse">
+                <option value="Ana Depo">Ana Depo</option>
+              </select>
+            </label>
+            <label>
+              Aynı stok varsa
+              <select id="stock-import-update-mode">
+                <option value="update">Miktarı Güncelle</option>
+                <option value="skip">Yeni kayıt açma</option>
+              </select>
+            </label>
+            <button class="primary" id="stock-import-pick">Dosya Seç</button>
+          </div>
+          <div class="import-card">
+            <h4>2) Kolon Eşleştirme</h4>
+            <label>
+              Stok Kodu
+              <select id="stock-import-map-code"></select>
+            </label>
+            <label>
+              Stok Adı (Zorunlu)
+              <select id="stock-import-map-name"></select>
+            </label>
+            <label>
+              Adet (Zorunlu)
+              <select id="stock-import-map-qty"></select>
+            </label>
+          </div>
+          <div class="import-card">
+            <h4>3) Önizleme</h4>
+            <div class="import-summary" id="stock-import-summary">
+              <div>Toplam Satır: <strong>0</strong></div>
+              <div>Yeni: <strong>0</strong></div>
+              <div>Güncellenecek: <strong>0</strong></div>
+              <div>Hatalı: <strong>0</strong></div>
+            </div>
+            <div class="table-card table-card--sheet">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Stok Kodu</th>
+                    <th>Stok Adı</th>
+                    <th>Adet</th>
+                    <th>Durum</th>
+                  </tr>
+                </thead>
+                <tbody id="stock-import-preview"></tbody>
+              </table>
+            </div>
+            <div class="import-actions">
+              <button class="ghost" id="stock-import-export-errors">Hata CSV İndir</button>
+              <button class="primary" id="stock-import-confirm">Onayla ve Kaydet</button>
+            </div>
+            <p class="report-path" id="stock-import-status"></p>
+          </div>
+        </div>
       </div>
     </div>
   </body>
