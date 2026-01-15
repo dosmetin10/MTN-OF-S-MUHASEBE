@@ -2638,13 +2638,14 @@ if (stockImportConfirmButton) {
     let created = 0;
     let updated = 0;
     let skipped = 0;
+    let invalid = 0;
     for (const row of importRows) {
       const name = normalizeStockName(row[mapName] ?? "");
       const code = row[mapCode] ?? "";
       const qtyRaw = row[mapQty];
       const quantity = Number(String(qtyRaw || "").replace(",", "."));
       if (!name || Number.isNaN(quantity) || quantity < 0) {
-        skipped += 1;
+        invalid += 1;
         continue;
       }
       const matchByCode = code
@@ -2676,7 +2677,7 @@ if (stockImportConfirmButton) {
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
-    stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan/Hatalı: ${skipped}.`;
+    stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}, Hatalı: ${invalid}.`;
   });
 }
 
