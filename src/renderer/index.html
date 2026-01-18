@@ -162,7 +162,7 @@
               <div class="subnav">
                 <button class="ghost subnav__item subnav__item--active" data-target="customer-create-section">Cari Ekle</button>
                 <button class="ghost subnav__item" data-target="customer-edit-section">Cari Düzenle</button>
-                <button class="ghost subnav__item" data-target="customer-payment-section">Tahsilat Yap</button>
+                <button class="ghost subnav__item" data-target="customer-payment-section">Tahsilat / Ödeme</button>
               </div>
               <div class="subsection subsection--active" id="customer-create-section">
               <form class="form-grid" id="customer-form">
@@ -227,33 +227,6 @@
                 </form>
               </div>
               <div class="subsection" id="customer-payment-section">
-              <form class="form-grid" id="customer-debt-form">
-                <label>
-                  Tarih
-                  <input name="createdAt" type="date" id="customer-debt-date" readonly />
-                </label>
-                <label>
-                  Cari Seç
-                  <select id="debt-customer"></select>
-                </label>
-                <label>
-                  Para Birimi
-                  <select name="currency" id="debt-currency">
-                    <option value="TRY">₺ TL</option>
-                    <option value="USD">$ USD</option>
-                    <option value="EUR">€ EUR</option>
-                  </select>
-                </label>
-                <label>
-                  Borç Tutarı
-                  <input name="amount" type="number" min="0" step="0.01" />
-                </label>
-                <label class="full-width">
-                  Açıklama
-                  <input name="note" placeholder="Borç açıklaması" />
-                </label>
-                <button class="primary" type="submit">Borç Ekle</button>
-              </form>
               <form class="form-grid" id="customer-payment-form">
             <label>
               Tarih
@@ -664,23 +637,17 @@
             <section class="module" id="stock-list-module">
               <div class="module__header">
                 <h2>Malzeme Stok Listesi</h2>
-                <p>Depo stoklarını sade bir listede görüntüleyin.</p>
               </div>
               <div class="table-card table-card--sheet">
                 <div class="table-actions">
-                  <input id="stock-master-search" class="search" placeholder="Stok adı / kod / Q arayın..." />
-                  <button class="ghost" id="stock-master-search-btn">Ara</button>
+                  <input id="stock-master-search" class="search" placeholder="Stok adı ara..." />
                 </div>
-                <p class="search-hint" id="stock-master-search-hint"></p>
                 <table>
                   <thead>
                     <tr>
-                      <th>Stok Kodu</th>
                       <th>Stok Adı</th>
                       <th>Depo</th>
                       <th>Mevcut Adet</th>
-                      <th>Birim</th>
-                      <th>Son Güncelleme</th>
                     </tr>
                   </thead>
                   <tbody id="stock-master-table"></tbody>
@@ -794,7 +761,7 @@
                 <p>PDF raporlarını tek tıkla oluşturun.</p>
               </div>
               <div class="report-actions">
-                <button class="primary" id="report-customers">Cari Ekstre (PDF)</button>
+                <button class="primary" id="report-customers">Borçlu Cariler (PDF)</button>
                 <button class="primary" id="report-stocks">Stok Raporu (PDF)</button>
                 <button class="primary" id="report-cash">Satış Raporu (PDF)</button>
                 <button class="primary" id="report-stock-movements">Stok Hareket Raporu</button>
@@ -934,6 +901,13 @@
             <h4>1) Dosya ve Depo</h4>
             <p class="muted" id="stock-import-file-name">Dosya seçilmedi.</p>
             <label>
+              Kaynak
+              <select id="stock-import-source">
+                <option value="file">Excel / CSV / PDF</option>
+                <option value="receipt">Fiş Listesi (seçili fişler)</option>
+              </select>
+            </label>
+            <label>
               Depo
               <select id="stock-import-warehouse">
                 <option value="Ana Depo">Ana Depo</option>
@@ -987,7 +961,7 @@
             </div>
             <div class="import-actions">
               <button class="ghost" id="stock-import-export-errors">Hata CSV İndir</button>
-              <button class="primary" id="stock-import-confirm">Onayla ve Kaydet</button>
+              <button class="primary" id="stock-import-confirm">Depoya Ekle</button>
             </div>
             <p class="report-path" id="stock-import-status"></p>
           </div>

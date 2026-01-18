@@ -63,6 +63,7 @@ const stockImportFileName = document.getElementById("stock-import-file-name");
 const stockImportWarehouseSelect = document.getElementById(
   "stock-import-warehouse"
 );
+const stockImportSourceSelect = document.getElementById("stock-import-source");
 const stockImportUpdateMode = document.getElementById(
   "stock-import-update-mode"
 );
@@ -248,6 +249,11 @@ const normalizeStockName = (value) => {
   replacements.forEach(([pattern, next]) => {
     normalized = normalized.replace(pattern, next);
   });
+  normalized = normalized
+    .replace(/[’']/g, " ")
+    .replace(/\bLIK\b/g, "LIK")
+    .replace(/\bLİK\b/g, "LIK");
+  normalized = normalized.replace(/\bQ?\s*(\d+)\s*LIK\b/g, "Q$1 LIK");
   normalized = normalized.replace(/3\"4/g, "3/4\"");
   normalized = normalized.replace(/1\"1\"4/g, "1 1/4\"");
   const inchMap = {
@@ -284,6 +290,7 @@ let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
 let cachedStockReceipts = [];
+let activeStockReceipt = null;
 const customerTabs = new Map();
 let importHeaders = [];
 let importRows = [];
@@ -662,21 +669,16 @@ const renderStockMasterList = (items) => {
   const filtered = term
     ? items.filter((item) => {
         const name = normalizeText(item.name);
-        const code = normalizeText(item.code);
-        return name.includes(term) || code.includes(term);
+        return name.includes(term);
       })
     : items;
   stockMasterTable.innerHTML = "";
   filtered.forEach((item) => {
     const row = document.createElement("tr");
-    const lastUpdated = item.updatedAt || item.createdAt;
     row.innerHTML = `
-      <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
       <td>${item.warehouse || "Ana Depo"}</td>
       <td>${item.quantity || 0}</td>
-      <td>${item.unit || "-"}</td>
-      <td>${lastUpdated ? new Date(lastUpdated).toLocaleDateString("tr-TR") : "-"}</td>
     `;
     stockMasterTable.appendChild(row);
   });
@@ -897,7 +899,7 @@ const buildImportPreview = () => {
       : null;
     const matchByName = name
       ? cachedStocks.find(
-          (item) => normalizeText(item.name) === normalizeText(name)
+          (item) => normalizeStockName(item.name) === normalizeStockName(name)
         )
       : null;
 
@@ -1428,27 +1430,53 @@ const openStockReceiptModal = (receipt) => {
   if (!stockReceiptModal || !stockReceiptModalBody) {
     return;
   }
+  activeStockReceipt = receipt;
   const items = Array.isArray(receipt.items) ? receipt.items : [];
   const rows = items
     .map(
       (item) => `
       <tr>
-        <td>${escapeHtml(item.name || "-")}</td>
-        <td>${escapeHtml(item.diameter || "-")}</td>
-        <td>${escapeHtml(item.unit || "-")}</td>
-        <td>${Number(item.quantity || 0)}</td>
-        <td>${Number(item.threshold || 0)}</td>
+        <td><input data-field="name" value="${escapeHtml(
+          item.name || ""
+        )}" /></td>
+        <td><input data-field="diameter" value="${escapeHtml(
+          item.diameter || ""
+        )}" /></td>
+        <td><input data-field="unit" value="${escapeHtml(
+          item.unit || ""
+        )}" /></td>
+        <td><input data-field="quantity" type="number" min="0" step="1" value="${Number(
+          item.quantity || 0
+        )}" /></td>
+        <td><input data-field="threshold" type="number" min="0" step="1" value="${Number(
+          item.threshold || 0
+        )}" /></td>
       </tr>
     `
     )
     .join("");
   stockReceiptModalBody.innerHTML = `
     <div class="detail-summary">
-      <div>Tarih <strong>${new Date(receipt.createdAt).toLocaleDateString(
-        "tr-TR"
-      )}</strong></div>
-      <div>Malzemeci <strong>${escapeHtml(receipt.supplierName || "-")}</strong></div>
-      <div>Not <strong>${escapeHtml(receipt.note || "-")}</strong></div>
+      <label>
+        Tarih
+        <input id="stock-receipt-edit-date" type="date" value="${new Date(
+          receipt.createdAt
+        )
+          .toISOString()
+          .split("T")[0]}" />
+      </label>
+      <label>
+        Malzemeci
+        <input id="stock-receipt-edit-supplier" value="${escapeHtml(
+          receipt.supplierName || ""
+        )}" />
+      </label>
+      <label>
+        Not
+        <input id="stock-receipt-edit-note" value="${escapeHtml(
+          receipt.note || ""
+        )}" />
+      </label>
     </div>
     <div class="table-card table-card--sheet">
       <h3>Fiş Kalemleri</h3>
@@ -1465,12 +1493,120 @@ const openStockReceiptModal = (receipt) => {
         <tbody>${rows || "<tr><td colspan='5'>Kayıt yok.</td></tr>"}</tbody>
       </table>
     </div>
+    <div class="detail-actions">
+      <button class="primary" id="stock-receipt-update">Fişi Güncelle</button>
+      <button class="danger" id="stock-receipt-delete">Fişi Sil</button>
+      <p class="report-path" id="stock-receipt-status"></p>
+    </div>
   `;
   if (stockReceiptModalTitle) {
     stockReceiptModalTitle.textContent = "Fiş Detay";
   }
   stockReceiptModal.classList.add("modal--open");
   stockReceiptModal.setAttribute("aria-hidden", "false");
+
+  const updateButton = stockReceiptModalBody.querySelector(
+    "#stock-receipt-update"
+  );
+  const deleteButton = stockReceiptModalBody.querySelector(
+    "#stock-receipt-delete"
+  );
+  const statusEl = stockReceiptModalBody.querySelector("#stock-receipt-status");
+  const isTransferred = Boolean(receipt.transferredAt);
+  if (isTransferred) {
+    if (updateButton) {
+      updateButton.disabled = true;
+    }
+    if (deleteButton) {
+      deleteButton.disabled = true;
+    }
+    if (statusEl) {
+      statusEl.textContent = "Depoya aktarılan fişler düzenlenemez/silinemez.";
+    }
+  }
+
+  updateButton?.addEventListener("click", async () => {
+    if (!window.mtnApp?.updateStockReceipt) {
+      if (statusEl) {
+        statusEl.textContent = "Fiş güncelleme servisi hazır değil.";
+      }
+      return;
+    }
+    const rows = Array.from(
+      stockReceiptModalBody.querySelectorAll("tbody tr")
+    ).map((row) => ({
+      name: normalizeStockName(
+        row.querySelector("[data-field='name']")?.value || ""
+      ),
+      diameter: row.querySelector("[data-field='diameter']")?.value || "",
+      unit: row.querySelector("[data-field='unit']")?.value || "",
+      quantity: row.querySelector("[data-field='quantity']")?.value || "",
+      threshold: row.querySelector("[data-field='threshold']")?.value || ""
+    }));
+    const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
+    if (!items.length) {
+      if (statusEl) {
+        statusEl.textContent = "Fiş için en az bir malzeme girin.";
+      }
+      return;
+    }
+    const createdAt =
+      stockReceiptModalBody.querySelector("#stock-receipt-edit-date")?.value ||
+      new Date().toISOString().split("T")[0];
+    const supplierName =
+      stockReceiptModalBody.querySelector("#stock-receipt-edit-supplier")
+        ?.value || "";
+    const note =
+      stockReceiptModalBody.querySelector("#stock-receipt-edit-note")?.value ||
+      "";
+    const result = await window.mtnApp.updateStockReceipt({
+      receiptId: receipt.id,
+      items,
+      createdAt,
+      supplierName: supplierName.trim(),
+      note: note.trim()
+    });
+    if (!result.ok) {
+      if (statusEl) {
+        statusEl.textContent = result.message || "Fiş güncellenemedi.";
+      }
+      return;
+    }
+    const data = result.data || (await window.mtnApp.getData());
+    renderStockReceipts(data.stockReceipts || []);
+    if (statusEl) {
+      statusEl.textContent = "Fiş güncellendi.";
+    }
+  });
+
+  deleteButton?.addEventListener("click", async () => {
+    if (!window.mtnApp?.deleteStockReceipt) {
+      if (statusEl) {
+        statusEl.textContent = "Fiş silme servisi hazır değil.";
+      }
+      return;
+    }
+    const confirmed = window.confirm("Fişi silmek istiyor musunuz?");
+    if (!confirmed) {
+      return;
+    }
+    const result = await window.mtnApp.deleteStockReceipt({
+      receiptId: receipt.id
+    });
+    if (!result.ok) {
+      if (statusEl) {
+        statusEl.textContent = result.message || "Fiş silinemedi.";
+      }
+      return;
+    }
+    const data = result.data || (await window.mtnApp.getData());
+    renderStockReceipts(data.stockReceipts || []);
+    if (statusEl) {
+      statusEl.textContent = "Fiş silindi.";
+    }
+    stockReceiptModal.classList.remove("modal--open");
+    stockReceiptModal.setAttribute("aria-hidden", "true");
+  });
 };
 
 const openStockImportModal = () => {
@@ -1975,9 +2111,16 @@ const generateReport = async (type) => {
   let rows = [];
 
   if (type === "customers") {
-    title = "Cari Ekstre";
+    title = "Borçlu Cari Listesi";
     headers = ["Kod", "Ünvan", "Telefon", "Vergi No", "E-posta", "Bakiye"];
-    rows = (data.customers || []).map((item) => [
+    const debtors = (data.customers || []).filter(
+      (item) => Number(item.balance || 0) > 0
+    );
+    const totalDebt = debtors.reduce(
+      (sum, item) => sum + Number(item.balance || 0),
+      0
+    );
+    rows = debtors.map((item) => [
       item.code || "-",
       item.name || "-",
       item.phone || "-",
@@ -1985,6 +2128,28 @@ const generateReport = async (type) => {
       item.email || "-",
       formatCurrency(Number(item.balance) || 0)
     ]);
+    if (!rows.length) {
+      rows = [["-", "Borçlu cari bulunamadı.", "-", "-", "-", "-"]];
+    }
+    const footerHtml = `
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr>
+            <td><strong>Genel Toplam</strong></td>
+            <td style="text-align:right;"><strong>${escapeHtml(
+              formatCurrency(totalDebt)
+            )}</strong></td>
+          </tr>
+        </table>
+      </div>
+    `;
+    const html = buildReportTable(title, headers, rows, {
+      includeWatermark: true,
+      footerHtml
+    });
+    const result = await window.mtnApp.generateReport({ title, html });
+    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+    return;
   }
 
   if (type === "stocks") {
@@ -2072,6 +2237,7 @@ if (customerForm) {
     renderSummary(data);
     customerForm.reset();
     setAutoCodes();
+    reportPathEl.textContent = "Kaydedildi.";
   });
 }
 
@@ -2253,6 +2419,7 @@ if (stockForm) {
     renderSummary(data);
     stockForm.reset();
     setAutoCodes();
+    reportPathEl.textContent = "Kaydedildi.";
   });
 
   stockForm.addEventListener("keydown", (event) => {
@@ -2461,6 +2628,7 @@ if (cashForm) {
     renderSummary(data);
     cashForm.reset();
     setTodayDate();
+    reportPathEl.textContent = "Kaydedildi.";
   });
 }
 
@@ -2547,12 +2715,31 @@ if (stockImportUpdateMode) {
   stockImportUpdateMode.addEventListener("change", buildImportPreview);
 }
 
+if (stockImportSourceSelect) {
+  stockImportSourceSelect.addEventListener("change", () => {
+    const isReceipt = stockImportSourceSelect.value === "receipt";
+    if (stockImportStatus) {
+      stockImportStatus.textContent = isReceipt
+        ? "Fiş listesinde seçim yapıp Depoya Ekle seçeneğini kullanın."
+        : "";
+    }
+  });
+}
+
 if (stockImportFileInput) {
   stockImportFileInput.addEventListener("change", async () => {
     if (!window.mtnApp?.parseStockImportFile) {
       if (stockImportStatus) {
         stockImportStatus.textContent = "Dosya servisi hazır değil.";
       }
+      return;
+    }
+    if (stockImportSourceSelect?.value === "receipt") {
+      if (stockImportStatus) {
+        stockImportStatus.textContent =
+          "Fiş listesi seçiliyken dosya yüklenemez.";
+      }
+      stockImportFileInput.value = "";
       return;
     }
     const file = stockImportFileInput.files?.[0];
@@ -2622,6 +2809,10 @@ if (stockImportExportErrors) {
 
 if (stockImportConfirmButton) {
   stockImportConfirmButton.addEventListener("click", async () => {
+    if (stockImportSourceSelect?.value === "receipt") {
+      await transferSelectedReceipts(stockImportStatus);
+      return;
+    }
     if (!importRows.length) {
       stockImportStatus.textContent = "İçe aktarım için dosya seçin.";
       return;
@@ -2653,7 +2844,7 @@ if (stockImportConfirmButton) {
         : null;
       const matchByName = name
         ? cachedStocks.find(
-            (item) => normalizeText(item.name) === normalizeText(name)
+            (item) => normalizeStockName(item.name) === normalizeStockName(name)
           )
         : null;
       if ((matchByCode || matchByName) && updateMode === "skip") {
@@ -2677,51 +2868,70 @@ if (stockImportConfirmButton) {
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
-    stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}, Hatalı: ${invalid}.`;
+    const updateNote =
+      updated > 0 ? " Mevcut stok bulundu, miktar güncellendi." : "";
+    stockImportStatus.textContent = `İçe aktarma tamamlandı. Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}, Hatalı: ${invalid}.${updateNote}`;
   });
 }
 
+const transferSelectedReceipts = async (statusTarget = reportPathEl) => {
+  if (!window.mtnApp?.transferStockReceipt) {
+    if (statusTarget) {
+      statusTarget.textContent = "Fiş aktarım servisi hazır değil.";
+    }
+    return;
+  }
+  const selected = Array.from(
+    stockReceiptsTable?.querySelectorAll("input[type='checkbox']:checked") ||
+      []
+  ).map((input) => input.getAttribute("data-receipt-id"));
+  if (!selected.length) {
+    if (statusTarget) {
+      statusTarget.textContent = "Lütfen aktarılacak fiş seçin.";
+    }
+    return;
+  }
+  let processed = 0;
+  let skipped = 0;
+  let updated = 0;
+  let created = 0;
+  const warnings = [];
+  for (const receiptId of selected) {
+    if (!receiptId) {
+      continue;
+    }
+    const result = await window.mtnApp.transferStockReceipt({
+      receiptId,
+      warehouse: "Ana Depo"
+    });
+    if (!result.ok) {
+      skipped += 1;
+      if (result.message) {
+        warnings.push(result.message);
+      }
+      continue;
+    }
+    processed += 1;
+    updated += result.updated || 0;
+    created += result.created || 0;
+  }
+  const data = await window.mtnApp.getData();
+  renderStocks(data.stocks || []);
+  renderStockMovements(data.stockMovements || []);
+  renderStockReceipts(data.stockReceipts || []);
+  renderStockMasterList(data.stocks || []);
+  renderSummary(data);
+  const warningText = warnings.length
+    ? ` ${[...new Set(warnings)].join(" ")}`
+    : "";
+  if (statusTarget) {
+    statusTarget.textContent = `Depoya aktarıldı. İşlenen: ${processed}, Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}.${warningText}`;
+  }
+};
+
 if (stockReceiptTransferButton) {
   stockReceiptTransferButton.addEventListener("click", async () => {
-    if (!window.mtnApp?.transferStockReceipt) {
-      reportPathEl.textContent = "Fiş aktarım servisi hazır değil.";
-      return;
-    }
-    const selected = Array.from(
-      stockReceiptsTable?.querySelectorAll("input[type='checkbox']:checked") ||
-        []
-    ).map((input) => input.getAttribute("data-receipt-id"));
-    if (!selected.length) {
-      reportPathEl.textContent = "Lütfen aktarılacak fiş seçin.";
-      return;
-    }
-    let processed = 0;
-    let skipped = 0;
-    let updated = 0;
-    let created = 0;
-    for (const receiptId of selected) {
-      if (!receiptId) {
-        continue;
-      }
-      const result = await window.mtnApp.transferStockReceipt({
-        receiptId,
-        warehouse: "Ana Depo"
-      });
-      if (!result.ok) {
-        skipped += 1;
-        continue;
-      }
-      processed += 1;
-      updated += result.updated || 0;
-      created += result.created || 0;
-    }
-    const data = await window.mtnApp.getData();
-    renderStocks(data.stocks || []);
-    renderStockMovements(data.stockMovements || []);
-    renderStockReceipts(data.stockReceipts || []);
-    renderStockMasterList(data.stocks || []);
-    renderSummary(data);
-    reportPathEl.textContent = `Depoya aktarıldı. İşlenen: ${processed}, Yeni: ${created}, Güncellenen: ${updated}, Atlanan: ${skipped}.`;
+    await transferSelectedReceipts(reportPathEl);
   });
 }
 

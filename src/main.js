@@ -173,6 +173,56 @@ const createRecord = (items, record) => {
 
 const normalizeNumber = (value) => Number(value || 0);
 
+const normalizeStockName = (value) => {
+  if (!value) {
+    return "";
+  }
+  let normalized = String(value).toUpperCase();
+  normalized = normalized
+    .replace(/İ/g, "I")
+    .replace(/Ğ/g, "G")
+    .replace(/Ü/g, "U")
+    .replace(/Ş/g, "S")
+    .replace(/Ö/g, "O")
+    .replace(/Ç/g, "C");
+  const replacements = [
+    [/\bMANSON\b/g, "MANSON"],
+    [/\bMANŞON\b/g, "MANSON"],
+    [/\bKOLLEKTOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKOR\b/g, "KOLLEKTOR"],
+    [/\bKOLLEKTÖR\b/g, "KOLLEKTOR"]
+  ];
+  replacements.forEach(([pattern, next]) => {
+    normalized = normalized.replace(pattern, next);
+  });
+  normalized = normalized
+    .replace(/[’']/g, " ")
+    .replace(/\bLIK\b/g, "LIK")
+    .replace(/\bLİK\b/g, "LIK");
+  normalized = normalized.replace(/\bQ?\s*(\d+)\s*LIK\b/g, "Q$1 LIK");
+  normalized = normalized.replace(/3\"4/g, "3/4\"");
+  normalized = normalized.replace(/1\"1\"4/g, "1 1/4\"");
+  const inchMap = {
+    "1/2": "20",
+    "3/4": "25",
+    "1": "32",
+    "1 1/4": "40",
+    "1 1/2": "50",
+    "2": "63"
+  };
+  Object.entries(inchMap).forEach(([inch, qValue]) => {
+    normalized = normalized.replace(new RegExp(`${inch}\"`, "g"), `Q${qValue}`);
+  });
+  if (normalized.includes("INÇ") || normalized.includes("\"")) {
+    normalized = normalized.replace(/INÇ/g, "").replace(/\"/g, "");
+    if (!normalized.includes("PPRC")) {
+      normalized = `${normalized.trim()} PPRC`;
+    }
+  }
+  normalized = normalized.replace(/\s+/g, " ").trim();
+  return normalized;
+};
+
 // Varsayım: kritik seviye girilmezse miktarın %10'u (en az 1) kritik eşik kabul edilir.
 const getAutoThreshold = (quantity) => {
   const normalized = normalizeNumber(quantity);
@@ -189,7 +239,7 @@ const generateCode = (prefix) => {
 };
 
 const upsertStockEntry = (data, payload, meta = {}) => {
-  const incomingName = (payload.name || "").trim();
+  const incomingName = normalizeStockName(payload.name || "");
   const incomingQuantity = normalizeNumber(payload.quantity);
   if (!incomingName || (incomingQuantity <= 0 && !meta.allowZero)) {
     return;
@@ -199,7 +249,7 @@ const upsertStockEntry = (data, payload, meta = {}) => {
   const existingIndex = normalizedCode
     ? data.stocks.findIndex((stock) => stock.code === normalizedCode)
     : data.stocks.findIndex(
-        (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
+        (stock) => normalizeStockName(stock.name) === incomingName
       );
   const threshold =
     payload.threshold === "" || payload.threshold === undefined
@@ -492,15 +542,19 @@ app.whenReady().then(() => {
   ipcMain.handle("stocks:receipt", async (_event, payload) => {
     const data = await loadStorage();
     const { items = [], createdAt, note, supplierName } = payload || {};
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
     const receiptEntry = {
       createdAt: createdAt || new Date().toISOString(),
       note: note || "",
       supplierName: supplierName || "",
-      items,
+      items: normalizedItems,
       transferredAt: new Date().toISOString()
     };
     data.stockReceipts = createRecord(data.stockReceipts, receiptEntry);
-    items.forEach((item) => {
+    normalizedItems.forEach((item) => {
       upsertStockEntry(data, item, {
         note: note || "Fiş girişi",
         createdAt
@@ -515,11 +569,15 @@ app.whenReady().then(() => {
   ipcMain.handle("stocks:receipt:save", async (_event, payload) => {
     const data = await loadStorage();
     const { items = [], createdAt, note, supplierName } = payload || {};
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
     data.stockReceipts = createRecord(data.stockReceipts, {
       createdAt: createdAt || new Date().toISOString(),
       note: note || "",
       supplierName: supplierName || "",
-      items,
+      items: normalizedItems,
       transferredAt: null
     });
     await saveStorage(data);
@@ -542,18 +600,18 @@ app.whenReady().then(() => {
     let updated = 0;
     const items = Array.isArray(receipt.items) ? receipt.items : [];
     items.forEach((item) => {
+      const normalizedName = normalizeStockName(item.name || "");
       const normalizedPayload = {
         ...item,
+        name: normalizedName,
         warehouse: warehouse || receipt.warehouse || "Ana Depo"
       };
       const matchByCode = normalizedPayload.code
         ? data.stocks.find((stock) => stock.code === normalizedPayload.code)
         : null;
-      const matchByName = normalizedPayload.name
+      const matchByName = normalizedName
         ? data.stocks.find(
-            (stock) =>
-              stock.name?.toLowerCase() ===
-              normalizedPayload.name?.toLowerCase()
+            (stock) => normalizeStockName(stock.name) === normalizedName
           )
         : null;
       if (matchByCode || matchByName) {
@@ -572,6 +630,66 @@ app.whenReady().then(() => {
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
     return { ok: true, created, updated, data };
+  });
+
+  ipcMain.handle("stocks:receipt:update", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId, items = [], createdAt, note, supplierName } =
+      payload || {};
+    const receiptIndex = data.stockReceipts.findIndex(
+      (item) => item.id === receiptId
+    );
+    if (receiptIndex < 0) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (data.stockReceipts[receiptIndex].transferredAt) {
+      return {
+        ok: false,
+        message: "Depoya aktarılan fişler düzenlenemez."
+      };
+    }
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      name: normalizeStockName(item.name || "")
+    }));
+    if (!normalizedItems.length) {
+      return { ok: false, message: "Fiş için en az bir malzeme girin." };
+    }
+    data.stockReceipts[receiptIndex] = {
+      ...data.stockReceipts[receiptIndex],
+      createdAt:
+        createdAt || data.stockReceipts[receiptIndex].createdAt || "",
+      note: note || "",
+      supplierName: supplierName || "",
+      items: normalizedItems,
+      updatedAt: new Date().toISOString()
+    };
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, data };
+  });
+
+  ipcMain.handle("stocks:receipt:delete", async (_event, payload) => {
+    const data = await loadStorage();
+    const { receiptId } = payload || {};
+    const receiptIndex = data.stockReceipts.findIndex(
+      (item) => item.id === receiptId
+    );
+    if (receiptIndex < 0) {
+      return { ok: false, message: "Fiş bulunamadı." };
+    }
+    if (data.stockReceipts[receiptIndex].transferredAt) {
+      return {
+        ok: false,
+        message: "Depoya aktarılan fişler silinemez."
+      };
+    }
+    data.stockReceipts.splice(receiptIndex, 1);
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ok: true, data };
   });
 
   ipcMain.handle("stocks:movement", async (_event, payload) => {

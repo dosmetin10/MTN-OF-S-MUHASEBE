@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld("mtnApp", {
     ipcRenderer.invoke("stocks:import:parse", payload),
   transferStockReceipt: (payload) =>
     ipcRenderer.invoke("stocks:receipt:transfer", payload),
+  updateStockReceipt: (payload) =>
+    ipcRenderer.invoke("stocks:receipt:update", payload),
+  deleteStockReceipt: (payload) =>
+    ipcRenderer.invoke("stocks:receipt:delete", payload),
   createStockReceipt: (payload) => ipcRenderer.invoke("stocks:receipt", payload),
   saveStockReceipt: (payload) =>
     ipcRenderer.invoke("stocks:receipt:save", payload),
