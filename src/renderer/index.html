@@ -65,18 +65,38 @@
     </div>
     <div class="login" id="login-screen">
       <div class="login__card">
-        <h1>MTN Masaüstü</h1>
-        <p>Lütfen kullanıcı adınızla giriş yapın.</p>
+        <div class="login__header">
+          <h1>Giriş</h1>
+          <span class="login__demo">Demo: mtn / 1453</span>
+        </div>
         <form id="login-form">
-          <label>
-            Kullanıcı Adı
-            <input name="username" required placeholder="kullanıcı adı" />
+          <label class="login__field">
+            <span class="login__label">Kullanıcı Adı</span>
+            <div class="login__input">
+              <span class="login__icon">👤</span>
+              <input name="username" required placeholder="mtn" />
+            </div>
           </label>
-          <label>
-            Şifre
-            <input name="password" type="password" required placeholder="****" />
+          <label class="login__field">
+            <span class="login__label">Şifre</span>
+            <div class="login__input">
+              <span class="login__icon">🔒</span>
+              <input
+                name="password"
+                type="password"
+                required
+                placeholder="****"
+                id="login-password"
+              />
+              <button class="login__toggle" type="button" id="login-toggle">
+                👁️
+              </button>
+            </div>
           </label>
-          <button class="primary" type="submit">Giriş Yap</button>
+          <div class="login__footer">
+            <span class="login__strength">Güç:</span>
+            <button class="primary" type="submit">Giriş Yap</button>
+          </div>
           <span class="login__error" id="login-error"></span>
         </form>
       </div>
@@ -85,21 +105,40 @@
       <aside class="sidebar">
         <div class="brand">
           <img class="brand__logo" id="brand-logo" alt="Firma logosu" />
-          <span class="brand__title" id="brand-title">MTN MASAÜSTÜ</span>
-          <span class="brand__subtitle">Kurumsal Yönetim</span>
+          <span class="brand__title" id="brand-title">MTN ENERJİ ERP</span>
+          <span class="brand__subtitle">Kurumsal Masaüstü — Aşama 2</span>
         </div>
         <nav class="menu">
-          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana Panel">Ana Panel</button>
-          <button class="menu__item" data-panel="customers-panel" data-title="Cari Yönetimi">Cari Yönetimi</button>
-          <button class="menu__item" data-panel="stocks-panel" data-title="Stok & Depo">Stok & Depo</button>
-          <button class="menu__item" data-panel="stock-list-panel" data-title="Malzeme Stok Listesi">Malzeme Stok Listesi</button>
-          <button class="menu__item" data-panel="sales-panel" data-title="Teklif & Sipariş">Teklif & Sipariş</button>
-          <button class="menu__item" data-panel="invoices-panel" data-title="Faturalarım">Faturalarım</button>
-          <button class="menu__item" data-panel="cash-panel" data-title="Kasa & Banka">Kasa & Banka</button>
-          <button class="menu__item" data-panel="reports-panel" data-title="Raporlar">Raporlar</button>
-          <button class="menu__item" data-panel="assistant-panel" data-title="Muhasebe Asistanı">Muhasebe Asistanı</button>
-          <button class="menu__item" data-panel="settings-panel" data-title="Ayarlar">Ayarlar</button>
+          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana">
+            <span class="menu__icon">🏠</span>
+            Ana
+          </button>
+          <button class="menu__item" data-panel="customers-panel" data-title="Cari">
+            <span class="menu__icon">👤</span>
+            Cari
+          </button>
+          <button class="menu__item" data-panel="stocks-panel" data-title="Stok">
+            <span class="menu__icon">📦</span>
+            Stok
+          </button>
+          <button class="menu__item" data-panel="invoices-panel" data-title="Fatura">
+            <span class="menu__icon">🧾</span>
+            Fatura
+          </button>
+          <button class="menu__item" data-panel="cash-panel" data-title="Kasa">
+            <span class="menu__icon">💳</span>
+            Kasa
+          </button>
+          <button class="menu__item" data-panel="assistant-panel" data-title="Mühendislik">
+            <span class="menu__icon">📐</span>
+            Müh.
+          </button>
         </nav>
+        <div class="sidebar__actions">
+          <button class="menu__action" data-panel="settings-panel">Ayarlar</button>
+          <button class="menu__action" id="backup-now-secondary">Yedek Al</button>
+          <button class="menu__action menu__action--danger" id="logout-button">Çıkış</button>
+        </div>
         <div class="sidebar__footer">
           <p>Offline mod: <strong class="status status--online">Hazır</strong></p>
           <p>Versiyon: <span id="app-version">0.1.0</span></p>
@@ -108,48 +147,75 @@
 
       <main class="content">
         <header class="topbar">
-          <div>
-            <h1 id="panel-title">Ana Panel</h1>
-            <p>
-              Hoş geldin <span id="user-name">Metin</span>,
-              bugün tüm operasyonlar kontrol altında.
-            </p>
+          <div class="topbar__brand">
+            <img class="topbar__logo" id="topbar-logo" alt="Firma logosu" />
+            <div>
+              <h1 id="panel-title">Ana</h1>
+              <p>
+                Hoş geldiniz: <span id="user-name">Metin</span> • rol:
+                <span id="user-role">muhasebe</span>
+              </p>
+            </div>
           </div>
           <div class="topbar__actions">
-            <input class="search" placeholder="Cari, stok, teklif ara..." />
-            <span class="user-chip" id="user-role">Rol: admin</span>
-            <button class="primary">+ Yeni İşlem</button>
+            <button class="ghost">GÜNCEL KUR</button>
           </div>
         </header>
         <div class="content__scroll">
           <section class="panel panel--active" id="dashboard-panel">
-            <section class="quick-actions">
-              <button data-panel="customers-panel">➕ Yeni Cari</button>
-              <button data-panel="stocks-panel">📦 Stok Girişi</button>
-              <button data-panel="cash-panel">💰 Tahsilat Yap</button>
-              <button data-panel="sales-panel">🧾 Yeni Teklif</button>
-              <button data-panel="reports-panel">📊 Raporlar</button>
-            </section>
-
-            <section class="cards">
-              <article class="card">
-                <h3>Günlük Durum</h3>
-                <p>Toplam tahsilat: <strong id="summary-collections">₺0,00</strong></p>
-                <p>Kasa bakiyesi: <strong id="summary-cash">₺0,00</strong></p>
-                <p>Bekleyen borç: <strong id="summary-balance">₺0,00</strong></p>
-              </article>
-              <article class="card">
-                <h3>Hatırlatıcılar</h3>
-                <ul id="summary-alerts"></ul>
-              </article>
-              <article class="card">
-                <h3>Yedekleme</h3>
-                <p>Son yerel yedek: <strong id="last-backup">Henüz yok</strong></p>
-                <p>Bulut senkron: <strong>Opsiyonel</strong></p>
-                <button class="ghost" id="backup-now">Flash'a Yedekle</button>
-                <p class="backup-path" id="backup-path"></p>
-              </article>
-            </section>
+            <div class="dashboard">
+              <section class="dashboard__main">
+                <div class="dashboard__banner">
+                  HOŞGELDİNİZ <span id="dashboard-user">METİN BEY</span>
+                </div>
+                <p class="dashboard__subtitle">Aşama 2: Malzeme ekleme & listeler</p>
+                <div class="dashboard__search">
+                  <input
+                    class="search search--wide"
+                    placeholder="Hızlı arama: cari, malzeme, fatura, fiş..."
+                  />
+                  <button class="ghost">ARA</button>
+                </div>
+                <div class="chip-group">
+                  <button class="chip chip--active">Hepsi</button>
+                  <button class="chip">Cariler</button>
+                  <button class="chip">Malzeme</button>
+                  <button class="chip">Fatura</button>
+                  <button class="chip">Fiş</button>
+                </div>
+                <div class="dashboard__grid">
+                  <button class="action-card" data-panel="customers-panel">CARİ</button>
+                  <button class="action-card" data-panel="customers-panel">CARİ DÜZENLE</button>
+                  <button class="action-card" data-panel="cash-panel">TAHSİLAT</button>
+                  <button class="action-card" data-panel="invoices-panel">FATURA</button>
+                  <button class="action-card" data-panel="stocks-panel">FİŞ</button>
+                  <button class="action-card" data-panel="stocks-panel">DEPO / STOK</button>
+                  <button class="action-card" data-panel="reports-panel">TÜM BORÇLULAR</button>
+                  <button class="action-card" data-panel="cash-panel">ÖDEME</button>
+                  <button class="action-card" data-panel="reports-panel">RAPOR / DURUM ANALİZ</button>
+                </div>
+                <div class="dashboard__footer">
+                  <span>Hızlı araçlar</span>
+                  <div class="dashboard__quick">
+                    <button class="quick-pill" data-panel="cash-panel">KASA</button>
+                    <button class="quick-pill" data-panel="reports-panel">TOPLAM KDV</button>
+                    <button class="quick-pill" data-panel="sales-panel">TEKLİF VER</button>
+                    <button class="quick-pill" data-panel="stocks-panel">MALZEME GİRİŞİ</button>
+                    <button class="quick-pill" data-panel="assistant-panel">MÜHENDİSLİK</button>
+                  </div>
+                </div>
+              </section>
+              <aside class="dashboard__aside">
+                <article class="info-card">
+                  <h3>HATIRLATICI OTOMATİK — YZ Destekli</h3>
+                  <p>Fatura/fiş, ödeme ve bakım tarihlerini takip eder, uyarı üretir.</p>
+                </article>
+                <article class="info-card">
+                  <h3>METİN ŞAHSİ ÖDEME HATIRLATMA</h3>
+                  <p>Elektrik, su vb. kişisel ödemeler için uyarı alanı.</p>
+                </article>
+              </aside>
+            </div>
           </section>
 
           <section class="panel" id="customers-panel">
@@ -904,6 +970,11 @@
             </section>
           </section>
         </div>
+        <footer class="app-footer">
+          Bu program <strong>MTN Enerji Mühendislik</strong> / Metin Döş
+          tarafından kodlanmış ve tasarlanmıştır. © Tüm hakları saklıdır.
+        </footer>
+        <button class="assistant-fab">YZ Asistan (F1)</button>
       </main>
     </div>
 

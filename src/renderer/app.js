@@ -138,8 +138,14 @@ const logoFileInput = document.getElementById("logo-file");
 const logoPreview = document.getElementById("logo-preview");
 const brandTitle = document.getElementById("brand-title");
 const brandLogo = document.getElementById("brand-logo");
+const topbarLogo = document.getElementById("topbar-logo");
 const userRoleEl = document.getElementById("user-role");
 const userNameEl = document.getElementById("user-name");
+const dashboardUserEl = document.getElementById("dashboard-user");
+const loginPasswordInput = document.getElementById("login-password");
+const loginToggleButton = document.getElementById("login-toggle");
+const logoutButton = document.getElementById("logout-button");
+const backupSecondaryButton = document.getElementById("backup-now-secondary");
 const licenseKeyInput = document.getElementById("license-key");
 const licenseCheckButton = document.getElementById("license-check");
 const invoiceForm = document.getElementById("invoice-form");
@@ -239,14 +245,22 @@ const applyBranding = (settings) => {
       brandLogo.style.display = "block";
     }
   }
+  if (topbarLogo) {
+    topbarLogo.src = brandLogo?.src || "assets/logo.svg";
+    topbarLogo.style.display = "block";
+  }
 };
 
 const applyUserProfile = (profile) => {
+  const displayName = profile?.displayName || profile?.username || "Kullanıcı";
   if (userNameEl) {
-    userNameEl.textContent = profile?.displayName || profile?.username || "Kullanıcı";
+    userNameEl.textContent = displayName;
+  }
+  if (dashboardUserEl) {
+    dashboardUserEl.textContent = displayName.toUpperCase();
   }
   if (userRoleEl) {
-    userRoleEl.textContent = `Rol: ${profile?.role || "kullanıcı"}`;
+    userRoleEl.textContent = profile?.role || "kullanıcı";
   }
 };
 
@@ -266,6 +280,22 @@ const handleLogin = (event) => {
     loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
   }
 };
+
+if (loginToggleButton && loginPasswordInput) {
+  loginToggleButton.addEventListener("click", () => {
+    const isHidden = loginPasswordInput.type === "password";
+    loginPasswordInput.type = isHidden ? "text" : "password";
+    loginToggleButton.textContent = isHidden ? "🙈" : "👁️";
+  });
+}
+
+if (logoutButton) {
+  logoutButton.addEventListener("click", () => {
+    appShell.classList.add("app--hidden");
+    loginScreen.style.display = "grid";
+  });
+}
+
 
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
@@ -2062,18 +2092,30 @@ const buildBackupPayload = () => {
       };
 };
 
-if (backupButton) {
-  backupButton.addEventListener("click", async () => {
-    if (!window.mtnApp?.createBackup) {
+const handleBackup = async () => {
+  if (!window.mtnApp?.createBackup) {
+    if (backupPathEl) {
       backupPathEl.textContent = "Yedekleme servisi hazır değil.";
-      return;
     }
+    return;
+  }
 
-    const payload = await buildBackupPayload();
-    const result = await window.mtnApp.createBackup(payload);
+  const payload = await buildBackupPayload();
+  const result = await window.mtnApp.createBackup(payload);
+  if (lastBackupEl) {
     lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
+  }
+  if (backupPathEl) {
     backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
-  });
+  }
+};
+
+if (backupButton) {
+  backupButton.addEventListener("click", handleBackup);
+}
+
+if (backupSecondaryButton) {
+  backupSecondaryButton.addEventListener("click", handleBackup);
 }
 
 const downloadCsv = (filename, headers, rows) => {
@@ -2346,8 +2388,11 @@ if (loginForm) {
 
 // Menu click handler
 const menuItems = document.querySelectorAll(".menu__item");
+const menuActionItems = document.querySelectorAll(".menu__action[data-panel]");
 const panels = document.querySelectorAll(".panel");
-const quickActionButtons = document.querySelectorAll(".quick-actions button");
+const quickActionButtons = document.querySelectorAll(
+  ".action-card, .quick-pill"
+);
 const panelTitleEl = document.getElementById("panel-title");
 
 const showPanel = (panelId, title) => {
@@ -2384,6 +2429,17 @@ menuItems.forEach((item) => {
   });
 });
 
+menuActionItems.forEach((item) => {
+  item.addEventListener("click", (event) => {
+    event.preventDefault();
+    const panelId = item.dataset.panel;
+    if (!panelId) {
+      return;
+    }
+    showPanel(panelId, item.textContent.trim());
+  });
+});
+
 quickActionButtons.forEach((button) => {
   button.addEventListener("click", () => {
     const targetPanel = button.dataset.panel;
@@ -2398,5 +2454,5 @@ quickActionButtons.forEach((button) => {
   });
 });
 
-showPanel("dashboard-panel", "Ana Panel");
+showPanel("dashboard-panel", "Ana");
 initApp().then(loadInitialData);
