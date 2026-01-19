@@ -379,15 +379,41 @@ const parseWorksheetRows = (xml, sharedStrings) => {
   return rows.filter((row) => row && row.some((cell) => cell && cell !== ""));
 };
 
+const resolveWorksheetPath = (entries) => {
+  if (entries["xl/worksheets/sheet1.xml"]) {
+    return "xl/worksheets/sheet1.xml";
+  }
+  const workbookXml = entries["xl/workbook.xml"];
+  const relsXml = entries["xl/_rels/workbook.xml.rels"];
+  if (!workbookXml || !relsXml) {
+    return "";
+  }
+  const sheetMatch = /<sheet[^>]*r:id="([^"]+)"[^>]*>/i.exec(workbookXml);
+  if (!sheetMatch) {
+    return "";
+  }
+  const relId = sheetMatch[1];
+  const relRegex = new RegExp(
+    `<Relationship[^>]*Id="${relId}"[^>]*Target="([^"]+)"[^>]*>`,
+    "i"
+  );
+  const relMatch = relRegex.exec(relsXml);
+  if (!relMatch) {
+    return "";
+  }
+  const target = relMatch[1];
+  return target.startsWith("xl/") ? target : `xl/${target}`;
+};
+
 const parseXlsxFile = async (filePath) => {
   const buffer = await fs.readFile(filePath);
   const entries = readZipEntries(buffer);
   const sharedStrings = parseSharedStrings(entries["xl/sharedStrings.xml"]);
-  const sheetXml = entries["xl/worksheets/sheet1.xml"];
-  if (!sheetXml) {
+  const sheetPath = resolveWorksheetPath(entries);
+  if (!sheetPath || !entries[sheetPath]) {
     throw new Error("Excel çalışma sayfası bulunamadı.");
   }
-  const rows = parseWorksheetRows(sheetXml, sharedStrings);
+  const rows = parseWorksheetRows(entries[sheetPath], sharedStrings);
   if (!rows.length) {
     return [];
   }
