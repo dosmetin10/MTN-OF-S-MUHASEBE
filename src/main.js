@@ -238,14 +238,50 @@ const normalizeData = (data) => ({
   invoices: data.invoices || []
 });
 
+const detectDelimiter = (line) => {
+  const counts = {
+    ",": (line.match(/,/g) || []).length,
+    ";": (line.match(/;/g) || []).length,
+    "\t": (line.match(/\t/g) || []).length
+  };
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+};
+
+const splitCsvLine = (line, delimiter) => {
+  const values = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (char === delimiter && !inQuotes) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+    current += char;
+  }
+  values.push(current);
+  return values.map((cell) => cell.trim());
+};
+
 const parseCsvContent = (content) => {
   const lines = content.split(/\r?\n/).filter((line) => line.trim());
   if (!lines.length) {
     return [];
   }
-  const header = lines[0].split(",").map((cell) => cell.trim());
+  const delimiter = detectDelimiter(lines[0]);
+  const header = splitCsvLine(lines[0], delimiter);
   return lines.slice(1).map((line) => {
-    const values = line.split(",").map((cell) => cell.replace(/(^\"|\"$)/g, ""));
+    const values = splitCsvLine(line, delimiter);
     const row = {};
     header.forEach((key, index) => {
       row[key] = values[index] || "";
