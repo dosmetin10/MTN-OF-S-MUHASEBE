@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
+const zlib = require("zlib");
 
 const storageFileName = "mtn-data.json";
 const settingsFileName = "mtn-settings.json";
@@ -261,17 +262,169 @@ const mapImportRow = (row) => ({
   diameter: row["ÇAP"] || row["CAP"] || row.diameter || ""
 });
 
+const decodeXmlEntities = (value) =>
+  String(value || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) =>
+      String.fromCharCode(parseInt(code, 16))
+    )
+    .replace(/&#(\d+);/g, (_, code) =>
+      String.fromCharCode(parseInt(code, 10))
+    );
+
+const findZipCentralDirectory = (buffer) => {
+  const signature = 0x06054b50;
+  const minOffset = Math.max(0, buffer.length - 0x10000);
+  for (let offset = buffer.length - 22; offset >= minOffset; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === signature) {
+      return offset;
+    }
+  }
+  return -1;
+};
+
+const readZipEntries = (buffer) => {
+  const centralDirectoryOffset = findZipCentralDirectory(buffer);
+  if (centralDirectoryOffset < 0) {
+    throw new Error("ZIP merkezi dizini bulunamadı.");
+  }
+  const totalEntries = buffer.readUInt16LE(centralDirectoryOffset + 10);
+  const directoryStart = buffer.readUInt32LE(centralDirectoryOffset + 16);
+  let offset = directoryStart;
+  const entries = {};
+  for (let index = 0; index < totalEntries; index += 1) {
+    if (buffer.readUInt32LE(offset) !== 0x02014b50) {
+      break;
+    }
+    const compression = buffer.readUInt16LE(offset + 10);
+    const compressedSize = buffer.readUInt32LE(offset + 20);
+    const fileNameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const localHeaderOffset = buffer.readUInt32LE(offset + 42);
+    const nameStart = offset + 46;
+    const nameEnd = nameStart + fileNameLength;
+    const fileName = buffer.slice(nameStart, nameEnd).toString("utf8");
+    offset = nameEnd + extraLength + commentLength;
+    if (!fileName) {
+      continue;
+    }
+    if (buffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
+      continue;
+    }
+    const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
+    const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
+    const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
+    const compressedData = buffer.slice(dataStart, dataStart + compressedSize);
+    let contentBuffer = null;
+    if (compression === 0) {
+      contentBuffer = compressedData;
+    } else if (compression === 8) {
+      contentBuffer = zlib.inflateRawSync(compressedData);
+    }
+    if (contentBuffer) {
+      entries[fileName] = contentBuffer.toString("utf8");
+    }
+  }
+  return entries;
+};
+
+const columnLabelToIndex = (label) => {
+  let result = 0;
+  for (const char of label) {
+    result = result * 26 + (char.charCodeAt(0) - 64);
+  }
+  return result - 1;
+};
+
+const parseSharedStrings = (xml) => {
+  if (!xml) {
+    return [];
+  }
+  const matches = xml.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g);
+  return Array.from(matches, (match) => decodeXmlEntities(match[1]));
+};
+
+const parseWorksheetRows = (xml, sharedStrings) => {
+  const rows = [];
+  const cellRegex = /<c[^>]*r="([A-Z]+)(\d+)"[^>]*?(?:t="([^"]+)")?[^>]*>([\s\S]*?)<\/c>/g;
+  let match = null;
+  while ((match = cellRegex.exec(xml)) !== null) {
+    const [, colLetters, rowNumber, cellType, cellXml] = match;
+    const rowIndex = Number(rowNumber) - 1;
+    const colIndex = columnLabelToIndex(colLetters);
+    if (!rows[rowIndex]) {
+      rows[rowIndex] = [];
+    }
+    let value = "";
+    if (cellType === "inlineStr") {
+      const inlineMatch = /<t[^>]*>([\s\S]*?)<\/t>/.exec(cellXml);
+      value = inlineMatch ? decodeXmlEntities(inlineMatch[1]) : "";
+    } else {
+      const valueMatch = /<v>([\s\S]*?)<\/v>/.exec(cellXml);
+      value = valueMatch ? valueMatch[1] : "";
+      if (cellType === "s") {
+        const sharedIndex = Number(value);
+        value = sharedStrings[sharedIndex] ?? "";
+      } else {
+        value = decodeXmlEntities(value);
+      }
+    }
+    rows[rowIndex][colIndex] = value;
+  }
+  return rows.filter((row) => row && row.some((cell) => cell && cell !== ""));
+};
+
+const parseXlsxFile = async (filePath) => {
+  const buffer = await fs.readFile(filePath);
+  const entries = readZipEntries(buffer);
+  const sharedStrings = parseSharedStrings(entries["xl/sharedStrings.xml"]);
+  const sheetXml = entries["xl/worksheets/sheet1.xml"];
+  if (!sheetXml) {
+    throw new Error("Excel çalışma sayfası bulunamadı.");
+  }
+  const rows = parseWorksheetRows(sheetXml, sharedStrings);
+  if (!rows.length) {
+    return [];
+  }
+  const header = rows[0].map((cell) => String(cell || "").trim());
+  return rows.slice(1).map((row) => {
+    const record = {};
+    header.forEach((key, index) => {
+      if (!key) {
+        return;
+      }
+      record[key] = row[index] ?? "";
+    });
+    return record;
+  });
+};
+
 const parseImportFile = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === ".csv") {
     const content = await fs.readFile(filePath, "utf8");
     return { rows: parseCsvContent(content).map(mapImportRow), error: "" };
   }
-  if (ext === ".xlsx" || ext === ".pdf") {
+  if (ext === ".xlsx") {
+    try {
+      const rows = await parseXlsxFile(filePath);
+      return { rows: rows.map(mapImportRow), error: "" };
+    } catch (error) {
+      return {
+        rows: [],
+        error: "Excel dosyası okunamadı. Lütfen dosyayı kontrol edin."
+      };
+    }
+  }
+  if (ext === ".pdf") {
     return {
       rows: [],
-      error:
-        "Bu dosya türü için otomatik okuma devre dışı. Lütfen CSV kullanın."
+      error: "PDF içeriği henüz otomatik okunmuyor. Lütfen CSV kullanın."
     };
   }
   return { rows: [], error: "Desteklenmeyen dosya türü." };
