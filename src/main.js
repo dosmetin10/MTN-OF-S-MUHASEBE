@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, shell } = require("electron");
 const fs = require("fs/promises");
 const path = require("path");
 
@@ -10,22 +10,13 @@ const getDefaultData = () => ({
   customerDebts: [],
   customerJobs: [],
   stocks: [],
+  stockReceipts: [],
   cashTransactions: [],
   sales: [],
-  stockMovements: []
+  stockMovements: [],
+  invoices: []
 });
 
-const normalizeData = (data) => ({
-  ...getDefaultData(),
-  ...data,
-  customers: data.customers || [],
-  customerDebts: data.customerDebts || [],
-  customerJobs: data.customerJobs || [],
-  stocks: data.stocks || [],
-  cashTransactions: data.cashTransactions || [],
-  sales: data.sales || [],
-  stockMovements: data.stockMovements || []
-});
 
 const loadStorage = async () => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
@@ -65,11 +56,12 @@ const loadSettings = async () => {
     enableAutoBackup: false,
     lastAutoBackupAt: "",
     hasOnboarded: false,
-    companyName: "MTN Enerji",
+    companyName: "MTN Masaüstü",
     taxOffice: "",
     taxNumber: "",
     logoDataUrl: "",
     defaultCashName: "Ana Kasa",
+    defaultWarehouse: "Ana Depo",
     users: [],
     licenseKey: ""
   };
@@ -77,6 +69,27 @@ const loadSettings = async () => {
 
 const getBackupBaseDir = () =>
   path.join(app.getPath("documents"), "MTN-Muhasebe-Yedekler");
+
+const getAttachmentBaseDir = () =>
+  path.join(app.getPath("userData"), "attachments");
+
+const saveAttachment = async ({ path: filePath, name, category }) => {
+  if (!filePath) {
+    return null;
+  }
+  const baseDir = getAttachmentBaseDir();
+  await fs.mkdir(baseDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const safeName = name ? name.replace(/[^\w.-]+/g, "_") : "dosya";
+  const targetName = `${category || "dosya"}-${timestamp}-${safeName}`;
+  const targetPath = path.join(baseDir, targetName);
+  await fs.copyFile(filePath, targetPath);
+  return {
+    path: targetPath,
+    name: name || targetName,
+    createdAt: new Date().toISOString()
+  };
+};
 
 const createBackupEntry = async (payload) => {
   const baseDir = getBackupBaseDir();
@@ -154,6 +167,178 @@ const createRecord = (items, record) => {
 
 const normalizeNumber = (value) => Number(value || 0);
 
+const normalizeSpaces = (value) => {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const fixTurkishTypos = (value) => {
+  return value
+    .replaceAll("MANSON", "MANŞON")
+    .replaceAll("KOLLEKTOR", "KOLLEKTÖR")
+    .replaceAll("KOLLEKOR", "KOLLEKTÖR");
+};
+
+const inchToQMap = new Map([
+  ["1/2", "Q20"],
+  ["3/4", "Q25"],
+  ["1", "Q32"],
+  ["1 1/4", "Q40"],
+  ["1 1/2", "Q50"],
+  ["2", "Q63"]
+]);
+
+const normalizeStockName = (value) => {
+  if (!value) {
+    return "";
+  }
+  let next = normalizeSpaces(String(value).toLocaleUpperCase("tr-TR"));
+  next = next.replaceAll("İNC", "İNÇ").replaceAll("INCH", "İNÇ");
+  next = fixTurkishTypos(next);
+  next = next.replace(/(\d)\s*"\s*(\d)/g, "$1/$2\"");
+  next = next.replace(/(\d)\s*\/\s*(\d)/g, "$1/$2");
+  const inchMatch = next.match(/(\d+(?:\s*\d\/\d)?)\s*İNÇ/);
+  if (inchMatch) {
+    const inchValue = normalizeSpaces(inchMatch[1]);
+    const qValue = inchToQMap.get(inchValue);
+    if (qValue) {
+      next = next.replace(inchMatch[0], `${qValue} LİK`);
+    }
+    if (!next.includes("PPRC")) {
+      next = `${next} PPRC`;
+    }
+  }
+  return normalizeSpaces(next);
+};
+
+const resolveWarehouse = (value, settings) => {
+  if (value) {
+    return value;
+  }
+  return settings?.defaultWarehouse || "Ana Depo";
+};
+
+const normalizeData = (data) => ({
+  ...getDefaultData(),
+  ...data,
+  customers: data.customers || [],
+  customerDebts: data.customerDebts || [],
+  customerJobs: data.customerJobs || [],
+  stocks: (data.stocks || []).map((stock) => ({
+    ...stock,
+    normalizedName: stock.normalizedName || normalizeStockName(stock.name || ""),
+    warehouse: stock.warehouse || "Ana Depo"
+  })),
+  stockReceipts: data.stockReceipts || [],
+  cashTransactions: data.cashTransactions || [],
+  sales: data.sales || [],
+  stockMovements: data.stockMovements || [],
+  invoices: data.invoices || []
+});
+
+const parseCsvContent = (content) => {
+  const lines = content.split(/\r?\n/).filter((line) => line.trim());
+  if (!lines.length) {
+    return [];
+  }
+  const header = lines[0].split(",").map((cell) => cell.trim());
+  return lines.slice(1).map((line) => {
+    const values = line.split(",").map((cell) => cell.replace(/(^\"|\"$)/g, ""));
+    const row = {};
+    header.forEach((key, index) => {
+      row[key] = values[index] || "";
+    });
+    return row;
+  });
+};
+
+const mapImportRow = (row) => ({
+  code: row["STOK KODU"] || row.code || row["KOD"] || "",
+  name: row["MALZEME ADI"] || row["STOK ADI"] || row.name || "",
+  quantity: row["ADET"] || row["MİKTAR"] || row.quantity || "",
+  unit: row["BİRİM"] || row["BIRIM"] || row.unit || "",
+  diameter: row["ÇAP"] || row["CAP"] || row.diameter || ""
+});
+
+const parseImportFile = async (filePath) => {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".csv") {
+    const content = await fs.readFile(filePath, "utf8");
+    return { rows: parseCsvContent(content).map(mapImportRow), error: "" };
+  }
+  if (ext === ".xlsx" || ext === ".pdf") {
+    return {
+      rows: [],
+      error:
+        "Bu dosya türü için otomatik okuma devre dışı. Lütfen CSV kullanın."
+    };
+  }
+  return { rows: [], error: "Desteklenmeyen dosya türü." };
+};
+
+const analyzeImportRows = (data, rows, warehouse, settings) => {
+  const reportRows = [];
+  let newCount = 0;
+  let updateCount = 0;
+  let errorCount = 0;
+  rows.forEach((row) => {
+    const payload = mapImportRow(row);
+    const incomingName = normalizeSpaces(payload.name || "");
+    const incomingQuantity = normalizeNumber(payload.quantity);
+    const normalizedName = normalizeStockName(incomingName);
+    if (!incomingName || incomingQuantity <= 0) {
+      errorCount += 1;
+      reportRows.push({
+        status: "error",
+        statusLabel: "Hatalı",
+        code: payload.code,
+        name: incomingName,
+        quantity: payload.quantity,
+        unit: payload.unit,
+        reason: "Eksik veya geçersiz miktar"
+      });
+      return;
+    }
+    const stockIndex = data.stocks.findIndex((stock) => {
+      if (payload.code && stock.code === payload.code) {
+        return true;
+      }
+      return (
+        stock.normalizedName === normalizedName &&
+        stock.warehouse === warehouse
+      );
+    });
+    if (stockIndex >= 0) {
+      updateCount += 1;
+      reportRows.push({
+        status: "update",
+        statusLabel: "Güncellenecek",
+        code: payload.code || data.stocks[stockIndex].code,
+        name: normalizedName,
+        quantity: incomingQuantity,
+        unit: payload.unit
+      });
+    } else {
+      newCount += 1;
+      reportRows.push({
+        status: "new",
+        statusLabel: "Yeni",
+        code: payload.code,
+        name: normalizedName,
+        quantity: incomingQuantity,
+        unit: payload.unit
+      });
+    }
+  });
+  return {
+    summary: { newCount, updateCount, errorCount },
+    rows: reportRows,
+    warehouse,
+    settings
+  };
+};
+
 // Varsayım: kritik seviye girilmezse miktarın %10'u (en az 1) kritik eşik kabul edilir.
 const getAutoThreshold = (quantity) => {
   const normalized = normalizeNumber(quantity);
@@ -169,47 +354,78 @@ const generateCode = (prefix) => {
   return `${prefix}-${stamp}-${random}`;
 };
 
-const upsertStockEntry = (data, payload, meta = {}) => {
-  const incomingName = (payload.name || "").trim();
+const upsertStockEntry = (data, payload, meta = {}, settings = {}) => {
+  const incomingName = normalizeSpaces(payload.name || "");
   const incomingQuantity = normalizeNumber(payload.quantity);
   if (!incomingName || incomingQuantity <= 0) {
-    return;
+    return { status: "error", reason: "Geçersiz stok adı veya miktar." };
   }
-  // Varsayım: aynı isim (büyük/küçük harf farkı olmadan) aynı stok kartıdır.
-  const existingIndex = data.stocks.findIndex(
-    (stock) => stock.name?.toLowerCase() === incomingName.toLowerCase()
-  );
+  const normalizedName = normalizeStockName(incomingName);
+  const warehouse = resolveWarehouse(payload.warehouse, settings);
   const threshold =
     payload.threshold === "" || payload.threshold === undefined
       ? getAutoThreshold(incomingQuantity)
       : normalizeNumber(payload.threshold);
+  const hasCode = Boolean(payload.code);
+  const existingIndex = data.stocks.findIndex((stock) => {
+    if (hasCode && stock.code === payload.code) {
+      return true;
+    }
+    return (
+      stock.normalizedName === normalizedName && stock.warehouse === warehouse
+    );
+  });
   if (existingIndex >= 0) {
     const existing = data.stocks[existingIndex];
+    const nextQuantity =
+      normalizeNumber(existing.quantity) + incomingQuantity;
     data.stocks[existingIndex] = {
       ...existing,
       name: incomingName || existing.name,
+      normalizedName,
       diameter: payload.diameter || existing.diameter,
       unit: payload.unit || existing.unit,
-      quantity: normalizeNumber(existing.quantity) + incomingQuantity,
+      warehouse,
+      quantity: nextQuantity,
       threshold,
       updatedAt: new Date().toISOString()
     };
-  } else {
-    data.stocks = createRecord(data.stocks, {
-      code: payload.code || generateCode("STK"),
-      ...payload,
-      name: incomingName,
+    data.stockMovements = createRecord(data.stockMovements, {
+      stockName: normalizedName,
+      type: "giris",
       quantity: incomingQuantity,
-      threshold
+      note: meta.note || "Fiş girişi",
+      createdAt: meta.createdAt || payload.createdAt
     });
+    return {
+      status: "updated",
+      name: normalizedName,
+      quantity: incomingQuantity,
+      total: nextQuantity
+    };
   }
+  data.stocks = createRecord(data.stocks, {
+    code: payload.code || generateCode("STK"),
+    ...payload,
+    name: incomingName,
+    normalizedName,
+    warehouse,
+    quantity: incomingQuantity,
+    threshold,
+    updatedAt: new Date().toISOString()
+  });
   data.stockMovements = createRecord(data.stockMovements, {
-    stockName: incomingName,
+    stockName: normalizedName,
     type: "giris",
     quantity: incomingQuantity,
     note: meta.note || "Fiş girişi",
     createdAt: meta.createdAt || payload.createdAt
   });
+  return {
+    status: "created",
+    name: normalizedName,
+    quantity: incomingQuantity
+  };
 };
 
 const createWindow = () => {
@@ -232,6 +448,18 @@ app.whenReady().then(() => {
   ipcMain.handle("backup:create", async (_event, payload) =>
     createBackupEntry(payload)
   );
+
+  ipcMain.handle("attachments:save", async (_event, payload) =>
+    saveAttachment(payload)
+  );
+
+  ipcMain.handle("file:open", async (_event, filePath) => {
+    if (!filePath) {
+      return { ok: false };
+    }
+    await shell.openPath(filePath);
+    return { ok: true };
+  });
 
   ipcMain.handle("data:get", async () => loadStorage());
   ipcMain.handle("data:reset", async () => {
@@ -270,6 +498,48 @@ app.whenReady().then(() => {
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
     return data.customers;
+  });
+
+  ipcMain.handle("customers:transaction", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, amount, note, createdAt, type } = payload;
+    const normalizedAmount = normalizeNumber(amount);
+    const customerName = data.customers.find(
+      (customer) => customer.id === customerId
+    )?.name;
+    if (!customerName) {
+      return data;
+    }
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      const current = Number(customer.balance || 0);
+      const nextBalance =
+        type === "tahsilat" ? current - normalizedAmount : current + normalizedAmount;
+      return { ...customer, balance: nextBalance };
+    });
+    data.cashTransactions = createRecord(data.cashTransactions, {
+      type: type === "tahsilat" ? "gelir" : "gider",
+      amount: normalizedAmount,
+      note: note || "Cari İşlem",
+      createdAt,
+      customerId,
+      customerName
+    });
+    if (type !== "tahsilat") {
+      data.customerDebts = createRecord(data.customerDebts, {
+        customerId,
+        customerName,
+        amount: normalizedAmount,
+        note: note || "Cari Ödeme",
+        createdAt
+      });
+    }
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
   });
 
   ipcMain.handle("customers:payment", async (_event, payload) => {
@@ -378,7 +648,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle("stocks:create", async (_event, payload) => {
     const data = await loadStorage();
-    upsertStockEntry(data, payload, { note: "Stok kartı girişi" });
+    const settings = await loadSettings();
+    upsertStockEntry(data, payload, { note: "Stok kartı girişi" }, settings);
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -387,12 +658,33 @@ app.whenReady().then(() => {
 
   ipcMain.handle("stocks:receipt", async (_event, payload) => {
     const data = await loadStorage();
-    const { items = [], createdAt, note } = payload || {};
-    items.forEach((item) => {
-      upsertStockEntry(data, item, {
-        note: note || "Fiş girişi",
-        createdAt
-      });
+    const settings = await loadSettings();
+    const { items = [], createdAt, note, supplier, warehouse, attachment } =
+      payload || {};
+    const receiptItems = items.map((item) => ({
+      ...item,
+      warehouse: warehouse || item.warehouse
+    }));
+    const receiptRecord = createRecord(data.stockReceipts, {
+      createdAt,
+      supplier,
+      warehouse: resolveWarehouse(warehouse, settings),
+      note,
+      attachment,
+      items: receiptItems,
+      transferredAt: new Date().toISOString()
+    });
+    data.stockReceipts = receiptRecord;
+    receiptItems.forEach((item) => {
+      upsertStockEntry(
+        data,
+        item,
+        {
+          note: note || "Fiş girişi",
+          createdAt
+        },
+        settings
+      );
     });
     await saveStorage(data);
     await syncStorageCopies(data);
@@ -400,18 +692,62 @@ app.whenReady().then(() => {
     return data;
   });
 
+  ipcMain.handle("stocks:receipt-transfer", async (_event, payload) => {
+    const data = await loadStorage();
+    const settings = await loadSettings();
+    const { receiptIds = [] } = payload || {};
+    let processed = 0;
+    let created = 0;
+    let updated = 0;
+    receiptIds.forEach((receiptId) => {
+      const receipt = data.stockReceipts.find((item) => item.id === receiptId);
+      if (!receipt || receipt.transferredAt) {
+        return;
+      }
+      receipt.items?.forEach((item) => {
+        const result = upsertStockEntry(
+          data,
+          { ...item, warehouse: receipt.warehouse },
+          {
+            note: `Fiş aktarımı: ${receipt.supplier || "Tedarikçi"}`,
+            createdAt: receipt.createdAt
+          },
+          settings
+        );
+        if (result?.status === "created") {
+          created += 1;
+        }
+        if (result?.status === "updated") {
+          updated += 1;
+        }
+      });
+      receipt.transferredAt = new Date().toISOString();
+      processed += 1;
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return {
+      ...data,
+      message: processed
+        ? `Depoya aktarıldı. Yeni: ${created}, Güncel: ${updated}`
+        : "Bu fiş daha önce depoya aktarılmış."
+    };
+  });
+
   ipcMain.handle("stocks:movement", async (_event, payload) => {
     const data = await loadStorage();
     const { stockName, type, quantity, note, createdAt } = payload;
+    const normalizedName = normalizeStockName(stockName);
     data.stockMovements = createRecord(data.stockMovements, {
-      stockName,
+      stockName: normalizedName,
       type,
       quantity: Number(quantity || 0),
       note,
       createdAt
     });
     data.stocks = data.stocks.map((stock) => {
-      if (stock.name !== stockName) {
+      if (stock.normalizedName !== normalizedName && stock.name !== stockName) {
         return stock;
       }
       const current = Number(stock.quantity || 0);
@@ -428,6 +764,78 @@ app.whenReady().then(() => {
     return data;
   });
 
+  ipcMain.handle("stocks:import-preview", async (_event, payload) => {
+    const data = await loadStorage();
+    const settings = await loadSettings();
+    const { path: filePath, warehouse } = payload || {};
+    if (!filePath) {
+      return { error: "Dosya yolu bulunamadı.", rows: [], summary: {} };
+    }
+    const parsed = await parseImportFile(filePath);
+    if (parsed.error) {
+      return { error: parsed.error, rows: [], summary: {} };
+    }
+    const rows = parsed.rows || [];
+    if (!rows.length) {
+      return {
+        error: "Dosyada okunabilir kayıt bulunamadı.",
+        rows: [],
+        summary: {}
+      };
+    }
+    const report = analyzeImportRows(
+      data,
+      rows,
+      resolveWarehouse(warehouse, settings),
+      settings
+    );
+    return {
+      rows,
+      summary: report.summary,
+      report
+    };
+  });
+
+  ipcMain.handle("stocks:import-apply", async (_event, payload) => {
+    const data = await loadStorage();
+    const settings = await loadSettings();
+    const { rows = [], warehouse } = payload || {};
+    const targetWarehouse = resolveWarehouse(warehouse, settings);
+    const report = analyzeImportRows(data, rows, targetWarehouse, settings);
+    report.rows.forEach((row, index) => {
+      if (row.status === "error") {
+        return;
+      }
+      const source = mapImportRow(rows[index] || {});
+      const result = upsertStockEntry(
+        data,
+        {
+          ...source,
+          name: row.name,
+          quantity: row.quantity,
+          unit: source.unit,
+          diameter: source.diameter,
+          warehouse: targetWarehouse
+        },
+        {
+          note: "Toplu aktarım",
+          createdAt: new Date().toISOString()
+        },
+        settings
+      );
+      if (result?.status === "updated") {
+        row.statusLabel = "Güncellendi";
+      }
+      if (result?.status === "created") {
+        row.statusLabel = "Eklendi";
+      }
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return { ...data, report };
+  });
+
   ipcMain.handle("cash:create", async (_event, payload) => {
     const data = await loadStorage();
     data.cashTransactions = createRecord(data.cashTransactions, payload);
@@ -435,6 +843,15 @@ app.whenReady().then(() => {
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
     return data.cashTransactions;
+  });
+
+  ipcMain.handle("invoices:create", async (_event, payload) => {
+    const data = await loadStorage();
+    data.invoices = createRecord(data.invoices, payload);
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
   });
 
   ipcMain.handle("sales:create", async (_event, payload) => {
@@ -462,7 +879,11 @@ app.whenReady().then(() => {
     }
 
     const updatedStocks = data.stocks.map((stock) => {
-      const item = items.find((entry) => entry.name === stock.name);
+      const item = items.find(
+        (entry) =>
+          normalizeStockName(entry.name) === stock.normalizedName ||
+          entry.name === stock.name
+      );
       if (!item) {
         return stock;
       }
@@ -478,8 +899,9 @@ app.whenReady().then(() => {
       if (!item.name) {
         return;
       }
+      const normalizedName = normalizeStockName(item.name);
       data.stockMovements = createRecord(data.stockMovements, {
-        stockName: item.name,
+        stockName: normalizedName || item.name,
         type: "cikis",
         quantity: normalizeNumber(item.quantity),
         note: `Satış: ${customerName || "Genel"}`

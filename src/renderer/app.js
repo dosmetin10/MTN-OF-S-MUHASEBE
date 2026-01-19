@@ -17,16 +17,18 @@ const summaryCashEl = document.getElementById("summary-cash");
 const summaryBalanceEl = document.getElementById("summary-balance");
 const summaryAlertsEl = document.getElementById("summary-alerts");
 const customerForm = document.getElementById("customer-form");
-const customerDebtForm = document.getElementById("customer-debt-form");
-const customerPaymentForm = document.getElementById("customer-payment-form");
-const customerDebtDateInput = document.getElementById("customer-debt-date");
+const customerTransactionForm = document.getElementById(
+  "customer-transaction-form"
+);
+const customerTransactionDateInput = document.getElementById(
+  "customer-transaction-date"
+);
 const customerJobForm = document.getElementById("customer-job-form");
 const customerJobDateInput = document.getElementById("customer-job-date");
-const customerPaymentDateInput = document.getElementById(
-  "customer-payment-date"
+const transactionCustomerSelect = document.getElementById(
+  "transaction-customer"
 );
-const debtCustomerSelect = document.getElementById("debt-customer");
-const paymentCustomerSelect = document.getElementById("payment-customer");
+const transactionTypeSelect = document.getElementById("transaction-type");
 const customersTable = document.getElementById("customers-table");
 const customerSearchInput = document.getElementById("customer-search");
 const customerSearchButton = document.getElementById("customer-search-btn");
@@ -46,11 +48,45 @@ const stockReceiptDateInput = document.getElementById("stock-receipt-date");
 const stockReceiptSupplierInput = document.getElementById(
   "stock-receipt-supplier"
 );
+const stockReceiptWarehouseSelect = document.getElementById(
+  "stock-receipt-warehouse"
+);
+const stockReceiptFileInput = document.getElementById("stock-receipt-file");
 const stockSearchInput = document.getElementById("stock-search");
 const stockSearchButton = document.getElementById("stock-search-btn");
 const stockSearchSuggestion = document.getElementById("stock-search-suggestion");
 const stockExportCsvButton = document.getElementById("stock-export-csv");
 const stockExportPdfButton = document.getElementById("stock-export-pdf");
+const stockImportFileInput = document.getElementById("stock-import-file");
+const stockImportWarehouseSelect = document.getElementById(
+  "stock-import-warehouse"
+);
+const stockImportPreviewButton = document.getElementById(
+  "stock-import-preview"
+);
+const stockImportApplyButton = document.getElementById("stock-import-apply");
+const stockImportResetButton = document.getElementById("stock-import-reset");
+const stockImportSummaryEl = document.getElementById("stock-import-summary");
+const stockImportTable = document.getElementById("stock-import-table");
+const stockReceiptsTable = document.getElementById("stock-receipts-table");
+const stockReceiptsTransferButton = document.getElementById(
+  "stock-receipts-transfer"
+);
+const receiptFilterStartInput = document.getElementById("receipt-filter-start");
+const receiptFilterEndInput = document.getElementById("receipt-filter-end");
+const receiptFilterSupplierInput = document.getElementById(
+  "receipt-filter-supplier"
+);
+const receiptFilterWarehouseSelect = document.getElementById(
+  "receipt-filter-warehouse"
+);
+const receiptFilterStatusSelect = document.getElementById(
+  "receipt-filter-status"
+);
+const stockListSearchInput = document.getElementById("stock-list-search");
+const stockListSearchButton = document.getElementById("stock-list-search-btn");
+const stockListTable = document.getElementById("stock-list-table");
+const stockListEmptyEl = document.getElementById("stock-list-empty");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
@@ -65,6 +101,9 @@ const reportStockMovementsButton = document.getElementById(
   "report-stock-movements"
 );
 const reportCashSummaryButton = document.getElementById("report-cash-summary");
+const customerBalanceReportButton = document.getElementById(
+  "customer-balance-report"
+);
 const reportPathEl = document.getElementById("report-path");
 const assistantDailyEl = document.getElementById("assistant-daily");
 const assistantRemindersEl = document.getElementById("assistant-reminders");
@@ -103,6 +142,10 @@ const userRoleEl = document.getElementById("user-role");
 const userNameEl = document.getElementById("user-name");
 const licenseKeyInput = document.getElementById("license-key");
 const licenseCheckButton = document.getElementById("license-check");
+const invoiceForm = document.getElementById("invoice-form");
+const invoiceDateInput = document.getElementById("invoice-date");
+const invoiceFileInput = document.getElementById("invoice-file");
+const invoicesTable = document.getElementById("invoices-table");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -119,6 +162,12 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const setStatus = (message) => {
+  if (reportPathEl) {
+    reportPathEl.textContent = message;
+  }
+};
+
 let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
@@ -131,6 +180,9 @@ let cachedCustomerDebts = [];
 let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
+let cachedStockReceipts = [];
+let cachedInvoices = [];
+let cachedImportRows = [];
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -171,7 +223,7 @@ const getSuggestion = (term, items, getLabel) => {
 };
 
 const applyBranding = (settings) => {
-  const companyName = settings.companyName || "MTN Muhasebe";
+  const companyName = settings.companyName || "MTN Masaüstü";
   if (brandTitle) {
     brandTitle.textContent = companyName.toUpperCase();
   }
@@ -292,7 +344,12 @@ const renderCustomers = (items) => {
     ? items.filter((item) => {
         const name = normalizeText(item.name);
         const code = normalizeText(item.code);
-        return name.includes(searchTerm) || code.includes(searchTerm);
+        const normalized = normalizeText(item.normalizedName);
+        return (
+          name.includes(searchTerm) ||
+          code.includes(searchTerm) ||
+          normalized.includes(searchTerm)
+        );
       })
     : items;
   if (offerCustomerSelect) {
@@ -302,19 +359,12 @@ const renderCustomers = (items) => {
     defaultOption.textContent = "Genel";
     offerCustomerSelect.appendChild(defaultOption);
   }
-  if (paymentCustomerSelect) {
-    paymentCustomerSelect.innerHTML = "";
+  if (transactionCustomerSelect) {
+    transactionCustomerSelect.innerHTML = "";
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
     defaultOption.textContent = "Cari Seç";
-    paymentCustomerSelect.appendChild(defaultOption);
-  }
-  if (debtCustomerSelect) {
-    debtCustomerSelect.innerHTML = "";
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Cari Seç";
-    debtCustomerSelect.appendChild(defaultOption);
+    transactionCustomerSelect.appendChild(defaultOption);
   }
   if (detailCustomerSelect) {
     detailCustomerSelect.innerHTML = "";
@@ -359,21 +409,13 @@ const renderCustomers = (items) => {
         : item.name || "Cari";
       offerCustomerSelect.appendChild(option);
     }
-    if (paymentCustomerSelect) {
+    if (transactionCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
       option.textContent = item.code
         ? `${item.code} - ${item.name || "Cari"}`
         : item.name || "Cari";
-      paymentCustomerSelect.appendChild(option);
-    }
-    if (debtCustomerSelect) {
-      const option = document.createElement("option");
-      option.value = item.id || item.name || "";
-      option.textContent = item.code
-        ? `${item.code} - ${item.name || "Cari"}`
-        : item.name || "Cari";
-      debtCustomerSelect.appendChild(option);
+      transactionCustomerSelect.appendChild(option);
     }
     if (detailCustomerSelect) {
       const option = document.createElement("option");
@@ -419,7 +461,7 @@ const renderStocks = (items) => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${item.code || "-"}</td>
-      <td>${item.name || "-"}</td>
+      <td>${item.normalizedName || item.name || "-"}</td>
       <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
@@ -430,10 +472,10 @@ const renderStocks = (items) => {
   items.forEach((item) => {
     if (movementStockSelect) {
       const option = document.createElement("option");
-      option.value = item.name || "";
+      option.value = item.normalizedName || item.name || "";
       option.textContent = item.code
-        ? `${item.code} - ${item.name || "Malzeme"}`
-        : item.name || "Malzeme";
+        ? `${item.code} - ${item.normalizedName || item.name || "Malzeme"}`
+        : item.normalizedName || item.name || "Malzeme";
       movementStockSelect.appendChild(option);
     }
   });
@@ -448,13 +490,160 @@ const renderStocks = (items) => {
     const suggestion = getSuggestion(
       searchTerm,
       items,
-      (item) => item.name || ""
+      (item) => item.normalizedName || item.name || ""
     );
     stockSearchSuggestion.textContent =
       searchTerm && !filtered.length && suggestion
         ? `Şunu mu demek istediniz: ${suggestion}`
         : "";
   }
+  renderStockList(items);
+};
+
+const renderStockList = (items) => {
+  if (!stockListTable) {
+    return;
+  }
+  stockListTable.innerHTML = "";
+  const searchTerm = normalizeText(stockListSearchInput?.value);
+  const filtered = searchTerm
+    ? items.filter((item) => {
+        const name = normalizeText(item.name);
+        const code = normalizeText(item.code);
+        const normalized = normalizeText(item.normalizedName);
+        return (
+          name.includes(searchTerm) ||
+          code.includes(searchTerm) ||
+          normalized.includes(searchTerm)
+        );
+      })
+    : items;
+  filtered.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.code || "-"}</td>
+      <td>${item.normalizedName || item.name || "-"}</td>
+      <td>${item.warehouse || "Ana Depo"}</td>
+      <td>${item.quantity || 0}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${
+        item.updatedAt
+          ? new Date(item.updatedAt).toLocaleDateString("tr-TR")
+          : "-"
+      }</td>
+    `;
+    stockListTable.appendChild(row);
+  });
+  if (stockListEmptyEl) {
+    stockListEmptyEl.textContent =
+      searchTerm && !filtered.length
+        ? "Aradığınız kriterlere uygun stok bulunamadı."
+        : "";
+  }
+};
+
+const renderStockReceipts = (items) => {
+  cachedStockReceipts = items || [];
+  if (!stockReceiptsTable) {
+    return;
+  }
+  stockReceiptsTable.innerHTML = "";
+  const supplierTerm = normalizeText(receiptFilterSupplierInput?.value);
+  const warehouseFilter = receiptFilterWarehouseSelect?.value || "";
+  const statusFilter = receiptFilterStatusSelect?.value || "";
+  const startDate = receiptFilterStartInput?.value
+    ? new Date(receiptFilterStartInput.value)
+    : null;
+  const endDate = receiptFilterEndInput?.value
+    ? new Date(receiptFilterEndInput.value)
+    : null;
+  if (endDate) {
+    endDate.setHours(23, 59, 59, 999);
+  }
+  const filtered = cachedStockReceipts.filter((receipt) => {
+    if (
+      supplierTerm &&
+      !normalizeText(receipt.supplier).includes(supplierTerm)
+    ) {
+      return false;
+    }
+    if (warehouseFilter && receipt.warehouse !== warehouseFilter) {
+      return false;
+    }
+    if (statusFilter === "transferred" && !receipt.transferredAt) {
+      return false;
+    }
+    if (statusFilter === "pending" && receipt.transferredAt) {
+      return false;
+    }
+    const createdAt = receipt.createdAt ? new Date(receipt.createdAt) : null;
+    if (startDate && createdAt && createdAt < startDate) {
+      return false;
+    }
+    if (endDate && createdAt && createdAt > endDate) {
+      return false;
+    }
+    return true;
+  });
+  filtered.forEach((receipt) => {
+    const row = document.createElement("tr");
+    const total = (receipt.items || []).reduce(
+      (sum, item) =>
+        sum + Number(item.purchasePrice || 0) * Number(item.quantity || 0),
+      0
+    );
+    row.innerHTML = `
+      <td><input type="checkbox" data-receipt-id="${receipt.id}" ${
+        receipt.transferredAt ? "disabled" : ""
+      } /></td>
+      <td>${new Date(receipt.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${receipt.warehouse || "Ana Depo"}</td>
+      <td>${receipt.supplier || "-"}</td>
+      <td>${receipt.items?.length || 0}</td>
+      <td>${formatCurrency(total)}</td>
+      <td>${
+        receipt.transferredAt ? "Aktarıldı" : "Bekliyor"
+      }</td>
+    `;
+    row.addEventListener("dblclick", () => {
+      if (receipt.attachment?.path) {
+        window.mtnApp?.openFile?.(receipt.attachment.path);
+      }
+    });
+    stockReceiptsTable.appendChild(row);
+  });
+};
+
+const renderInvoices = (items) => {
+  cachedInvoices = items || [];
+  if (!invoicesTable) {
+    return;
+  }
+  invoicesTable.innerHTML = "";
+  const sorted = [...cachedInvoices].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.forEach((invoice) => {
+    const row = document.createElement("tr");
+    const fileLabel = invoice.attachment?.name || "-";
+    row.innerHTML = `
+      <td>${new Date(invoice.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${invoice.vendor || "-"}</td>
+      <td>${formatCurrency(Number(invoice.amount || 0))}</td>
+      <td><button class="ghost" data-open-path="${
+        invoice.attachment?.path || ""
+      }">${fileLabel}</button></td>
+      <td>${invoice.note || "-"}</td>
+    `;
+    row
+      .querySelector("[data-open-path]")
+      ?.addEventListener("click", () => {
+        if (invoice.attachment?.path) {
+          window.mtnApp?.openFile?.(invoice.attachment.path);
+        }
+      });
+    invoicesTable.appendChild(row);
+  });
 };
 
 const renderStockMovements = (items) => {
@@ -492,6 +681,7 @@ const createReceiptRow = () => {
     <td><input data-field="diameter" placeholder="Çap" /></td>
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
     <td><input data-field="threshold" type="number" min="0" step="1" /></td>
   `;
   return row;
@@ -842,13 +1032,18 @@ const loadInitialData = async () => {
   const data = await window.mtnApp.getData();
   renderCustomers(data.customers || []);
   renderStocks(data.stocks || []);
+  renderStockList(data.stocks || []);
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
   renderStockMovements(data.stockMovements || []);
   cachedCustomerDebts = data.customerDebts || [];
   cachedCustomerJobs = data.customerJobs || [];
+  cachedStockReceipts = data.stockReceipts || [];
+  cachedInvoices = data.invoices || [];
   renderSummary(data);
   renderCustomerDetail(data);
+  renderStockReceipts(data.stockReceipts || []);
+  renderInvoices(data.invoices || []);
 };
 
 const readLogoFile = (file) =>
@@ -873,14 +1068,14 @@ const setTodayDate = () => {
   if (stockReceiptDateInput) {
     stockReceiptDateInput.value = today;
   }
-  if (customerDebtDateInput) {
-    customerDebtDateInput.value = today;
-  }
   if (customerJobDateInput) {
     customerJobDateInput.value = today;
   }
-  if (customerPaymentDateInput) {
-    customerPaymentDateInput.value = today;
+  if (customerTransactionDateInput) {
+    customerTransactionDateInput.value = today;
+  }
+  if (invoiceDateInput) {
+    invoiceDateInput.value = today;
   }
 };
 
@@ -908,6 +1103,14 @@ const initApp = async () => {
   applyBranding(settings);
   if (settings.users?.length) {
     users = settings.users;
+  }
+  if (stockReceiptWarehouseSelect) {
+    stockReceiptWarehouseSelect.value =
+      settings.defaultWarehouse || "Ana Depo";
+  }
+  if (stockImportWarehouseSelect) {
+    stockImportWarehouseSelect.value =
+      settings.defaultWarehouse || "Ana Depo";
   }
   if (licenseKeyInput) {
     licenseKeyInput.value = settings.licenseKey || "";
@@ -1147,7 +1350,7 @@ const generateReport = async (type) => {
     headers = ["Kod", "Malzeme", "Çap", "Birim", "Stok", "Kritik Seviye"];
     rows = (data.stocks || []).map((item) => [
       item.code || "-",
-      item.name || "-",
+      item.normalizedName || item.name || "-",
       item.diameter || "-",
       item.unit || "-",
       item.quantity || 0,
@@ -1195,8 +1398,31 @@ const generateReport = async (type) => {
     ];
   }
 
+  if (type === "customer-balance") {
+    title = "Borçlular Listesi";
+    headers = ["Cari Adı", "Borç", "Alacak", "Net"];
+    const balances = (data.customers || []).map((customer) => {
+      const balance = Number(customer.balance || 0);
+      return [
+        customer.name || "-",
+        balance > 0 ? formatCurrency(balance) : formatCurrency(0),
+        balance < 0 ? formatCurrency(Math.abs(balance)) : formatCurrency(0),
+        formatCurrency(balance)
+      ];
+    });
+    const totalNet = (data.customers || []).reduce(
+      (sum, customer) => sum + Number(customer.balance || 0),
+      0
+    );
+    rows = [
+      ...balances,
+      ["GENEL TOPLAM", "-", "-", formatCurrency(totalNet)]
+    ];
+  }
+
   const html = buildReportTable(title, headers, rows, {
-    includeWatermark: type === "customers" || type === "cash"
+    includeWatermark:
+      type === "customers" || type === "cash" || type === "customer-balance"
   });
   const result = await window.mtnApp.generateReport({ title, html });
   reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
@@ -1207,6 +1433,14 @@ if (customerForm) {
     event.preventDefault();
     const formData = new FormData(customerForm);
     const payload = Object.fromEntries(formData.entries());
+    const normalizedName = normalizeText(payload.name);
+    const hasDuplicate = cachedCustomers.some(
+      (customer) => normalizeText(customer.name) === normalizedName
+    );
+    if (hasDuplicate) {
+      setStatus("Bu isimde bir cari zaten mevcut. Lütfen kontrol edin.");
+      return;
+    }
     await window.mtnApp.createCustomer(payload);
     const data = await window.mtnApp.getData();
     renderCustomers(data.customers || []);
@@ -1216,62 +1450,34 @@ if (customerForm) {
   });
 }
 
-if (customerPaymentForm) {
-  customerPaymentForm.addEventListener("submit", async (event) => {
+if (customerTransactionForm) {
+  customerTransactionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!window.mtnApp?.collectPayment) {
-      reportPathEl.textContent = "Tahsilat servisi hazır değil.";
+    if (!window.mtnApp?.createCustomerTransaction) {
+      setStatus("Cari işlem servisi hazır değil.");
       return;
     }
-    const formData = new FormData(customerPaymentForm);
+    const formData = new FormData(customerTransactionForm);
     const payload = Object.fromEntries(formData.entries());
-    const customerId = paymentCustomerSelect?.value || "";
+    const customerId = transactionCustomerSelect?.value || "";
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.");
       return;
     }
-    const result = await window.mtnApp.collectPayment({
+    const result = await window.mtnApp.createCustomerTransaction({
       customerId,
-      amount: payload.amount,
-      note: payload.note,
-      createdAt: payload.createdAt
-    });
-    renderCustomers(result.customers || []);
-    renderCash(result.cashTransactions || []);
-    renderSummary(result);
-    renderCustomerDetail(result);
-    reportPathEl.textContent = "Tahsilat kaydedildi.";
-    customerPaymentForm.reset();
-    setTodayDate();
-  });
-}
-
-if (customerDebtForm) {
-  customerDebtForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!window.mtnApp?.addDebt) {
-      reportPathEl.textContent = "Borç servisi hazır değil.";
-      return;
-    }
-    const formData = new FormData(customerDebtForm);
-    const payload = Object.fromEntries(formData.entries());
-    const customerId = debtCustomerSelect?.value || "";
-    if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
-      return;
-    }
-    const result = await window.mtnApp.addDebt({
-      customerId,
+      type: payload.type,
       amount: payload.amount,
       note: payload.note,
       createdAt: payload.createdAt
     });
     cachedCustomerDebts = result.customerDebts || [];
     renderCustomers(result.customers || []);
+    renderCash(result.cashTransactions || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "Borç kaydedildi.";
-    customerDebtForm.reset();
+    setStatus("Cari işlem kaydedildi.");
+    customerTransactionForm.reset();
     setTodayDate();
   });
 }
@@ -1307,6 +1513,10 @@ if (customerJobForm) {
     updateJobTotal();
     const formData = new FormData(customerJobForm);
     const payload = Object.fromEntries(formData.entries());
+    if (!payload.title || Number(payload.quantity || 0) <= 0) {
+      setStatus("İş kalemi için zorunlu alanları doldurun.");
+      return;
+    }
     const result = await window.mtnApp.addCustomerJob({
       customerId,
       title: payload.title,
@@ -1372,7 +1582,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
   stockReceiptSubmit.addEventListener("click", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.createStockReceipt) {
-      reportPathEl.textContent = "Fiş servisi hazır değil.";
+      setStatus("Fiş servisi hazır değil.");
       return;
     }
     const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
@@ -1381,19 +1591,22 @@ if (stockReceiptSubmit && stockReceiptBody) {
         diameter: row.querySelector("[data-field='diameter']")?.value || "",
         unit: row.querySelector("[data-field='unit']")?.value || "",
         quantity: row.querySelector("[data-field='quantity']")?.value || "",
+        purchasePrice:
+          row.querySelector("[data-field='purchasePrice']")?.value || "",
         threshold: row.querySelector("[data-field='threshold']")?.value || ""
       })
     );
     const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
     if (!items.length) {
-      reportPathEl.textContent = "Fiş için en az bir malzeme girin.";
+      setStatus("Fiş için en az bir malzeme girin.");
       return;
     }
-    const approved = window.confirm("Fiş depoya aktarılsın mı?");
+    const approved = window.confirm("Fiş kaydedilsin ve depoya aktarılsın mı?");
     if (!approved) {
       return;
     }
     const supplierName = stockReceiptSupplierInput?.value?.trim();
+    const warehouseName = stockReceiptWarehouseSelect?.value || "Ana Depo";
     const noteParts = [];
     if (supplierName) {
       noteParts.push(`Malzemeci: ${supplierName}`);
@@ -1401,16 +1614,29 @@ if (stockReceiptSubmit && stockReceiptBody) {
     if (stockReceiptNote?.value) {
       noteParts.push(stockReceiptNote.value);
     }
+    let attachment = null;
+    const file = stockReceiptFileInput?.files?.[0];
+    if (file && window.mtnApp?.saveAttachment) {
+      attachment = await window.mtnApp.saveAttachment({
+        path: file.path,
+        name: file.name,
+        category: "stock-receipt"
+      });
+    }
     const result = await window.mtnApp.createStockReceipt({
       items,
       note: noteParts.join(" • "),
+      supplier: supplierName,
+      warehouse: warehouseName,
+      attachment,
       createdAt:
         stockReceiptDateInput?.value || new Date().toISOString().split("T")[0]
     });
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
-    reportPathEl.textContent = "Fiş depoya aktarıldı.";
+    setStatus("Fiş kaydedildi ve depoya aktarıldı.");
     stockReceiptBody.innerHTML = "";
     stockReceiptBody.appendChild(createReceiptRow());
     if (stockReceiptNote) {
@@ -1418,6 +1644,9 @@ if (stockReceiptSubmit && stockReceiptBody) {
     }
     if (stockReceiptSupplierInput) {
       stockReceiptSupplierInput.value = "";
+    }
+    if (stockReceiptFileInput) {
+      stockReceiptFileInput.value = "";
     }
   });
 }
@@ -1432,6 +1661,39 @@ if (cashForm) {
     renderCash(data.cashTransactions || []);
     renderSummary(data);
     cashForm.reset();
+    setTodayDate();
+  });
+}
+
+if (invoiceForm) {
+  invoiceForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createInvoice) {
+      setStatus("Fatura servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(invoiceForm);
+    const payload = Object.fromEntries(formData.entries());
+    const file = invoiceFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Fatura dosyası seçin.");
+      return;
+    }
+    const attachment = await window.mtnApp.saveAttachment({
+      path: file.path,
+      name: file.name,
+      category: "invoice"
+    });
+    const result = await window.mtnApp.createInvoice({
+      vendor: payload.vendor,
+      amount: payload.amount,
+      note: payload.note,
+      createdAt: payload.createdAt,
+      attachment
+    });
+    renderInvoices(result.invoices || []);
+    setStatus("Fatura kaydedildi.");
+    invoiceForm.reset();
     setTodayDate();
   });
 }
@@ -1472,6 +1734,155 @@ if (stockSearchButton) {
   stockSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleStockSearch();
+  });
+}
+
+const resetStockImport = () => {
+  cachedImportRows = [];
+  if (stockImportSummaryEl) {
+    stockImportSummaryEl.textContent = "Dosya seçilmedi.";
+  }
+  if (stockImportTable) {
+    stockImportTable.innerHTML = "";
+  }
+  if (stockImportFileInput) {
+    stockImportFileInput.value = "";
+  }
+};
+
+const renderStockImportPreview = (report) => {
+  if (!stockImportTable) {
+    return;
+  }
+  stockImportTable.innerHTML = "";
+  if (stockImportSummaryEl) {
+    stockImportSummaryEl.textContent = `Yeni: ${report.summary.newCount}, Güncellenecek: ${report.summary.updateCount}, Hatalı: ${report.summary.errorCount}`;
+  }
+  report.rows.forEach((row) => {
+    const tableRow = document.createElement("tr");
+    tableRow.innerHTML = `
+      <td>${row.statusLabel}</td>
+      <td>${row.code || "-"}</td>
+      <td>${row.name || "-"}</td>
+      <td>${row.quantity || "-"}</td>
+      <td>${row.unit || "-"}</td>
+    `;
+    stockImportTable.appendChild(tableRow);
+  });
+};
+
+if (stockImportPreviewButton) {
+  stockImportPreviewButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.previewStockImport) {
+      setStatus("Toplu aktarım servisi hazır değil.");
+      return;
+    }
+    const file = stockImportFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Lütfen bir dosya seçin.");
+      return;
+    }
+    const result = await window.mtnApp.previewStockImport({
+      path: file.path,
+      warehouse: stockImportWarehouseSelect?.value || "Ana Depo"
+    });
+    if (result.error) {
+      setStatus(result.error);
+      return;
+    }
+    cachedImportRows = result.rows || [];
+    renderStockImportPreview(result.report);
+  });
+}
+
+if (stockImportApplyButton) {
+  stockImportApplyButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.applyStockImport) {
+      setStatus("Toplu aktarım servisi hazır değil.");
+      return;
+    }
+    if (!cachedImportRows.length) {
+      setStatus("Önce önizleme alın.");
+      return;
+    }
+    const approved = window.confirm("Toplu aktarım onaylansın mı?");
+    if (!approved) {
+      return;
+    }
+    const result = await window.mtnApp.applyStockImport({
+      rows: cachedImportRows,
+      warehouse: stockImportWarehouseSelect?.value || "Ana Depo"
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    renderStockImportPreview(result.report);
+    setStatus("Toplu aktarım tamamlandı.");
+  });
+}
+
+if (stockImportResetButton) {
+  stockImportResetButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    resetStockImport();
+  });
+}
+
+const handleStockListSearch = () => {
+  renderStockList(cachedStocks);
+};
+
+if (stockListSearchInput) {
+  stockListSearchInput.addEventListener("input", handleStockListSearch);
+}
+
+if (stockListSearchButton) {
+  stockListSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    handleStockListSearch();
+  });
+}
+
+const handleReceiptFilter = () => {
+  renderStockReceipts(cachedStockReceipts);
+};
+
+[
+  receiptFilterStartInput,
+  receiptFilterEndInput,
+  receiptFilterSupplierInput,
+  receiptFilterWarehouseSelect,
+  receiptFilterStatusSelect
+].forEach((input) => {
+  input?.addEventListener("input", handleReceiptFilter);
+  input?.addEventListener("change", handleReceiptFilter);
+});
+
+if (stockReceiptsTransferButton) {
+  stockReceiptsTransferButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.transferStockReceipts) {
+      setStatus("Depo aktarım servisi hazır değil.");
+      return;
+    }
+    const selectedIds = Array.from(
+      stockReceiptsTable?.querySelectorAll("input[type='checkbox']:checked") ||
+        []
+    ).map((input) => input.dataset.receiptId);
+    if (!selectedIds.length) {
+      setStatus("Aktarım için fiş seçin.");
+      return;
+    }
+    const result = await window.mtnApp.transferStockReceipts({
+      receiptIds: selectedIds
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    setStatus(result.message || "Fişler depoya aktarıldı.");
   });
 }
 
@@ -1696,7 +2107,7 @@ if (stockExportCsvButton) {
     ];
     const rows = (cachedStocks || []).map((item) => [
       item.code || "",
-      item.name || "",
+      item.normalizedName || item.name || "",
       item.diameter || "",
       item.unit || "",
       item.quantity || 0,
@@ -1736,6 +2147,12 @@ if (reportStockMovementsButton) {
 if (reportCashSummaryButton) {
   reportCashSummaryButton.addEventListener("click", () =>
     generateReport("cash-summary")
+  );
+}
+
+if (customerBalanceReportButton) {
+  customerBalanceReportButton.addEventListener("click", () =>
+    generateReport("customer-balance")
   );
 }
 
