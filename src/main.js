@@ -731,13 +731,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle("sales:create", async (_event, payload) => {
     const data = await loadStorage();
-    const { customerId, customerName, items, total, vatRate } = payload;
+    const { customerId, customerName, items, total, vatRate, currency } = payload;
     const saleRecord = {
       customerId,
       customerName,
       items,
       total,
-      vatRate
+      vatRate,
+      currency: currency || "TRY"
     };
     data.sales = createRecord(data.sales, saleRecord);
 
@@ -781,6 +782,7 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, {
       type: "gelir",
       amount: total,
+      currency: currency || "TRY",
       note: `Satış: ${customerName || "Genel"}`
     });
 

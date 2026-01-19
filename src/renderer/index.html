@@ -535,6 +535,9 @@
                   <input name="note" placeholder="Fiş açıklaması" />
                 </label>
                 <button class="primary" type="submit">Hareket Kaydet</button>
+                <button class="ghost" type="button" id="stock-movement-slip">
+                  Çıkış Fişi PDF
+                </button>
               </form>
               <div class="table-card table-card--sheet">
                 <h3>Stok Hareketleri</h3>
@@ -580,6 +583,7 @@
                 <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
                 <div class="offer__actions">
                   <button id="add-row">+ Satır Ekle</button>
+                  <button class="ghost" id="offer-quote-pdf">Teklif PDF</button>
                   <button class="primary" id="offer-pdf">Fatura PDF</button>
                 </div>
               </div>
@@ -587,6 +591,14 @@
                 <label>
                   Cari Seç
                   <select id="offer-customer"></select>
+                </label>
+                <label>
+                  Para Birimi
+                  <select id="offer-currency">
+                    <option value="TRY">₺ TL</option>
+                    <option value="USD">$ USD</option>
+                    <option value="EUR">€ EUR</option>
+                  </select>
                 </label>
                 <label>
                   Ödeme Türü
