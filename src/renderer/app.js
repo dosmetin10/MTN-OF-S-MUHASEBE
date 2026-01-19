@@ -518,6 +518,7 @@ const renderStocks = (items) => {
     movementStockSelect.appendChild(defaultOption);
   }
   filtered.forEach((item) => {
+    const isActive = item.isActive !== false;
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${item.code || "-"}</td>
@@ -525,11 +526,42 @@ const renderStocks = (items) => {
       <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
+      <td>${formatCurrency(Number(item.purchasePrice || 0))}</td>
+      <td>${formatCurrency(Number(item.salePrice || 0))}</td>
+      <td>${Number(item.vatRate || 0)}</td>
       <td>${item.threshold || 0}</td>
+      <td>
+        <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
+          ${isActive ? "Aktif" : "Pasif"}
+        </span>
+      </td>
+      <td>
+        <button class="ghost" data-toggle-stock="${
+          item.id
+        }" data-active="${isActive ? "true" : "false"}">
+          ${isActive ? "Pasife Al" : "Aktifleştir"}
+        </button>
+      </td>
     `;
+    row.querySelector("[data-toggle-stock]")?.addEventListener("click", async () => {
+      if (!window.mtnApp?.toggleStockStatus) {
+        setStatus("Stok servisi hazır değil.");
+        return;
+      }
+      const nextActive = !isActive;
+      const result = await window.mtnApp.toggleStockStatus({
+        stockId: item.id,
+        isActive: nextActive
+      });
+      renderStocks(result || []);
+      setStatus(nextActive ? "Stok aktifleştirildi." : "Stok pasife alındı.");
+    });
     stocksTable.appendChild(row);
   });
   items.forEach((item) => {
+    if (item.isActive === false) {
+      return;
+    }
     if (movementStockSelect) {
       const option = document.createElement("option");
       option.value = item.normalizedName || item.name || "";
@@ -586,6 +618,7 @@ const renderStockList = (items) => {
       <td>${item.warehouse || "Ana Depo"}</td>
       <td>${item.quantity || 0}</td>
       <td>${item.unit || "-"}</td>
+      <td>${item.isActive === false ? "Pasif" : "Aktif"}</td>
       <td>${
         item.updatedAt
           ? new Date(item.updatedAt).toLocaleDateString("tr-TR")

@@ -234,7 +234,8 @@ const normalizeData = (data) => ({
   stocks: (data.stocks || []).map((stock) => ({
     ...stock,
     normalizedName: stock.normalizedName || normalizeStockName(stock.name || ""),
-    warehouse: stock.warehouse || "Ana Depo"
+    warehouse: stock.warehouse || "Ana Depo",
+    isActive: stock.isActive !== false
   })),
   stockReceipts: data.stockReceipts || [],
   cashTransactions: data.cashTransactions || [],
@@ -697,6 +698,19 @@ const upsertStockEntry = (data, payload, meta = {}, settings = {}) => {
       normalizedName,
       diameter: payload.diameter || existing.diameter,
       unit: payload.unit || existing.unit,
+      purchasePrice:
+        payload.purchasePrice !== undefined && payload.purchasePrice !== ""
+          ? normalizeNumber(payload.purchasePrice)
+          : existing.purchasePrice,
+      salePrice:
+        payload.salePrice !== undefined && payload.salePrice !== ""
+          ? normalizeNumber(payload.salePrice)
+          : existing.salePrice,
+      vatRate:
+        payload.vatRate !== undefined && payload.vatRate !== ""
+          ? normalizeNumber(payload.vatRate)
+          : existing.vatRate,
+      description: payload.description || existing.description,
       warehouse,
       quantity: nextQuantity,
       threshold,
@@ -718,12 +732,27 @@ const upsertStockEntry = (data, payload, meta = {}, settings = {}) => {
   }
   data.stocks = createRecord(data.stocks, {
     code: payload.code || generateCode("STK"),
-    ...payload,
     name: incomingName,
     normalizedName,
+    diameter: payload.diameter,
+    unit: payload.unit,
+    purchasePrice:
+      payload.purchasePrice !== undefined && payload.purchasePrice !== ""
+        ? normalizeNumber(payload.purchasePrice)
+        : undefined,
+    salePrice:
+      payload.salePrice !== undefined && payload.salePrice !== ""
+        ? normalizeNumber(payload.salePrice)
+        : undefined,
+    vatRate:
+      payload.vatRate !== undefined && payload.vatRate !== ""
+        ? normalizeNumber(payload.vatRate)
+        : undefined,
+    description: payload.description || "",
     warehouse,
     quantity: incomingQuantity,
     threshold,
+    isActive: payload.isActive !== false,
     updatedAt: new Date().toISOString()
   });
   data.stockMovements = createRecord(data.stockMovements, {
@@ -987,6 +1016,25 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     const settings = await loadSettings();
     upsertStockEntry(data, payload, { note: "Stok kartı girişi" }, settings);
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.stocks;
+  });
+
+  ipcMain.handle("stocks:toggle-status", async (_event, payload) => {
+    const data = await loadStorage();
+    const { stockId, isActive } = payload || {};
+    data.stocks = data.stocks.map((stock) => {
+      if (stock.id !== stockId) {
+        return stock;
+      }
+      return {
+        ...stock,
+        isActive: Boolean(isActive),
+        deactivatedAt: isActive ? "" : new Date().toISOString()
+      };
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);

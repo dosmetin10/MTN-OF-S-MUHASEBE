@@ -436,6 +436,22 @@
                   <input name="quantity" type="number" min="0" step="1" />
                 </label>
                 <label>
+                  Alış Fiyatı
+                  <input name="purchasePrice" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  Satış Fiyatı
+                  <input name="salePrice" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  KDV (%)
+                  <input name="vatRate" type="number" min="0" step="0.01" />
+                </label>
+                <label>
+                  Açıklama
+                  <input name="description" placeholder="Stok notu" />
+                </label>
+                <label>
                   Kritik Seviye
                   <input name="threshold" type="number" min="0" step="1" placeholder="Otomatik" />
                 </label>
@@ -511,7 +527,12 @@
                       <th>Çap</th>
                       <th>Birim</th>
                       <th>Adet</th>
+                      <th>Alış</th>
+                      <th>Satış</th>
+                      <th>KDV</th>
                       <th>Kritik Seviye</th>
+                      <th>Durum</th>
+                      <th>İşlem</th>
                     </tr>
                   </thead>
                   <tbody id="stocks-table"></tbody>
@@ -675,16 +696,17 @@
                 <p class="search-hint" id="stock-list-empty"></p>
                 <div class="table-card table-card--sheet">
                   <table>
-                    <thead>
-                      <tr>
-                        <th>Stok Kodu</th>
-                        <th>Stok Adı</th>
-                        <th>Depo</th>
-                        <th>Mevcut Adet</th>
-                        <th>Birim</th>
-                        <th>Son Güncelleme</th>
-                      </tr>
-                    </thead>
+                  <thead>
+                    <tr>
+                      <th>Stok Kodu</th>
+                      <th>Stok Adı</th>
+                      <th>Depo</th>
+                      <th>Mevcut Adet</th>
+                      <th>Birim</th>
+                      <th>Durum</th>
+                      <th>Son Güncelleme</th>
+                    </tr>
+                  </thead>
                     <tbody id="stock-list-table"></tbody>
                   </table>
                 </div>
