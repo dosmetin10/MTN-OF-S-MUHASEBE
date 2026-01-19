@@ -5,7 +5,9 @@ const subtotalEl = document.getElementById("offer-subtotal");
 const vatTotalEl = document.getElementById("offer-vat-total");
 const vatInput = document.getElementById("offer-vat");
 const offerPdfButton = document.getElementById("offer-pdf");
+const offerQuotePdfButton = document.getElementById("offer-quote-pdf");
 const offerCustomerSelect = document.getElementById("offer-customer");
+const offerCurrencySelect = document.getElementById("offer-currency");
 const offerPaymentSelect = document.getElementById("offer-payment");
 const offerSaveButton = document.getElementById("offer-save");
 const versionEl = document.getElementById("app-version");
@@ -122,6 +124,7 @@ const loginForm = document.getElementById("login-form");
 const loginError = document.getElementById("login-error");
 const appShell = document.getElementById("app-shell");
 const stockMovementForm = document.getElementById("stock-movement-form");
+const stockMovementSlipButton = document.getElementById("stock-movement-slip");
 const movementStockSelect = document.getElementById("movement-stock");
 const stockMovementDateInput = document.getElementById("stock-movement-date");
 const stockMovementsTable = document.getElementById("stock-movements-table");
@@ -379,6 +382,8 @@ const handleLogin = (event) => {
   }
 };
 
+const getOfferCurrency = () => offerCurrencySelect?.value || "TRY";
+
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
   const subtotal = rows.reduce((sum, row) => {
@@ -399,10 +404,11 @@ const calculateTotal = () => {
   const vatRate = Number(vatInput?.value || 0) / 100;
   const vatTotal = subtotal * vatRate;
   const total = subtotal + vatTotal;
+  const currency = getOfferCurrency();
 
-  subtotalEl.textContent = formatCurrency(subtotal);
-  vatTotalEl.textContent = formatCurrency(vatTotal);
-  totalEl.textContent = formatCurrency(total);
+  subtotalEl.textContent = formatCurrency(subtotal, currency);
+  vatTotalEl.textContent = formatCurrency(vatTotal, currency);
+  totalEl.textContent = formatCurrency(total, currency);
 };
 
 const createRow = () => {
@@ -442,6 +448,10 @@ calculateTotal();
 
 if (vatInput) {
   vatInput.addEventListener("input", calculateTotal);
+}
+
+if (offerCurrencySelect) {
+  offerCurrencySelect.addEventListener("change", calculateTotal);
 }
 
 if (window.mtnApp) {
@@ -1046,7 +1056,7 @@ const renderSales = (items) => {
     row.innerHTML = `
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
       <td>${item.customerName || "Genel"}</td>
-      <td>${formatCurrency(Number(item.total) || 0)}</td>
+      <td>${formatCurrency(Number(item.total) || 0, item.currency || "TRY")}</td>
       <td>${Number(item.vatRate || 0)}</td>
     `;
     salesTable.appendChild(row);
@@ -1113,6 +1123,7 @@ const renderCustomerDetail = (data) => {
       createdAt: sale.createdAt,
       type: "Satış",
       amount: Number(sale.total || 0),
+      currency: sale.currency || "TRY",
       note: "Satış faturası"
     })),
     ...debts.map((debt) => ({
@@ -1228,6 +1239,7 @@ const buildCustomerTabContent = (data, customerId) => {
       createdAt: sale.createdAt,
       type: "Satış",
       amount: Number(sale.total || 0),
+      currency: sale.currency || "TRY",
       note: "Satış faturası"
     })),
     ...debts.map((debt) => ({
@@ -2032,6 +2044,24 @@ const buildInvoiceHtml = (title, rows) => {
       </table>
     </div>
   `;
+};
+
+const buildStockIssueSlipHtml = (movement) => {
+  const dateLabel = new Date(movement.createdAt).toLocaleDateString("tr-TR");
+  const rows = [
+    [
+      dateLabel,
+      movement.stockName || "-",
+      String(Number(movement.quantity || 0)),
+      movement.note || "-"
+    ]
+  ];
+  return buildReportTable(
+    "Ürün Çıkış Fişi",
+    ["Tarih", "Malzeme", "Miktar", "Açıklama"],
+    rows,
+    { includeWatermark: true }
+  );
 };
 
 const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals, vatSummary) => {
@@ -2969,6 +2999,32 @@ if (stockMovementForm) {
   });
 }
 
+if (stockMovementSlipButton) {
+  stockMovementSlipButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const latestExit = [...(cachedStockMovements || [])]
+      .filter((movement) => movement.type === "cikis")
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    if (!latestExit) {
+      reportPathEl.textContent = "Çıkış fişi için kayıt bulunamadı.";
+      return;
+    }
+    const html = buildStockIssueSlipHtml(latestExit);
+    const safeName = (latestExit.stockName || "malzeme")
+      .toString()
+      .replace(/\s+/g, "-");
+    const result = await window.mtnApp.generateReport({
+      title: `Urun-Cikis-Fisi-${safeName}`,
+      html
+    });
+    reportPathEl.textContent = `Fiş kaydedildi: ${result.reportFile}`;
+    await window.mtnApp?.openFile?.(result.reportFile);
+  });
+}
+
 if (debtCurrencySelect) {
   applyCurrencyFormat(
     customerDebtForm?.elements?.amount,
@@ -3118,6 +3174,7 @@ const buildBackupPayload = () => {
       total: getValue("total")
     };
   });
+  const currency = getOfferCurrency();
 
   return window.mtnApp?.getData
     ? window.mtnApp.getData().then((data) => ({
@@ -3127,6 +3184,7 @@ const buildBackupPayload = () => {
         },
         teklif: rows,
         toplam: totalEl.textContent,
+        currency,
         data
       }))
     : {
@@ -3135,7 +3193,8 @@ const buildBackupPayload = () => {
           module: "teklif"
         },
         teklif: rows,
-        toplam: totalEl.textContent
+        toplam: totalEl.textContent,
+        currency
       };
 };
 
@@ -3275,6 +3334,7 @@ if (detailReportButton) {
     );
     const vatMode = detailVatModeSelect?.value || "exclude";
     const vatRate = Number(detailVatRateInput?.value || 0);
+    const reportCurrency = sales[0]?.currency || "TRY";
     if (jobs.length) {
       const jobRows = jobs.map((job) => ({
         title: job.title || "-",
@@ -3323,7 +3383,7 @@ if (detailReportButton) {
         row: [
           new Date(sale.createdAt).toLocaleDateString("tr-TR"),
           "Satış",
-          formatCurrency(Number(sale.total) || 0),
+          formatCurrency(Number(sale.total) || 0, sale.currency || reportCurrency),
           "Satış faturası"
         ]
       })),
@@ -3357,13 +3417,13 @@ if (detailReportButton) {
       <div style="margin-top:16px;display:flex;justify-content:flex-end;">
         <table style="width:260px;border-collapse:collapse;">
           <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
-            formatCurrency(vatTotals.base)
+            formatCurrency(vatTotals.base, reportCurrency)
           )}</td></tr>
           <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
-            formatCurrency(vatTotals.vat)
+            formatCurrency(vatTotals.vat, reportCurrency)
           )}</td></tr>
           <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
-            formatCurrency(vatTotals.total)
+            formatCurrency(vatTotals.total, reportCurrency)
           )}</strong></td></tr>
         </table>
       </div>
@@ -3389,19 +3449,59 @@ if (offerPdfButton) {
       reportPathEl.textContent = "Rapor servisi hazır değil.";
       return;
     }
-    const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => [
-      row.querySelector("[data-field='name']")?.value || "-",
-      row.querySelector("[data-field='quantity']")?.value || "0",
-      row.querySelector("[data-field='unit']")?.value || "-",
-      row.querySelector("[data-field='price']")?.value || "0",
-      row.querySelector("[data-field='total']")?.value || "0"
-    ]);
+    const currency = getOfferCurrency();
+    const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
+      const price = Number(
+        row.querySelector("[data-field='price']")?.value || 0
+      );
+      const total = Number(
+        row.querySelector("[data-field='total']")?.value || 0
+      );
+      return [
+        row.querySelector("[data-field='name']")?.value || "-",
+        row.querySelector("[data-field='quantity']")?.value || "0",
+        row.querySelector("[data-field='unit']")?.value || "-",
+        formatCurrency(price, currency),
+        formatCurrency(total, currency)
+      ];
+    });
     const html = buildInvoiceHtml("Satış Faturası", rows);
     const result = await window.mtnApp.generateReport({
       title: "Satis-Faturasi",
       html
     });
     reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
+}
+
+if (offerQuotePdfButton) {
+  offerQuotePdfButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const currency = getOfferCurrency();
+    const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => {
+      const price = Number(
+        row.querySelector("[data-field='price']")?.value || 0
+      );
+      const total = Number(
+        row.querySelector("[data-field='total']")?.value || 0
+      );
+      return [
+        row.querySelector("[data-field='name']")?.value || "-",
+        row.querySelector("[data-field='quantity']")?.value || "0",
+        row.querySelector("[data-field='unit']")?.value || "-",
+        formatCurrency(price, currency),
+        formatCurrency(total, currency)
+      ];
+    });
+    const html = buildInvoiceHtml("Teklif", rows);
+    const result = await window.mtnApp.generateReport({
+      title: "Teklif",
+      html
+    });
+    reportPathEl.textContent = `Teklif kaydedildi: ${result.reportFile}`;
   });
 }
 
@@ -3415,6 +3515,7 @@ if (offerSaveButton) {
     const customerName =
       offerCustomerSelect?.selectedOptions?.[0]?.textContent || "Genel";
     const vatRate = Number(vatInput?.value || 0);
+    const currency = getOfferCurrency();
     const items = Array.from(offerBody.querySelectorAll("tr")).map((row) => ({
       name: row.querySelector("[data-field='name']")?.value || "",
       quantity: Number(row.querySelector("[data-field='quantity']")?.value || 0),
@@ -3441,6 +3542,7 @@ if (offerSaveButton) {
       customerName,
       vatRate,
       paymentType: offerPaymentSelect?.value || "nakit",
+      currency,
       total,
       items: validItems
     });
