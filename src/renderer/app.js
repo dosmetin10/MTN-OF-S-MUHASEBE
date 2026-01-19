@@ -90,6 +90,7 @@ const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const autoBackupEnabledSelect = document.getElementById("auto-backup-enabled");
+const allowNegativeStockSelect = document.getElementById("allow-negative-stock");
 const lastAutoBackupEl = document.getElementById("last-auto-backup");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
@@ -474,11 +475,18 @@ const renderStockMovements = (items) => {
         : item.type === "cikis"
           ? "Çıkış"
           : item.type || "-";
+    const negativeLabel =
+      item.negativeStock === true
+        ? "Evet"
+        : item.negativeStock === false
+          ? "Hayır"
+          : "-";
     row.innerHTML = `
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
       <td>${item.stockName || "-"}</td>
       <td>${typeLabel}</td>
       <td>${Number(item.quantity || 0)}</td>
+      <td>${negativeLabel}</td>
       <td>${item.note || "-"}</td>
     `;
     stockMovementsTable.appendChild(row);
@@ -927,6 +935,9 @@ const initApp = async () => {
   if (autoBackupEnabledSelect) {
     autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
   }
+  if (allowNegativeStockSelect) {
+    allowNegativeStockSelect.value = String(settings.allowNegativeStock);
+  }
   if (lastAutoBackupEl) {
     lastAutoBackupEl.textContent = settings.lastAutoBackupAt
       ? new Date(settings.lastAutoBackupAt).toLocaleString("tr-TR")
@@ -1168,12 +1179,17 @@ const generateReport = async (type) => {
 
   if (type === "stock-movements") {
     title = "Stok Hareket Raporu";
-    headers = ["Tarih", "Malzeme", "Tür", "Miktar", "Açıklama"];
+    headers = ["Tarih", "Malzeme", "Tür", "Miktar", "Negatif", "Açıklama"];
     rows = (data.stockMovements || []).map((item) => [
       new Date(item.createdAt).toLocaleDateString("tr-TR"),
       item.stockName || "-",
       item.type || "-",
       Number(item.quantity || 0),
+      item.negativeStock === true
+        ? "Evet"
+        : item.negativeStock === false
+          ? "Hayır"
+          : "-",
       item.note || "-"
     ]);
   }
@@ -1496,6 +1512,10 @@ if (stockMovementForm) {
       createdAt: payload.createdAt,
       note: payload.note
     });
+    if (result?.error) {
+      reportPathEl.textContent = result.error;
+      return;
+    }
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderSummary(result);
@@ -1517,7 +1537,8 @@ if (settingsForm) {
       cloudBackupPath: cloudBackupPathInput?.value || "",
       enableAutoSync: autoSyncEnabledSelect?.value === "true",
       enableCloudBackup: cloudBackupEnabledSelect?.value === "true",
-      enableAutoBackup: autoBackupEnabledSelect?.value === "true"
+      enableAutoBackup: autoBackupEnabledSelect?.value === "true",
+      allowNegativeStock: allowNegativeStockSelect?.value === "true"
     };
     const existingSettings = await window.mtnApp.getSettings();
     const nextSettings = { ...existingSettings, ...payload };
@@ -1912,6 +1933,10 @@ if (offerSaveButton) {
       total,
       items
     });
+    if (result?.error) {
+      reportPathEl.textContent = result.error;
+      return;
+    }
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderCash(result.cashTransactions || []);
