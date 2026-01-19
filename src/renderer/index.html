@@ -230,8 +230,19 @@
                   <input name="code" placeholder="Otomatik" readonly />
                 </label>
                 <label>
+                  Cari Tipi
+                  <select name="type">
+                    <option value="musteri">Müşteri</option>
+                    <option value="tedarikci">Tedarikçi</option>
+                  </select>
+                </label>
+                <label>
                   Ünvan / Ad Soyad
                   <input name="name" required placeholder="Müşteri adı" />
+                </label>
+                <label>
+                  TC / VKN
+                  <input name="identityNumber" placeholder="TC / VKN" />
                 </label>
                 <label>
                   Açılış Borç
@@ -249,9 +260,21 @@
                   E-posta
                   <input name="email" type="email" placeholder="mail@firma.com" />
                 </label>
+                <label>
+                  Risk Limiti
+                  <input name="riskLimit" type="number" min="0" step="0.01" placeholder="0" />
+                </label>
+                <label>
+                  Vade (Gün)
+                  <input name="dueDays" type="number" min="0" step="1" placeholder="0" />
+                </label>
                 <label class="full-width">
                   Adres
                   <input name="address" placeholder="Firma adresi" />
+                </label>
+                <label class="full-width">
+                  Not
+                  <input name="note" placeholder="Cari notu" />
                 </label>
                 <button class="primary" type="submit">Cari Kaydet</button>
               </form>
@@ -293,10 +316,13 @@
                     <tr>
                       <th>Kod</th>
                       <th>Ünvan</th>
+                      <th>Tip</th>
                       <th>Telefon</th>
                       <th>Vergi No</th>
                       <th>E-posta</th>
                       <th>Bakiye</th>
+                      <th>Durum</th>
+                      <th>İşlem</th>
                     </tr>
                   </thead>
                   <tbody id="customers-table"></tbody>

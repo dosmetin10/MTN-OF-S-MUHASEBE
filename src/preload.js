@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld("mtnApp", {
   createBackup: (payload) => ipcRenderer.invoke("backup:create", payload),
   getData: () => ipcRenderer.invoke("data:get"),
   createCustomer: (payload) => ipcRenderer.invoke("customers:create", payload),
+  toggleCustomerStatus: (payload) =>
+    ipcRenderer.invoke("customers:toggle-status", payload),
   createCustomerTransaction: (payload) =>
     ipcRenderer.invoke("customers:transaction", payload),
   collectPayment: (payload) => ipcRenderer.invoke("customers:payment", payload),

@@ -223,7 +223,12 @@ const resolveWarehouse = (value, settings) => {
 const normalizeData = (data) => ({
   ...getDefaultData(),
   ...data,
-  customers: data.customers || [],
+  customers: (data.customers || []).map((customer) => ({
+    ...customer,
+    normalizedName:
+      customer.normalizedName || normalizeSpaces(customer.name || ""),
+    isActive: customer.isActive !== false
+  })),
   customerDebts: data.customerDebts || [],
   customerJobs: data.customerJobs || [],
   stocks: (data.stocks || []).map((stock) => ({
@@ -789,9 +794,12 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     const { openingDebt, ...rest } = payload;
     const normalizedOpeningDebt = normalizeNumber(openingDebt);
+    const normalizedName = normalizeSpaces(payload.name || "");
     data.customers = createRecord(data.customers, {
       code: payload.code || generateCode("CAR"),
       balance: normalizedOpeningDebt,
+      normalizedName,
+      isActive: true,
       ...rest
     });
     if (normalizedOpeningDebt > 0) {
@@ -804,6 +812,25 @@ app.whenReady().then(() => {
         createdAt: payload.createdAt
       });
     }
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.customers;
+  });
+
+  ipcMain.handle("customers:toggle-status", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, isActive } = payload || {};
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      return {
+        ...customer,
+        isActive: Boolean(isActive),
+        deactivatedAt: isActive ? "" : new Date().toISOString()
+      };
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);

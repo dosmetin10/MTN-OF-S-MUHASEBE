@@ -747,6 +747,11 @@ body {
   color: #9c2a2a;
 }
 
+.badge {
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .report-actions {
   display: flex;
   flex-wrap: wrap;

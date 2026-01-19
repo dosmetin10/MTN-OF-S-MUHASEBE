@@ -404,16 +404,43 @@ const renderCustomers = (items) => {
     detailCustomerSelect.appendChild(defaultOption);
   }
   filtered.forEach((item) => {
+    const isActive = item.isActive !== false;
     const row = document.createElement("tr");
     row.dataset.customerId = item.id || "";
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
+      <td>${item.type === "tedarikci" ? "Tedarikçi" : "Müşteri"}</td>
       <td>${item.phone || "-"}</td>
       <td>${item.taxNumber || "-"}</td>
       <td>${item.email || "-"}</td>
       <td>${formatCurrency(Number(item.balance) || 0)}</td>
+      <td>
+        <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
+          ${isActive ? "Aktif" : "Pasif"}
+        </span>
+      </td>
+      <td>
+        <button class="ghost" data-toggle-status="${
+          item.id
+        }" data-active="${isActive ? "true" : "false"}">
+          ${isActive ? "Pasife Al" : "Aktifleştir"}
+        </button>
+      </td>
     `;
+    row.querySelector("[data-toggle-status]")?.addEventListener("click", async () => {
+      if (!window.mtnApp?.toggleCustomerStatus) {
+        setStatus("Cari servisi hazır değil.");
+        return;
+      }
+      const nextActive = !isActive;
+      const result = await window.mtnApp.toggleCustomerStatus({
+        customerId: item.id,
+        isActive: nextActive
+      });
+      renderCustomers(result || []);
+      setStatus(nextActive ? "Cari aktifleştirildi." : "Cari pasife alındı.");
+    });
     row.addEventListener("dblclick", () => {
       if (detailCustomerSelect && item.id) {
         detailCustomerSelect.value = item.id;
@@ -431,6 +458,9 @@ const renderCustomers = (items) => {
     customersTable.appendChild(row);
   });
   items.forEach((item) => {
+    if (item.isActive === false) {
+      return;
+    }
     if (offerCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
