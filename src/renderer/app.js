@@ -2395,14 +2395,27 @@ const quickActionButtons = document.querySelectorAll(
 );
 const panelTitleEl = document.getElementById("panel-title");
 
+const panelTitles = {
+  "dashboard-panel": "Ana",
+  "customers-panel": "Cari",
+  "stocks-panel": "Stok",
+  "stock-list-panel": "Malzeme Stok Listesi",
+  "sales-panel": "Teklif",
+  "invoices-panel": "Fatura",
+  "cash-panel": "Kasa",
+  "reports-panel": "Raporlar",
+  "assistant-panel": "Mühendislik",
+  "settings-panel": "Ayarlar"
+};
+
 const showPanel = (panelId, title) => {
   panels.forEach((panel) => panel.classList.remove("panel--active"));
   const target = document.getElementById(panelId);
   if (target) {
     target.classList.add("panel--active");
   }
-  if (panelTitleEl && title) {
-    panelTitleEl.textContent = title;
+  if (panelTitleEl) {
+    panelTitleEl.textContent = title || panelTitles[panelId] || "Panel";
   }
 };
 
@@ -2420,7 +2433,7 @@ menuItems.forEach((item) => {
   item.addEventListener("click", (event) => {
     event.preventDefault();
     const panelId = item.dataset.panel;
-    const title = item.dataset.title || item.textContent;
+    const title = item.dataset.title || panelTitles[panelId] || item.textContent;
     if (!panelId) {
       return;
     }
@@ -2436,7 +2449,9 @@ menuActionItems.forEach((item) => {
     if (!panelId) {
       return;
     }
-    showPanel(panelId, item.textContent.trim());
+    const title = panelTitles[panelId] || item.textContent.trim();
+    showPanel(panelId, title);
+    activateMenuByPanel(panelId);
   });
 });
 
@@ -2448,6 +2463,7 @@ quickActionButtons.forEach((button) => {
     }
     const title =
       document.querySelector(`[data-panel='${targetPanel}']`)?.dataset.title ||
+      panelTitles[targetPanel] ||
       "";
     showPanel(targetPanel, title);
     activateMenuByPanel(targetPanel);
