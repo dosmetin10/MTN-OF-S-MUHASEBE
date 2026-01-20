@@ -252,6 +252,23 @@
                 <h2>Cari Yönetimi</h2>
                 <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
               </div>
+              <div class="table-actions">
+                <input id="customer-search" class="search" placeholder="Cari ara (ad/ünvan/vergi/telefon)..." />
+                <button class="ghost" id="customer-search-btn">Ara</button>
+              </div>
+              <p class="search-hint" id="customer-search-suggestion"></p>
+              <div class="table-card is-hidden" id="customer-detail-card">
+                <div class="table-actions">
+                  <h3 id="customer-detail-title">Cari Detay</h3>
+                  <button class="ghost" id="customer-detail-close">Kapat</button>
+                </div>
+                <div class="report-actions">
+                  <button class="primary" id="customer-detail-offer">📄 Teklif Oluştur</button>
+                  <button class="ghost" id="customer-detail-statement">📊 Ekstre Gör</button>
+                  <button class="ghost" id="customer-detail-collect">💰 Tahsilat Yap</button>
+                  <button class="ghost" id="customer-detail-job">🧱 İlave İş Ekle</button>
+                </div>
+              </div>
               <form class="form-grid" id="customer-form">
                 <label>
                   Cari Kodu
@@ -345,11 +362,6 @@
               </form>
               <div class="table-card">
                 <h3>Mevcut Cariler</h3>
-                <div class="table-actions">
-                  <input id="customer-search" class="search" placeholder="Cari ara..." />
-                  <button class="ghost" id="customer-search-btn">Ara</button>
-                </div>
-                <p class="search-hint" id="customer-search-suggestion"></p>
                 <table>
                   <thead>
                     <tr>

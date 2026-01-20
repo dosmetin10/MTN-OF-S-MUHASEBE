@@ -35,6 +35,15 @@ const customerSearchButton = document.getElementById("customer-search-btn");
 const customerSearchSuggestion = document.getElementById(
   "customer-search-suggestion"
 );
+const customerDetailCard = document.getElementById("customer-detail-card");
+const customerDetailTitle = document.getElementById("customer-detail-title");
+const customerDetailClose = document.getElementById("customer-detail-close");
+const customerDetailOffer = document.getElementById("customer-detail-offer");
+const customerDetailStatement = document.getElementById(
+  "customer-detail-statement"
+);
+const customerDetailCollect = document.getElementById("customer-detail-collect");
+const customerDetailJob = document.getElementById("customer-detail-job");
 const stockForm = document.getElementById("stock-form");
 const stocksTable = document.getElementById("stocks-table");
 const stocksTotalEl = document.getElementById("stocks-total");
@@ -469,6 +478,12 @@ const renderCustomers = (items) => {
         cashTransactions: cachedCashTransactions,
         sales: cachedSales
       });
+      if (customerDetailCard) {
+        customerDetailCard.classList.remove("is-hidden");
+      }
+      if (customerDetailTitle) {
+        customerDetailTitle.textContent = `${item.code || ""} ${item.name || ""}`.trim();
+      }
       const detailModule = document.getElementById("customer-detail-module");
       detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1869,6 +1884,46 @@ if (customerSearchButton) {
   customerSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleCustomerSearch();
+  });
+}
+
+if (customerDetailClose) {
+  customerDetailClose.addEventListener("click", () => {
+    customerDetailCard?.classList.add("is-hidden");
+  });
+}
+
+if (customerDetailOffer) {
+  customerDetailOffer.addEventListener("click", () => {
+    showPanel("sales-panel", "Teklif");
+    activateMenuByPanel("sales-panel");
+  });
+}
+
+if (customerDetailStatement) {
+  customerDetailStatement.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    document.getElementById("customer-detail-module")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
+
+if (customerDetailCollect) {
+  customerDetailCollect.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    customerTransactionForm?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
+
+if (customerDetailJob) {
+  customerDetailJob.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
 
