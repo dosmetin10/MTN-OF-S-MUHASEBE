@@ -27,10 +27,12 @@ contextBridge.exposeInMainWorld("mtnApp", {
   createCash: (payload) => ipcRenderer.invoke("cash:create", payload),
   createSale: (payload) => ipcRenderer.invoke("sales:create", payload),
   createInvoice: (payload) => ipcRenderer.invoke("invoices:create", payload),
+  createProposal: (payload) => ipcRenderer.invoke("proposals:create", payload),
   generateReport: (payload) => ipcRenderer.invoke("report:generate", payload),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (payload) => ipcRenderer.invoke("settings:save", payload),
   resetData: () => ipcRenderer.invoke("data:reset"),
+  restoreBackup: (payload) => ipcRenderer.invoke("backup:restore", payload),
   saveAttachment: (payload) => ipcRenderer.invoke("attachments:save", payload),
   openFile: (payload) => ipcRenderer.invoke("file:open", payload)
 });

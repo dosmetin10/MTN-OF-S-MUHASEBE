@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div class="splash" id="splash-screen">
+      <div class="splash__content">
+        <img class="splash__logo" src="assets/logo.svg" alt="MTN logo" />
+        <h1>MTN Ön Muhasebe</h1>
+        <p>Profesyonel ERP deneyimi yükleniyor...</p>
+      </div>
+    </div>
     <div class="first-run first-run--hidden" id="first-run-screen">
       <div class="first-run__card">
         <div>
@@ -941,6 +948,17 @@
                 <h2>Satışlar</h2>
                 <p>Fatura ve satış hareketleri listesi.</p>
               </div>
+              <div class="tabs" id="offer-tabs">
+                <button class="tab-button tab-button--active" data-offer-tab="internal">
+                  İç Tesisat Teklif
+                </button>
+                <button class="tab-button" data-offer-tab="industrial">
+                  Endüstriyel Doğalgaz Teklif
+                </button>
+                <button class="tab-button" data-offer-tab="saved">
+                  Tekliflerim
+                </button>
+              </div>
               <div class="table-card">
                 <table>
                   <thead>
@@ -956,12 +974,36 @@
               </div>
             </section>
 
-          <section class="offer">
+          <section class="offer tab-panel" data-offer-tab-panel="internal">
               <div class="offer__header">
-                <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
+                <h2>İç Tesisat Teklif - Fatura Görünümü</h2>
                 <div class="offer__actions">
                   <button id="add-row">+ Satır Ekle</button>
                   <button class="primary" id="offer-pdf">Fatura PDF</button>
+                </div>
+              </div>
+              <div class="offer__document">
+                <div class="offer__brand">
+                  <img class="offer__logo" id="offer-logo" alt="Firma logosu" />
+                  <div>
+                    <h3 id="offer-company-name">MTN Enerji</h3>
+                    <p id="offer-company-meta">Vergi Dairesi • Vergi No</p>
+                    <p id="offer-company-address">Firma adresi</p>
+                  </div>
+                </div>
+                <div class="offer__info">
+                  <div>
+                    <label>Teklif Başlığı</label>
+                    <input id="offer-title" placeholder="İç tesisat teklifi" />
+                  </div>
+                  <div>
+                    <label>Teklif Tarihi</label>
+                    <input id="offer-date" type="date" />
+                  </div>
+                  <div>
+                    <label>İrsaliye No</label>
+                    <input id="offer-waybill" placeholder="IRS-2024-001" />
+                  </div>
                 </div>
               </div>
               <div class="offer__meta">
@@ -1002,6 +1044,10 @@
                   KDV Oranı (%)
                   <input id="offer-vat" type="number" min="0" step="1" value="20" />
                 </label>
+                <label>
+                  KDV Tutarı (Manuel)
+                  <input id="offer-vat-manual" type="number" min="0" step="0.01" placeholder="0" />
+                </label>
                 <div class="offer__totals">
                   <div>
                     <span>Ara Toplam</span>
@@ -1016,6 +1062,105 @@
                     <strong id="offer-total">₺0,00</strong>
                   </div>
                 </div>
+              </div>
+              <div class="offer__footer">
+                <button class="primary" id="offer-save-proposal">Teklifi Kaydet</button>
+                <p class="muted">PDF oluşturma sonrası teklif kaydı saklanır.</p>
+              </div>
+            </section>
+            <section class="offer tab-panel tab-panel--hidden" data-offer-tab-panel="industrial">
+              <div class="offer__header">
+                <h2>Endüstriyel Doğalgaz Teklif - Fatura Görünümü</h2>
+                <div class="offer__actions">
+                  <button id="add-row-industrial">+ Satır Ekle</button>
+                  <button class="primary" id="offer-pdf-industrial">Fatura PDF</button>
+                </div>
+              </div>
+              <div class="offer__document">
+                <div class="offer__brand">
+                  <img class="offer__logo" id="offer-logo-industrial" alt="Firma logosu" />
+                  <div>
+                    <h3 id="offer-company-name-industrial">MTN Enerji</h3>
+                    <p id="offer-company-meta-industrial">Vergi Dairesi • Vergi No</p>
+                    <p id="offer-company-address-industrial">Firma adresi</p>
+                  </div>
+                </div>
+                <div class="offer__info">
+                  <div>
+                    <label>Teklif Başlığı</label>
+                    <input id="offer-title-industrial" placeholder="Endüstriyel teklif" />
+                  </div>
+                  <div>
+                    <label>Teklif Tarihi</label>
+                    <input id="offer-date-industrial" type="date" />
+                  </div>
+                  <div>
+                    <label>İrsaliye No</label>
+                    <input id="offer-waybill-industrial" placeholder="IRS-2024-002" />
+                  </div>
+                </div>
+              </div>
+              <table class="offer__table">
+                <thead>
+                  <tr>
+                    <th>Malzeme</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th>Birim Fiyat</th>
+                    <th>Tutar</th>
+                  </tr>
+                </thead>
+                <tbody id="offer-body-industrial"></tbody>
+              </table>
+              <div class="offer__summary">
+                <label>
+                  KDV Oranı (%)
+                  <input id="offer-vat-industrial" type="number" min="0" step="1" value="20" />
+                </label>
+                <label>
+                  KDV Tutarı (Manuel)
+                  <input id="offer-vat-manual-industrial" type="number" min="0" step="0.01" placeholder="0" />
+                </label>
+                <div class="offer__totals">
+                  <div>
+                    <span>Ara Toplam</span>
+                    <strong id="offer-subtotal-industrial">₺0,00</strong>
+                  </div>
+                  <div>
+                    <span>KDV Toplam</span>
+                    <strong id="offer-vat-total-industrial">₺0,00</strong>
+                  </div>
+                  <div>
+                    <span>Genel Toplam</span>
+                    <strong id="offer-total-industrial">₺0,00</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="offer__footer">
+                <button class="primary" id="offer-save-proposal-industrial">Teklifi Kaydet</button>
+                <p class="muted">PDF oluşturma sonrası teklif kaydı saklanır.</p>
+              </div>
+            </section>
+            <section class="offer tab-panel tab-panel--hidden" data-offer-tab-panel="saved">
+              <div class="offer__header">
+                <h2>Tekliflerim</h2>
+                <div class="offer__actions">
+                  <button class="ghost" id="offer-refresh">Listeyi Yenile</button>
+                </div>
+              </div>
+              <div class="table-card table-card--sheet">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Teklif</th>
+                      <th>Cari</th>
+                      <th>Tutar</th>
+                      <th>PDF</th>
+                    </tr>
+                  </thead>
+                  <tbody id="offer-table"></tbody>
+                </table>
               </div>
             </section>
           </section>
@@ -1336,6 +1481,19 @@
                 </label>
                 <button class="primary" type="submit">Ayarları Kaydet</button>
               </form>
+              <div class="table-card">
+                <div class="table-actions">
+                  <h3>Yedekten Geri Yükleme</h3>
+                </div>
+                <div class="filter-bar">
+                  <label class="full-width">
+                    Yedek Dosyası (yedek.json)
+                    <input id="restore-backup-file" type="file" accept=".json" />
+                  </label>
+                  <button class="primary" id="restore-backup">Yedeği Geri Yükle</button>
+                </div>
+                <p class="muted" id="restore-backup-status"></p>
+              </div>
               <p class="muted">
                 Son otomatik yedek: <strong id="last-auto-backup">Henüz yok</strong>
               </p>

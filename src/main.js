@@ -19,7 +19,8 @@ const getDefaultData = () => ({
   accounts: [],
   ledgerEntries: [],
   unitConversions: [],
-  auditLogs: []
+  auditLogs: [],
+  proposals: []
 });
 
 const getDefaultAccounts = () => [
@@ -53,6 +54,12 @@ const loadStorage = async () => {
 const saveStorage = async (data) => {
   const filePath = path.join(app.getPath("userData"), storageFileName);
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf8");
+};
+
+const loadBackupFile = async (filePath) => {
+  const raw = await fs.readFile(filePath, "utf8");
+  const parsed = JSON.parse(raw);
+  return parsed?.data ? parsed.data : parsed;
 };
 
 const loadSettings = async () => {
@@ -274,7 +281,8 @@ const normalizeData = (data) => ({
   ),
   ledgerEntries: data.ledgerEntries || [],
   unitConversions: data.unitConversions || [],
-  auditLogs: data.auditLogs || []
+  auditLogs: data.auditLogs || [],
+  proposals: data.proposals || []
 });
 
 const addAuditLog = (data, entry) => {
@@ -855,6 +863,26 @@ app.whenReady().then(() => {
     await maybeAutoBackup(data);
     return data;
   });
+  ipcMain.handle("backup:restore", async (_event, payload) => {
+    const { path: filePath } = payload || {};
+    if (!filePath) {
+      return { ok: false, error: "Yedek dosyası seçilmedi." };
+    }
+    const restored = normalizeData(await loadBackupFile(filePath));
+    if (!restored.accounts?.length) {
+      restored.accounts = getDefaultAccounts();
+    }
+    await saveStorage(restored);
+    await syncStorageCopies(restored);
+    await maybeAutoBackup(restored);
+    addAuditLog(restored, {
+      module: "backup",
+      action: "restore",
+      message: "Yedek geri yüklendi."
+    });
+    await saveStorage(restored);
+    return { ok: true, data: restored };
+  });
   ipcMain.handle("settings:get", async () => loadSettings());
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
@@ -1417,6 +1445,19 @@ app.whenReady().then(() => {
       module: "invoices",
       action: "create",
       message: `Fatura yüklendi: ${payload.vendor || "Firma"}`
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+  ipcMain.handle("proposals:create", async (_event, payload) => {
+    const data = await loadStorage();
+    data.proposals = createRecord(data.proposals, payload);
+    addAuditLog(data, {
+      module: "proposals",
+      action: "create",
+      message: `Teklif kaydedildi: ${payload.title || "Teklif"}`
     });
     await saveStorage(data);
     await syncStorageCopies(data);

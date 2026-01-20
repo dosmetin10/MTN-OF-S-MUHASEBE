@@ -211,6 +211,39 @@ const accountForm = document.getElementById("account-form");
 const accountsTable = document.getElementById("accounts-table");
 const ledgerTable = document.getElementById("ledger-table");
 const auditLogTable = document.getElementById("audit-log-table");
+const splashScreen = document.getElementById("splash-screen");
+const offerTabs = document.querySelectorAll("[data-offer-tab]");
+const offerPanels = document.querySelectorAll("[data-offer-tab-panel]");
+const offerTitleInput = document.getElementById("offer-title");
+const offerDateInput = document.getElementById("offer-date");
+const offerWaybillInput = document.getElementById("offer-waybill");
+const offerVatManualInput = document.getElementById("offer-vat-manual");
+const offerSaveProposalButton = document.getElementById("offer-save-proposal");
+const offerLogo = document.getElementById("offer-logo");
+const offerCompanyName = document.getElementById("offer-company-name");
+const offerCompanyMeta = document.getElementById("offer-company-meta");
+const offerCompanyAddress = document.getElementById("offer-company-address");
+const offerBodyIndustrial = document.getElementById("offer-body-industrial");
+const offerVatIndustrial = document.getElementById("offer-vat-industrial");
+const offerVatManualIndustrial = document.getElementById("offer-vat-manual-industrial");
+const offerSubtotalIndustrial = document.getElementById("offer-subtotal-industrial");
+const offerVatTotalIndustrial = document.getElementById("offer-vat-total-industrial");
+const offerTotalIndustrial = document.getElementById("offer-total-industrial");
+const offerPdfIndustrialButton = document.getElementById("offer-pdf-industrial");
+const addRowIndustrialButton = document.getElementById("add-row-industrial");
+const offerSaveProposalIndustrialButton = document.getElementById("offer-save-proposal-industrial");
+const offerLogoIndustrial = document.getElementById("offer-logo-industrial");
+const offerCompanyNameIndustrial = document.getElementById("offer-company-name-industrial");
+const offerCompanyMetaIndustrial = document.getElementById("offer-company-meta-industrial");
+const offerCompanyAddressIndustrial = document.getElementById("offer-company-address-industrial");
+const offerTitleIndustrial = document.getElementById("offer-title-industrial");
+const offerDateIndustrial = document.getElementById("offer-date-industrial");
+const offerWaybillIndustrial = document.getElementById("offer-waybill-industrial");
+const offerTableBody = document.getElementById("offer-table");
+const offerRefreshButton = document.getElementById("offer-refresh");
+const restoreBackupFileInput = document.getElementById("restore-backup-file");
+const restoreBackupButton = document.getElementById("restore-backup");
+const restoreBackupStatus = document.getElementById("restore-backup-status");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -313,6 +346,30 @@ const applyBranding = (settings) => {
   }
   if (footerCompanyOwner) {
     footerCompanyOwner.textContent = settings.companyOwner || "Metin Döş";
+  }
+  if (offerLogo) {
+    offerLogo.src = brandLogo?.src || "assets/logo.svg";
+  }
+  if (offerCompanyName) {
+    offerCompanyName.textContent = companyName;
+  }
+  if (offerCompanyMeta) {
+    offerCompanyMeta.textContent = `Vergi Dairesi: ${settings.taxOffice || ""} • Vergi No: ${settings.taxNumber || ""}`;
+  }
+  if (offerCompanyAddress) {
+    offerCompanyAddress.textContent = settings.companyAddress || "";
+  }
+  if (offerLogoIndustrial) {
+    offerLogoIndustrial.src = brandLogo?.src || "assets/logo.svg";
+  }
+  if (offerCompanyNameIndustrial) {
+    offerCompanyNameIndustrial.textContent = companyName;
+  }
+  if (offerCompanyMetaIndustrial) {
+    offerCompanyMetaIndustrial.textContent = `Vergi Dairesi: ${settings.taxOffice || ""} • Vergi No: ${settings.taxNumber || ""}`;
+  }
+  if (offerCompanyAddressIndustrial) {
+    offerCompanyAddressIndustrial.textContent = settings.companyAddress || "";
   }
 };
 
@@ -424,6 +481,17 @@ const updateReminderUI = () => {
 };
 
 const loginAnimationMs = 350;
+const splashDurationMs = 2600;
+
+const hideSplash = () => {
+  if (!splashScreen) {
+    return;
+  }
+  splashScreen.style.opacity = "0";
+  setTimeout(() => {
+    splashScreen.remove();
+  }, 800);
+};
 
 const showLoginScreen = () => {
   if (!loginScreen) {
@@ -516,12 +584,49 @@ const calculateTotal = () => {
   }, 0);
 
   const vatRate = Number(vatInput?.value || 0) / 100;
-  const vatTotal = subtotal * vatRate;
+  const vatManual = Number(offerVatManualInput?.value || 0);
+  const vatTotal = vatManual || subtotal * vatRate;
   const total = subtotal + vatTotal;
 
   subtotalEl.textContent = formatCurrency(subtotal);
   vatTotalEl.textContent = formatCurrency(vatTotal);
   totalEl.textContent = formatCurrency(total);
+};
+
+const calculateIndustrialTotals = () => {
+  if (!offerBodyIndustrial) {
+    return;
+  }
+  const rows = Array.from(offerBodyIndustrial.querySelectorAll("tr"));
+  const subtotal = rows.reduce((sum, row) => {
+    const quantity = Number(
+      row.querySelector("[data-field='quantity']")?.value || 0
+    );
+    const price = Number(
+      row.querySelector("[data-field='price']")?.value || 0
+    );
+    const totalInput = row.querySelector("[data-field='total']");
+    const rowTotal = quantity * price;
+    if (totalInput) {
+      totalInput.value = rowTotal ? rowTotal.toFixed(2) : "";
+    }
+    return sum + rowTotal;
+  }, 0);
+
+  const vatRate = Number(offerVatIndustrial?.value || 0) / 100;
+  const vatManual = Number(offerVatManualIndustrial?.value || 0);
+  const vatTotal = vatManual || subtotal * vatRate;
+  const total = subtotal + vatTotal;
+
+  if (offerSubtotalIndustrial) {
+    offerSubtotalIndustrial.textContent = formatCurrency(subtotal);
+  }
+  if (offerVatTotalIndustrial) {
+    offerVatTotalIndustrial.textContent = formatCurrency(vatTotal);
+  }
+  if (offerTotalIndustrial) {
+    offerTotalIndustrial.textContent = formatCurrency(total);
+  }
 };
 
 const findStockMatch = (value) => {
@@ -593,6 +698,21 @@ const createRow = () => {
   return row;
 };
 
+const createIndustrialRow = () => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
+    <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="unit" placeholder="Birim" /></td>
+    <td><input data-field="price" type="number" min="0" step="0.01" /></td>
+    <td><input data-field="total" type="number" min="0" step="0.01" /></td>
+  `;
+  row.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("input", calculateIndustrialTotals);
+  });
+  return row;
+};
+
 addRowButton.addEventListener("click", () => {
   const newRow = createRow();
   offerBody.appendChild(newRow);
@@ -602,8 +722,22 @@ addRowButton.addEventListener("click", () => {
 offerBody.appendChild(createRow());
 calculateTotal();
 
+if (offerBodyIndustrial) {
+  offerBodyIndustrial.appendChild(createIndustrialRow());
+  calculateIndustrialTotals();
+}
+
 if (vatInput) {
   vatInput.addEventListener("input", calculateTotal);
+}
+if (offerVatManualInput) {
+  offerVatManualInput.addEventListener("input", calculateTotal);
+}
+if (offerVatIndustrial) {
+  offerVatIndustrial.addEventListener("input", calculateIndustrialTotals);
+}
+if (offerVatManualIndustrial) {
+  offerVatManualIndustrial.addEventListener("input", calculateIndustrialTotals);
 }
 
 if (window.mtnApp) {
@@ -1123,6 +1257,35 @@ const refreshAccountingPanels = (data) => {
   renderAuditLogs(data.auditLogs || []);
 };
 
+const renderOffers = (items) => {
+  if (!offerTableBody) {
+    return;
+  }
+  offerTableBody.innerHTML = "";
+  (items || []).forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${item.title || "-"}</td>
+      <td>${item.customerName || "Genel"}</td>
+      <td>${formatCurrency(Number(item.total || 0))}</td>
+      <td><button class="ghost" data-open-path="${item.pdfPath || ""}">PDF</button></td>
+    `;
+    row
+      .querySelector("[data-open-path]")
+      ?.addEventListener("click", async () => {
+        if (!item.pdfPath) {
+          return;
+        }
+        const result = await window.mtnApp?.openFile?.(item.pdfPath);
+        if (result && !result.ok) {
+          setStatus("Dosya açılamadı.");
+        }
+      });
+    offerTableBody.appendChild(row);
+  });
+};
+
 const renderStockMovements = (items) => {
   cachedStockMovements = items;
   if (!stockMovementsTable) {
@@ -1589,6 +1752,7 @@ const loadInitialData = async () => {
   renderCustomerDetail(data);
   renderStockReceipts(data.stockReceipts || []);
   renderInvoices(data.invoices || []);
+  renderOffers(data.proposals || []);
 };
 
 const readLogoFile = (file) =>
@@ -1627,6 +1791,12 @@ const setTodayDate = () => {
   }
   if (inventoryCountDate) {
     inventoryCountDate.value = today;
+  }
+  if (offerDateInput) {
+    offerDateInput.value = today;
+  }
+  if (offerDateIndustrial) {
+    offerDateIndustrial.value = today;
   }
 };
 
@@ -1839,6 +2009,64 @@ const buildInvoiceHtml = (title, rows) => {
         )}</td></tr>
         <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
           totalEl.textContent
+        )}</strong></td></tr>
+      </table>
+    </div>
+  `;
+};
+
+const buildOfferHtml = (title, rows, totals) => {
+  const rowHtml = rows
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+          .join("")}</tr>`
+    )
+    .join("");
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
+  const logoSrc = currentSettings.logoDataUrl || "";
+  const logoHtml = logoSrc
+    ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
+    : `<div class="report-logo">MTN</div>`;
+  return `
+    <div class="report-header">
+      <div>
+        <h1>${escapeHtml(title)}</h1>
+        <p>${escapeHtml(companyName)}</p>
+        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+          taxNumber
+        )}</p>
+      </div>
+      ${logoHtml}
+    </div>
+    <div class="report-watermark">${
+      logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
+    }</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Malzeme</th>
+          <th>Miktar</th>
+          <th>Birim</th>
+          <th>Birim Fiyat</th>
+          <th>Tutar</th>
+        </tr>
+      </thead>
+      <tbody>${rowHtml}</tbody>
+    </table>
+    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+      <table style="width:260px;border-collapse:collapse;">
+        <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+          totals.subtotal
+        )}</td></tr>
+        <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+          totals.vat
+        )}</td></tr>
+        <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+          totals.total
         )}</strong></td></tr>
       </table>
     </div>
@@ -3159,7 +3387,11 @@ if (offerPdfButton) {
       row.querySelector("[data-field='price']")?.value || "0",
       row.querySelector("[data-field='total']")?.value || "0"
     ]);
-    const html = buildInvoiceHtml("Satış Faturası", rows);
+    const html = buildOfferHtml("İç Tesisat Teklif", rows, {
+      subtotal: subtotalEl.textContent,
+      vat: vatTotalEl.textContent,
+      total: totalEl.textContent
+    });
     const result = await window.mtnApp.generateReport({
       title: "Satis-Faturasi",
       html
@@ -3208,6 +3440,100 @@ if (offerSaveButton) {
   });
 }
 
+if (offerPdfIndustrialButton) {
+  offerPdfIndustrialButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const rows = Array.from(offerBodyIndustrial?.querySelectorAll("tr") || []).map(
+      (row) => [
+        row.querySelector("[data-field='name']")?.value || "-",
+        row.querySelector("[data-field='quantity']")?.value || "0",
+        row.querySelector("[data-field='unit']")?.value || "-",
+        row.querySelector("[data-field='price']")?.value || "0",
+        row.querySelector("[data-field='total']")?.value || "0"
+      ]
+    );
+    const html = buildOfferHtml("Endüstriyel Teklif", rows, {
+      subtotal: offerSubtotalIndustrial?.textContent || "₺0,00",
+      vat: offerVatTotalIndustrial?.textContent || "₺0,00",
+      total: offerTotalIndustrial?.textContent || "₺0,00"
+    });
+    const result = await window.mtnApp.generateReport({
+      title: "Endustriyel-Teklif",
+      html
+    });
+    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
+}
+
+const saveProposal = async (type) => {
+  if (!window.mtnApp?.createProposal || !window.mtnApp?.generateReport) {
+    setStatus("Teklif servisi hazır değil.");
+    return;
+  }
+  const isIndustrial = type === "industrial";
+  const rowsSource = isIndustrial ? offerBodyIndustrial : offerBody;
+  const titleInput = isIndustrial ? offerTitleIndustrial : offerTitleInput;
+  const dateInput = isIndustrial ? offerDateIndustrial : offerDateInput;
+  const waybillInput = isIndustrial ? offerWaybillIndustrial : offerWaybillInput;
+  const vatRateInput = isIndustrial ? offerVatIndustrial : vatInput;
+  const vatManualInput = isIndustrial ? offerVatManualIndustrial : offerVatManualInput;
+  const totalElTarget = isIndustrial ? offerTotalIndustrial : totalEl;
+
+  const rows = Array.from(rowsSource?.querySelectorAll("tr") || []).map((row) => [
+    row.querySelector("[data-field='name']")?.value || "-",
+    row.querySelector("[data-field='quantity']")?.value || "0",
+    row.querySelector("[data-field='unit']")?.value || "-",
+    row.querySelector("[data-field='price']")?.value || "0",
+    row.querySelector("[data-field='total']")?.value || "0"
+  ]);
+
+  const html = buildOfferHtml(
+    isIndustrial ? "Endüstriyel Teklif" : "İç Tesisat Teklif",
+    rows,
+    {
+      subtotal: isIndustrial
+        ? offerSubtotalIndustrial?.textContent || "₺0,00"
+        : subtotalEl.textContent,
+      vat: isIndustrial
+        ? offerVatTotalIndustrial?.textContent || "₺0,00"
+        : vatTotalEl.textContent,
+      total: isIndustrial
+        ? offerTotalIndustrial?.textContent || "₺0,00"
+        : totalEl.textContent
+    }
+  );
+  const report = await window.mtnApp.generateReport({
+    title: isIndustrial ? "Endustriyel-Teklif" : "Ic-Tesisat-Teklif",
+    html
+  });
+  const data = await window.mtnApp.createProposal({
+    title: titleInput?.value || (isIndustrial ? "Endüstriyel Teklif" : "İç Tesisat Teklif"),
+    type: isIndustrial ? "industrial" : "internal",
+    customerName: offerCustomerSelect?.selectedOptions?.[0]?.textContent || "Genel",
+    total: Number(
+      totalElTarget?.textContent.replace(/[^\d,.-]/g, "").replace(",", ".")
+    ),
+    vatRate: Number(vatRateInput?.value || 0),
+    vatManual: Number(vatManualInput?.value || 0),
+    waybillNo: waybillInput?.value || "",
+    createdAt: dateInput?.value || new Date().toISOString().split("T")[0],
+    pdfPath: report.reportFile
+  });
+  renderOffers(data.proposals || []);
+  refreshAccountingPanels(data);
+  setStatus("Teklif kaydedildi.");
+};
+
+if (offerSaveProposalButton) {
+  offerSaveProposalButton.addEventListener("click", () => saveProposal("internal"));
+}
+if (offerSaveProposalIndustrialButton) {
+  offerSaveProposalIndustrialButton.addEventListener("click", () => saveProposal("industrial"));
+}
+
 if (offerApplyMarginButton) {
   offerApplyMarginButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -3224,6 +3550,68 @@ if (offerApplyMarginButton) {
       }
     });
     calculateTotal();
+  });
+}
+
+if (offerTabs.length) {
+  offerTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.offerTab;
+      offerTabs.forEach((btn) => {
+        btn.classList.toggle("tab-button--active", btn.dataset.offerTab === target);
+      });
+      offerPanels.forEach((panel) => {
+        panel.classList.toggle(
+          "tab-panel--hidden",
+          panel.dataset.offerTabPanel !== target
+        );
+      });
+    });
+  });
+}
+
+if (addRowIndustrialButton && offerBodyIndustrial) {
+  addRowIndustrialButton.addEventListener("click", () => {
+    offerBodyIndustrial.appendChild(createIndustrialRow());
+  });
+}
+
+if (offerRefreshButton) {
+  offerRefreshButton.addEventListener("click", async () => {
+    const data = await window.mtnApp?.getData?.();
+    renderOffers(data?.proposals || []);
+  });
+}
+
+if (restoreBackupButton) {
+  restoreBackupButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.restoreBackup) {
+      setStatus("Geri yükleme servisi hazır değil.");
+      return;
+    }
+    const file = restoreBackupFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Lütfen yedek dosyası seçin.");
+      return;
+    }
+    const result = await window.mtnApp.restoreBackup({ path: file.path });
+    if (!result.ok) {
+      setStatus(result.error || "Geri yükleme başarısız.");
+      return;
+    }
+    renderCustomers(result.data.customers || []);
+    renderStocks(result.data.stocks || []);
+    renderStockList(result.data.stocks || []);
+    renderCash(result.data.cashTransactions || []);
+    renderSales(result.data.sales || []);
+    renderStockMovements(result.data.stockMovements || []);
+    renderInvoices(result.data.invoices || []);
+    renderOffers(result.data.proposals || []);
+    refreshAccountingPanels(result.data);
+    renderSummary(result.data);
+    if (restoreBackupStatus) {
+      restoreBackupStatus.textContent = "Yedek başarıyla geri yüklendi.";
+    }
   });
 }
 
@@ -3257,6 +3645,10 @@ if (aiReminderForm) {
 
 if (loginScreen) {
   showLoginScreen();
+}
+
+if (splashScreen) {
+  setTimeout(hideSplash, splashDurationMs);
 }
 
 if (customerTabButtons.length) {
