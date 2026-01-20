@@ -142,6 +142,17 @@ const topbarLogo = document.getElementById("topbar-logo");
 const userRoleEl = document.getElementById("user-role");
 const userNameEl = document.getElementById("user-name");
 const dashboardUserEl = document.getElementById("dashboard-user");
+const companyForm = document.getElementById("company-form");
+const companyNameInput = document.getElementById("company-name");
+const companyOwnerInput = document.getElementById("company-owner");
+const companyTaxOfficeInput = document.getElementById("company-tax-office");
+const companyTaxNumberInput = document.getElementById("company-tax-number");
+const companyPhoneInput = document.getElementById("company-phone");
+const companyIbanInput = document.getElementById("company-iban");
+const companyBankInput = document.getElementById("company-bank");
+const companyAddressInput = document.getElementById("company-address");
+const footerCompanyName = document.getElementById("footer-company-name");
+const footerCompanyOwner = document.getElementById("footer-company-owner");
 const loginPasswordInput = document.getElementById("login-password");
 const loginToggleButton = document.getElementById("login-toggle");
 const logoutButton = document.getElementById("logout-button");
@@ -248,6 +259,12 @@ const applyBranding = (settings) => {
   if (topbarLogo) {
     topbarLogo.src = brandLogo?.src || "assets/logo.svg";
     topbarLogo.style.display = "block";
+  }
+  if (footerCompanyName) {
+    footerCompanyName.textContent = companyName;
+  }
+  if (footerCompanyOwner) {
+    footerCompanyOwner.textContent = settings.companyOwner || "Metin Döş";
   }
 };
 
@@ -1216,6 +1233,30 @@ const initApp = async () => {
   if (licenseKeyInput) {
     licenseKeyInput.value = settings.licenseKey || "";
   }
+  if (companyNameInput) {
+    companyNameInput.value = settings.companyName || "";
+  }
+  if (companyOwnerInput) {
+    companyOwnerInput.value = settings.companyOwner || "";
+  }
+  if (companyTaxOfficeInput) {
+    companyTaxOfficeInput.value = settings.taxOffice || "";
+  }
+  if (companyTaxNumberInput) {
+    companyTaxNumberInput.value = settings.taxNumber || "";
+  }
+  if (companyPhoneInput) {
+    companyPhoneInput.value = settings.companyPhone || "";
+  }
+  if (companyIbanInput) {
+    companyIbanInput.value = settings.companyIban || "";
+  }
+  if (companyBankInput) {
+    companyBankInput.value = settings.companyBank || "";
+  }
+  if (companyAddressInput) {
+    companyAddressInput.value = settings.companyAddress || "";
+  }
   if (autoSyncPathInput) {
     autoSyncPathInput.value = settings.autoSyncPath || "";
   }
@@ -1250,6 +1291,13 @@ const initApp = async () => {
     }
     if (firstRunForm) {
       firstRunForm.companyName.value = settings.companyName || "";
+      firstRunForm.companyOwner.value = settings.companyOwner || "";
+      firstRunForm.companyPhone.value = settings.companyPhone || "";
+      firstRunForm.companyIban.value = settings.companyIban || "";
+      firstRunForm.companyBank.value = settings.companyBank || "";
+      firstRunForm.companyAddress.value = settings.companyAddress || "";
+      firstRunForm.taxOffice.value = settings.taxOffice || "";
+      firstRunForm.taxNumber.value = settings.taxNumber || "";
       firstRunForm.defaultCashName.value = settings.defaultCashName || "";
     }
   }
@@ -2039,6 +2087,24 @@ if (settingsForm) {
   });
 }
 
+if (companyForm) {
+  companyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.saveSettings) {
+      settingsStatusEl.textContent = "Firma servisi hazır değil.";
+      return;
+    }
+    const formData = new FormData(companyForm);
+    const payload = Object.fromEntries(formData.entries());
+    const existingSettings = await window.mtnApp.getSettings();
+    const nextSettings = { ...existingSettings, ...payload };
+    await window.mtnApp.saveSettings(nextSettings);
+    currentSettings = nextSettings;
+    applyBranding(nextSettings);
+    settingsStatusEl.textContent = "Firma bilgileri kaydedildi.";
+  });
+}
+
 if (licenseCheckButton) {
   licenseCheckButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -2097,6 +2163,11 @@ if (firstRunForm) {
     const nextSettings = {
       // Varsayım: varsayılan kasa adı ileride kasa kartı eklendiğinde kullanılacak.
       companyName: payload.companyName,
+      companyOwner: payload.companyOwner || "",
+      companyAddress: payload.companyAddress || "",
+      companyPhone: payload.companyPhone || "",
+      companyIban: payload.companyIban || "",
+      companyBank: payload.companyBank || "",
       taxOffice: payload.taxOffice || "",
       taxNumber: payload.taxNumber || "",
       logoDataUrl,

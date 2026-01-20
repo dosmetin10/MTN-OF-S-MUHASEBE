@@ -20,12 +20,32 @@
               <input name="companyName" required placeholder="MTN Enerji" />
             </label>
             <label>
+              Yetkili
+              <input name="companyOwner" placeholder="Metin Döş" />
+            </label>
+            <label>
               Vergi Dairesi
               <input name="taxOffice" placeholder="Şahinbey" />
             </label>
             <label>
               Vergi No
               <input name="taxNumber" placeholder="14168163156" />
+            </label>
+            <label>
+              Telefon
+              <input name="companyPhone" placeholder="0535 641 90 61" />
+            </label>
+            <label>
+              IBAN
+              <input name="companyIban" placeholder="TR13 0011 1000 0000 0136 9157 74" />
+            </label>
+            <label class="full-width">
+              Adres
+              <input name="companyAddress" placeholder="Ertuğrulgazi Mah. Suyolu Cad. No:77 Şahinbey / Gaziantep" />
+            </label>
+            <label>
+              Banka
+              <input name="companyBank" placeholder="FİNANSBANK" />
             </label>
             <label>
               Logo Yükle
@@ -954,6 +974,44 @@
                 <h2>Otomatik Yedekleme & Taşıma</h2>
                 <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
               </div>
+              <div class="table-card">
+                <h3>Firma Bilgileri</h3>
+                <form class="form-grid" id="company-form">
+                  <label>
+                    Firma Ünvanı
+                    <input id="company-name" name="companyName" />
+                  </label>
+                  <label>
+                    Yetkili
+                    <input id="company-owner" name="companyOwner" />
+                  </label>
+                  <label>
+                    Vergi Dairesi
+                    <input id="company-tax-office" name="taxOffice" />
+                  </label>
+                  <label>
+                    Vergi No
+                    <input id="company-tax-number" name="taxNumber" />
+                  </label>
+                  <label>
+                    Telefon
+                    <input id="company-phone" name="companyPhone" />
+                  </label>
+                  <label>
+                    IBAN
+                    <input id="company-iban" name="companyIban" />
+                  </label>
+                  <label>
+                    Banka
+                    <input id="company-bank" name="companyBank" />
+                  </label>
+                  <label class="full-width">
+                    Adres
+                    <input id="company-address" name="companyAddress" />
+                  </label>
+                  <button class="primary" type="submit">Firma Kaydet</button>
+                </form>
+              </div>
               <form class="form-grid" id="settings-form">
                 <label>
                   Otomatik Taşıma Klasörü
@@ -1019,8 +1077,9 @@
           </section>
         </div>
         <footer class="app-footer">
-          Bu program <strong>MTN Enerji Mühendislik</strong> / Metin Döş
-          tarafından kodlanmış ve tasarlanmıştır. © Tüm hakları saklıdır.
+          Bu program <strong id="footer-company-name">MTN Enerji Mühendislik</strong>
+          / <span id="footer-company-owner">Metin Döş</span> tarafından kodlanmış
+          ve tasarlanmıştır. © Tüm hakları saklıdır.
         </footer>
         <button class="assistant-fab">YZ Asistan (F1)</button>
       </main>
