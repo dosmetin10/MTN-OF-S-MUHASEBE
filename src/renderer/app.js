@@ -172,6 +172,10 @@ const invoiceForm = document.getElementById("invoice-form");
 const invoiceDateInput = document.getElementById("invoice-date");
 const invoiceFileInput = document.getElementById("invoice-file");
 const invoicesTable = document.getElementById("invoices-table");
+const customerTabButtons = document.querySelectorAll("[data-customer-tab]");
+const customerTabPanels = document.querySelectorAll(
+  "[data-customer-tab-panel]"
+);
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -290,6 +294,48 @@ const applyUserProfile = (profile) => {
   }
 };
 
+const loginAnimationMs = 350;
+
+const showLoginScreen = () => {
+  if (!loginScreen) {
+    return;
+  }
+  loginScreen.style.display = "grid";
+  requestAnimationFrame(() => {
+    loginScreen.classList.add("login--ready");
+    loginScreen.classList.remove("login--leaving");
+  });
+};
+
+const hideLoginScreen = () => {
+  if (!loginScreen) {
+    return;
+  }
+  loginScreen.classList.add("login--leaving");
+  loginScreen.classList.remove("login--ready");
+  setTimeout(() => {
+    loginScreen.style.display = "none";
+  }, loginAnimationMs);
+};
+
+const showCustomerTab = (tabId) => {
+  if (!customerTabButtons.length || !customerTabPanels.length) {
+    return;
+  }
+  customerTabButtons.forEach((button) => {
+    button.classList.toggle(
+      "tab-button--active",
+      button.dataset.customerTab === tabId
+    );
+  });
+  customerTabPanels.forEach((panel) => {
+    panel.classList.toggle(
+      "tab-panel--hidden",
+      panel.dataset.customerTabPanel !== tabId
+    );
+  });
+};
+
 const handleLogin = (event) => {
   event.preventDefault();
   const formData = new FormData(loginForm);
@@ -299,8 +345,8 @@ const handleLogin = (event) => {
   );
 
   if (matchedUser) {
-    loginScreen.style.display = "none";
     appShell.classList.remove("app--hidden");
+    hideLoginScreen();
     applyUserProfile(matchedUser);
   } else {
     loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
@@ -318,7 +364,7 @@ if (loginToggleButton && loginPasswordInput) {
 if (logoutButton) {
   logoutButton.addEventListener("click", () => {
     appShell.classList.add("app--hidden");
-    loginScreen.style.display = "grid";
+    showLoginScreen();
   });
 }
 
@@ -478,6 +524,7 @@ const renderCustomers = (items) => {
         cashTransactions: cachedCashTransactions,
         sales: cachedSales
       });
+      showCustomerTab("detail");
       if (customerDetailCard) {
         customerDetailCard.classList.remove("is-hidden");
       }
@@ -1299,6 +1346,7 @@ const initApp = async () => {
   if (!settings.hasOnboarded && firstRunScreen) {
     firstRunScreen.classList.remove("first-run--hidden");
     loginScreen.style.display = "none";
+    loginScreen.classList.remove("login--ready", "login--leaving");
     if (logoPreview && settings.logoDataUrl) {
       logoPreview.src = settings.logoDataUrl;
     }
@@ -1890,6 +1938,7 @@ if (customerSearchButton) {
 if (customerDetailClose) {
   customerDetailClose.addEventListener("click", () => {
     customerDetailCard?.classList.add("is-hidden");
+    showCustomerTab("list");
   });
 }
 
@@ -1903,6 +1952,7 @@ if (customerDetailOffer) {
 if (customerDetailStatement) {
   customerDetailStatement.addEventListener("click", () => {
     showPanel("customers-panel", "Cari");
+    showCustomerTab("detail");
     document.getElementById("customer-detail-module")?.scrollIntoView({
       behavior: "smooth",
       block: "start"
@@ -1913,6 +1963,7 @@ if (customerDetailStatement) {
 if (customerDetailCollect) {
   customerDetailCollect.addEventListener("click", () => {
     showPanel("customers-panel", "Cari");
+    showCustomerTab("list");
     customerTransactionForm?.scrollIntoView({
       behavior: "smooth",
       block: "start"
@@ -1923,6 +1974,7 @@ if (customerDetailCollect) {
 if (customerDetailJob) {
   customerDetailJob.addEventListener("click", () => {
     showPanel("customers-panel", "Cari");
+    showCustomerTab("detail");
     customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
@@ -2582,6 +2634,23 @@ if (offerSaveButton) {
 
 if (loginForm) {
   loginForm.addEventListener("submit", handleLogin);
+}
+
+if (loginScreen) {
+  showLoginScreen();
+}
+
+if (customerTabButtons.length) {
+  customerTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const tabId = button.dataset.customerTab;
+      if (!tabId) {
+        return;
+      }
+      showCustomerTab(tabId);
+    });
+  });
+  showCustomerTab("list");
 }
 
 // Menu click handler

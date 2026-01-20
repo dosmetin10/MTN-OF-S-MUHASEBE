@@ -247,7 +247,15 @@
           </section>
 
           <section class="panel" id="customers-panel">
-            <section class="module" id="customers-module">
+            <div class="tabs" id="customer-tabs">
+              <button class="tab-button tab-button--active" data-customer-tab="list">
+                Cari Listesi
+              </button>
+              <button class="tab-button" data-customer-tab="detail">
+                Cari Detay
+              </button>
+            </div>
+            <section class="module tab-panel" id="customers-module" data-customer-tab-panel="list">
               <div class="module__header">
                 <h2>Cari Yönetimi</h2>
                 <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
@@ -381,7 +389,11 @@
               </div>
             </section>
 
-            <section class="module" id="customer-detail-module">
+            <section
+              class="module tab-panel tab-panel--hidden"
+              id="customer-detail-module"
+              data-customer-tab-panel="detail"
+            >
               <div class="module__header">
                 <h2>Cari Ekstre</h2>
                 <p>Seçili cari için satış ve tahsilat hareketleri.</p>
