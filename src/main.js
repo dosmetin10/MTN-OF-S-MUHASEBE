@@ -1217,6 +1217,49 @@ app.whenReady().then(() => {
     return data.stocks;
   });
 
+  ipcMain.handle("stocks:update", async (_event, payload) => {
+    const data = await loadStorage();
+    const { stockId, updates } = payload || {};
+    data.stocks = data.stocks.map((stock) => {
+      if (stock.id !== stockId) {
+        return stock;
+      }
+      const next = {
+        ...stock,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+      if (updates?.name) {
+        next.normalizedName = normalizeStockName(updates.name);
+      }
+      return next;
+    });
+    addAuditLog(data, {
+      module: "stocks",
+      action: "update",
+      message: "Stok kartı güncellendi."
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.stocks;
+  });
+
+  ipcMain.handle("stocks:delete", async (_event, payload) => {
+    const data = await loadStorage();
+    const { stockId } = payload || {};
+    data.stocks = data.stocks.filter((stock) => stock.id !== stockId);
+    addAuditLog(data, {
+      module: "stocks",
+      action: "delete",
+      message: "Stok kartı silindi."
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.stocks;
+  });
+
   ipcMain.handle("stocks:receipt", async (_event, payload) => {
     const data = await loadStorage();
     const settings = await loadSettings();
@@ -1565,7 +1608,7 @@ app.whenReady().then(() => {
         sandbox: false
       }
     });
-    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:140px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:6px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-header--corporate{align-items:stretch}.report-brand{display:flex;align-items:center;gap:12px}.report-brand h1{font-size:18px;margin:0}.report-meta{max-width:320px;font-size:11px;color:#516081}.report-meta p{margin:2px 0}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:120px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
     await reportWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
     );

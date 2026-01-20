@@ -682,7 +682,7 @@
                       <th data-stock-col="sale">Satış</th>
                       <th data-stock-col="vat">KDV</th>
                       <th>Kritik Seviye</th>
-                      <th>Durum</th>
+                      <th>Stok Durumu</th>
                       <th>İşlem</th>
                     </tr>
                   </thead>
@@ -948,16 +948,16 @@
                 <h2>Satışlar</h2>
                 <p>Fatura ve satış hareketleri listesi.</p>
               </div>
-              <div class="tabs" id="offer-tabs">
-                <button class="tab-button tab-button--active" data-offer-tab="internal">
-                  İç Tesisat Teklif
-                </button>
-                <button class="tab-button" data-offer-tab="industrial">
-                  Endüstriyel Doğalgaz Teklif
-                </button>
-                <button class="tab-button" data-offer-tab="saved">
-                  Tekliflerim
-                </button>
+              <div class="offer-home" id="offer-home">
+                <div class="offer-home__card">
+                  <h3>Teklif Menüsü</h3>
+                  <p>İç tesisat, endüstriyel ve kayıtlı teklifler için seçim yapın.</p>
+                  <div class="offer-home__actions">
+                    <button class="primary" data-offer-home="internal">İç Tesisat</button>
+                    <button class="primary" data-offer-home="industrial">Endüstriyel</button>
+                    <button class="ghost" data-offer-home="saved">Tekliflerim</button>
+                  </div>
+                </div>
               </div>
               <div class="table-card">
                 <table>
@@ -974,7 +974,24 @@
               </div>
             </section>
 
-          <section class="offer tab-panel" data-offer-tab-panel="internal">
+          <div class="offer-workspace is-hidden" id="offer-workspace">
+            <div class="offer-workspace__header">
+              <button class="ghost" data-offer-back>← Teklif Menüsüne Dön</button>
+              <h3 id="offer-workspace-title">Teklif</h3>
+            </div>
+            <div class="tabs" id="offer-tabs">
+              <button class="tab-button tab-button--active" data-offer-tab="internal">
+                İç Tesisat Teklif
+              </button>
+              <button class="tab-button" data-offer-tab="industrial">
+                Endüstriyel Doğalgaz Teklif
+              </button>
+              <button class="tab-button" data-offer-tab="saved">
+                Tekliflerim
+              </button>
+            </div>
+
+          <section class="offer tab-panel tab-panel--hidden" data-offer-tab-panel="internal">
               <div class="offer__header">
                 <h2>İç Tesisat Teklif - Fatura Görünümü</h2>
                 <div class="offer__actions">
@@ -1038,7 +1055,16 @@
                 </thead>
                 <tbody id="offer-body"></tbody>
               </table>
-              <datalist id="stock-suggestions"></datalist>
+              <div class="offer__picker">
+                <div class="offer__picker-header">
+                  <h4>Malzeme Seçimi</h4>
+                  <div class="offer__picker-search">
+                    <input id="offer-stock-search" placeholder="Malzeme ara..." />
+                    <button class="ghost" id="offer-stock-search-btn">Ara</button>
+                  </div>
+                </div>
+                <div class="offer__picker-list" id="offer-stock-list"></div>
+              </div>
               <div class="offer__summary">
                 <label>
                   KDV Oranı (%)
@@ -1112,6 +1138,16 @@
                 </thead>
                 <tbody id="offer-body-industrial"></tbody>
               </table>
+              <div class="offer__picker">
+                <div class="offer__picker-header">
+                  <h4>Malzeme Seçimi</h4>
+                  <div class="offer__picker-search">
+                    <input id="offer-stock-search-industrial" placeholder="Malzeme ara..." />
+                    <button class="ghost" id="offer-stock-search-industrial-btn">Ara</button>
+                  </div>
+                </div>
+                <div class="offer__picker-list" id="offer-stock-list-industrial"></div>
+              </div>
               <div class="offer__summary">
                 <label>
                   KDV Oranı (%)
@@ -1163,6 +1199,7 @@
                 </table>
               </div>
             </section>
+            </div>
           </section>
 
           <section class="panel" id="invoices-panel">

@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("mtnApp", {
   createUnitConversion: (payload) =>
     ipcRenderer.invoke("unit-conversions:create", payload),
   createStock: (payload) => ipcRenderer.invoke("stocks:create", payload),
+  updateStock: (payload) => ipcRenderer.invoke("stocks:update", payload),
+  deleteStock: (payload) => ipcRenderer.invoke("stocks:delete", payload),
   toggleStockStatus: (payload) =>
     ipcRenderer.invoke("stocks:toggle-status", payload),
   createStockReceipt: (payload) => ipcRenderer.invoke("stocks:receipt", payload),

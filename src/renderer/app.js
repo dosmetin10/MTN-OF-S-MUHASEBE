@@ -242,6 +242,23 @@ const offerDateIndustrial = document.getElementById("offer-date-industrial");
 const offerWaybillIndustrial = document.getElementById("offer-waybill-industrial");
 const offerTableBody = document.getElementById("offer-table");
 const offerRefreshButton = document.getElementById("offer-refresh");
+const offerHome = document.getElementById("offer-home");
+const offerWorkspace = document.getElementById("offer-workspace");
+const offerWorkspaceTitle = document.getElementById("offer-workspace-title");
+const offerHomeButtons = document.querySelectorAll("[data-offer-home]");
+const offerBackButtons = document.querySelectorAll("[data-offer-back]");
+const offerStockSearchInput = document.getElementById("offer-stock-search");
+const offerStockSearchButton = document.getElementById("offer-stock-search-btn");
+const offerStockList = document.getElementById("offer-stock-list");
+const offerStockSearchInputIndustrial = document.getElementById(
+  "offer-stock-search-industrial"
+);
+const offerStockSearchButtonIndustrial = document.getElementById(
+  "offer-stock-search-industrial-btn"
+);
+const offerStockListIndustrial = document.getElementById(
+  "offer-stock-list-industrial"
+);
 const restoreBackupFileInput = document.getElementById("restore-backup-file");
 const restoreBackupButton = document.getElementById("restore-backup");
 const restoreBackupStatus = document.getElementById("restore-backup-status");
@@ -283,6 +300,11 @@ let cachedStockReceipts = [];
 let lastManualBackupDir = "";
 let cachedInvoices = [];
 let cachedImportRows = [];
+let editingStockId = "";
+const activeOfferRows = {
+  internal: null,
+  industrial: null
+};
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -655,10 +677,18 @@ const findStockMatch = (value) => {
   );
 };
 
+const setActiveOfferRow = (panel, row) => {
+  if (activeOfferRows[panel]) {
+    activeOfferRows[panel].classList.remove("offer-row--active");
+  }
+  activeOfferRows[panel] = row;
+  row.classList.add("offer-row--active");
+};
+
 const createRow = () => {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
+    <td><input data-field="name" placeholder="Malzeme adı" /></td>
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
@@ -680,6 +710,9 @@ const createRow = () => {
 
   const nameInput = row.querySelector("[data-field='name']");
   if (nameInput) {
+    nameInput.addEventListener("focus", () => {
+      setActiveOfferRow("internal", row);
+    });
     nameInput.addEventListener("change", () => {
       const matched = findStockMatch(nameInput.value);
       if (!matched) {
@@ -703,7 +736,7 @@ const createRow = () => {
 const createIndustrialRow = () => {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
+    <td><input data-field="name" placeholder="Malzeme adı" /></td>
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
@@ -712,6 +745,27 @@ const createIndustrialRow = () => {
   row.querySelectorAll("input").forEach((input) => {
     input.addEventListener("input", calculateIndustrialTotals);
   });
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("focus", () => {
+      setActiveOfferRow("industrial", row);
+    });
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const priceInput = row.querySelector("[data-field='price']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = matched.salePrice || matched.purchasePrice || "";
+      }
+      calculateIndustrialTotals();
+    });
+  }
   return row;
 };
 
@@ -900,6 +954,58 @@ const updateStockSuggestions = (items) => {
   });
 };
 
+const renderOfferStockPicker = (panel, items) => {
+  const listEl =
+    panel === "industrial" ? offerStockListIndustrial : offerStockList;
+  const searchInput =
+    panel === "industrial" ? offerStockSearchInputIndustrial : offerStockSearchInput;
+  if (!listEl) {
+    return;
+  }
+  const term = normalizeText(searchInput?.value || "");
+  const filtered = term
+    ? items.filter((item) => {
+        const name = normalizeText(item.normalizedName || item.name || "");
+        const code = normalizeText(item.code || "");
+        return name.includes(term) || code.includes(term);
+      })
+    : items;
+  listEl.innerHTML = "";
+  filtered.slice(0, 60).forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "offer-stock-item";
+    button.innerHTML = `
+      <span>${item.normalizedName || item.name || "Malzeme"}</span>
+      <span class="muted">${item.code || item.unit || ""}</span>
+    `;
+    button.addEventListener("click", () => {
+      let targetRow = activeOfferRows[panel];
+      if (!targetRow) {
+        targetRow =
+          panel === "industrial" && offerBodyIndustrial
+            ? offerBodyIndustrial.appendChild(createIndustrialRow())
+            : offerBody.appendChild(createRow());
+      }
+      setActiveOfferRow(panel, targetRow);
+      const nameInput = targetRow.querySelector("[data-field='name']");
+      const unitInput = targetRow.querySelector("[data-field='unit']");
+      const priceInput = targetRow.querySelector("[data-field='price']");
+      if (nameInput) {
+        nameInput.value = item.normalizedName || item.name || "";
+      }
+      if (unitInput) {
+        unitInput.value = item.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = item.salePrice || item.purchasePrice || "";
+      }
+      panel === "industrial" ? calculateIndustrialTotals() : calculateTotal();
+    });
+    listEl.appendChild(button);
+  });
+};
+
 const renderStocks = (items) => {
   cachedStocks = items;
   stocksTable.innerHTML = "";
@@ -919,43 +1025,59 @@ const renderStocks = (items) => {
     movementStockSelect.appendChild(defaultOption);
   }
   filtered.forEach((item) => {
-    const isActive = item.isActive !== false;
+    const quantity = Number(item.quantity || 0);
+    const threshold = Number(item.threshold || 0);
+    const isLow = threshold > 0 && quantity <= threshold;
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.normalizedName || item.name || "-"}</td>
       <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
-      <td>${item.quantity || 0}</td>
+      <td>${quantity}</td>
       <td data-stock-col="purchase">${formatCurrency(Number(item.purchasePrice || 0))}</td>
       <td data-stock-col="sale">${formatCurrency(Number(item.salePrice || 0))}</td>
       <td data-stock-col="vat">${Number(item.vatRate || 0)}</td>
-      <td>${item.threshold || 0}</td>
+      <td>${threshold || 0}</td>
       <td>
-        <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
-          ${isActive ? "Aktif" : "Pasif"}
+        <span class="badge ${isLow ? "badge--danger" : "badge--income"}">
+          ${isLow ? "Kritik" : "Normal"} • ${quantity}
         </span>
       </td>
       <td>
-        <button class="ghost" data-toggle-stock="${
-          item.id
-        }" data-active="${isActive ? "true" : "false"}">
-          ${isActive ? "Pasife Al" : "Aktifleştir"}
-        </button>
+        <button class="ghost" data-edit-stock="${item.id}">Düzenle</button>
+        <button class="ghost ghost--danger" data-delete-stock="${item.id}">Sil</button>
       </td>
     `;
-    row.querySelector("[data-toggle-stock]")?.addEventListener("click", async () => {
-      if (!window.mtnApp?.toggleStockStatus) {
-        setStatus("Stok servisi hazır değil.");
+    row.querySelector("[data-edit-stock]")?.addEventListener("click", () => {
+      editingStockId = item.id;
+      if (!stockForm) {
         return;
       }
-      const nextActive = !isActive;
-      const result = await window.mtnApp.toggleStockStatus({
-        stockId: item.id,
-        isActive: nextActive
-      });
+      stockForm.elements.code.value = item.code || "";
+      stockForm.elements.name.value = item.name || "";
+      stockForm.elements.diameter.value = item.diameter || "";
+      stockForm.elements.unit.value = item.unit || "";
+      stockForm.elements.quantity.value = item.quantity || 0;
+      stockForm.elements.purchasePrice.value = item.purchasePrice || "";
+      stockForm.elements.salePrice.value = item.salePrice || "";
+      stockForm.elements.vatRate.value = item.vatRate || "";
+      stockForm.elements.description.value = item.description || "";
+      stockForm.elements.threshold.value = item.threshold || "";
+      stockForm.elements.createdAt.value = item.createdAt || "";
+      setStatus("Stok düzenleme modunda. Güncellemek için kaydet.");
+    });
+    row.querySelector("[data-delete-stock]")?.addEventListener("click", async () => {
+      if (!window.confirm("Bu stoğu silmek istiyor musunuz?")) {
+        return;
+      }
+      if (!window.mtnApp?.deleteStock) {
+        setStatus("Stok silme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.deleteStock({ stockId: item.id });
       renderStocks(result || []);
-      setStatus(nextActive ? "Stok aktifleştirildi." : "Stok pasife alındı.");
+      setStatus("Stok silindi.");
     });
     stocksTable.appendChild(row);
   });
@@ -991,6 +1113,8 @@ const renderStocks = (items) => {
         : "";
   }
   updateStockSuggestions(items);
+  renderOfferStockPicker("internal", items);
+  renderOfferStockPicker("industrial", items);
   applyStockColumnVisibility();
   renderStockList(items);
 };
@@ -2030,19 +2154,30 @@ const buildOfferHtml = (title, rows, totals) => {
   const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
   const taxNumber = currentSettings.taxNumber || "0000000000";
   const logoSrc = currentSettings.logoDataUrl || "";
+  const companyOwner = currentSettings.companyOwner || "";
+  const companyPhone = currentSettings.companyPhone || "";
+  const companyAddress = currentSettings.companyAddress || "";
+  const companyIban = currentSettings.companyIban || "";
   const logoHtml = logoSrc
     ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
     : `<div class="report-logo">MTN</div>`;
   return `
-    <div class="report-header">
-      <div>
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(companyName)}</p>
-        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
-          taxNumber
-        )}</p>
+    <div class="report-header report-header--corporate">
+      <div class="report-brand">
+        ${logoHtml}
+        <div>
+          <h1>${escapeHtml(companyName)}</h1>
+          <p>${escapeHtml(title)}</p>
+        </div>
       </div>
-      ${logoHtml}
+      <div class="report-meta">
+        <p><strong>Vergi Dairesi:</strong> ${escapeHtml(taxOffice)}</p>
+        <p><strong>Vergi No:</strong> ${escapeHtml(taxNumber)}</p>
+        <p><strong>Yetkili:</strong> ${escapeHtml(companyOwner || "-")}</p>
+        <p><strong>Telefon:</strong> ${escapeHtml(companyPhone || "-")}</p>
+        <p><strong>IBAN:</strong> ${escapeHtml(companyIban || "-")}</p>
+        <p><strong>Adres:</strong> ${escapeHtml(companyAddress || "-")}</p>
+      </div>
     </div>
     <div class="report-watermark">${
       logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
@@ -2405,6 +2540,27 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
+    if (editingStockId) {
+      if (!window.mtnApp?.updateStock) {
+        setStatus("Stok güncelleme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.updateStock({
+        stockId: editingStockId,
+        updates: payload
+      });
+      renderStocks(result || []);
+      const data = await window.mtnApp.getData();
+      renderStockMovements(data.stockMovements || []);
+      renderSummary(data);
+      refreshAccountingPanels(data);
+      setStatus("Stok güncellendi.");
+      editingStockId = "";
+      stockForm.reset();
+      setAutoCodes();
+      setTodayDate();
+      return;
+    }
     const normalizedName = normalizeText(payload.name);
     const existingStock = cachedStocks.find(
       (item) => normalizeText(item.name) === normalizedName
@@ -2449,6 +2605,7 @@ if (stockForm) {
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
     refreshAccountingPanels(data);
+    setStatus("Stok kaydedildi.");
     stockForm.reset();
     setAutoCodes();
     setTodayDate();
@@ -3580,19 +3737,62 @@ if (offerApplyMarginButton) {
   });
 }
 
+const offerTitles = {
+  internal: "İç Tesisat Teklif",
+  industrial: "Endüstriyel Teklif",
+  saved: "Tekliflerim"
+};
+
+const openOfferWorkspace = (target) => {
+  if (offerHome) {
+    offerHome.classList.add("is-hidden");
+  }
+  if (offerWorkspace) {
+    offerWorkspace.classList.remove("is-hidden");
+  }
+  if (offerWorkspaceTitle) {
+    offerWorkspaceTitle.textContent = offerTitles[target] || "Teklif";
+  }
+  offerTabs.forEach((btn) => {
+    btn.classList.toggle("tab-button--active", btn.dataset.offerTab === target);
+  });
+  offerPanels.forEach((panel) => {
+    panel.classList.toggle(
+      "tab-panel--hidden",
+      panel.dataset.offerTabPanel !== target
+    );
+  });
+};
+
+const showOfferHome = () => {
+  if (offerWorkspace) {
+    offerWorkspace.classList.add("is-hidden");
+  }
+  if (offerHome) {
+    offerHome.classList.remove("is-hidden");
+  }
+};
+
+offerHomeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = button.dataset.offerHome;
+    if (target) {
+      openOfferWorkspace(target);
+    }
+  });
+});
+
+offerBackButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    showOfferHome();
+  });
+});
+
 if (offerTabs.length) {
   offerTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
       const target = tab.dataset.offerTab;
-      offerTabs.forEach((btn) => {
-        btn.classList.toggle("tab-button--active", btn.dataset.offerTab === target);
-      });
-      offerPanels.forEach((panel) => {
-        panel.classList.toggle(
-          "tab-panel--hidden",
-          panel.dataset.offerTabPanel !== target
-        );
-      });
+      openOfferWorkspace(target);
     });
   });
 }
@@ -3607,6 +3807,32 @@ if (offerRefreshButton) {
   offerRefreshButton.addEventListener("click", async () => {
     const data = await window.mtnApp?.getData?.();
     renderOffers(data?.proposals || []);
+  });
+}
+
+if (offerStockSearchButton) {
+  offerStockSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderOfferStockPicker("internal", cachedStocks);
+  });
+}
+
+if (offerStockSearchInput) {
+  offerStockSearchInput.addEventListener("input", () => {
+    renderOfferStockPicker("internal", cachedStocks);
+  });
+}
+
+if (offerStockSearchButtonIndustrial) {
+  offerStockSearchButtonIndustrial.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderOfferStockPicker("industrial", cachedStocks);
+  });
+}
+
+if (offerStockSearchInputIndustrial) {
+  offerStockSearchInputIndustrial.addEventListener("input", () => {
+    renderOfferStockPicker("industrial", cachedStocks);
   });
 }
 
