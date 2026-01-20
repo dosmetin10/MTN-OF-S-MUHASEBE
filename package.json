@@ -1,6 +1,6 @@
 {
   "name": "mtn-muhasebe",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "MTN Muhasebe masaustu uygulamasi temel iskelet",
   "main": "src/main.js",
   "scripts": {
