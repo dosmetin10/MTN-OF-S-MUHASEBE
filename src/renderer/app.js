@@ -10,30 +10,59 @@ const offerPaymentSelect = document.getElementById("offer-payment");
 const offerSaveButton = document.getElementById("offer-save");
 const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
+const backupOpenButton = document.getElementById("backup-open");
 const lastBackupEl = document.getElementById("last-backup");
 const backupPathEl = document.getElementById("backup-path");
 const summaryCollectionsEl = document.getElementById("summary-collections");
 const summaryCashEl = document.getElementById("summary-cash");
 const summaryBalanceEl = document.getElementById("summary-balance");
 const summaryAlertsEl = document.getElementById("summary-alerts");
+const execReceivablesEl = document.getElementById("exec-receivables");
+const execCashEl = document.getElementById("exec-cash");
+const execStocksEl = document.getElementById("exec-stocks");
+const execLowStocksEl = document.getElementById("exec-low-stocks");
+const execPaymentsEl = document.getElementById("exec-payments");
 const customerForm = document.getElementById("customer-form");
-const customerDebtForm = document.getElementById("customer-debt-form");
-const customerPaymentForm = document.getElementById("customer-payment-form");
-const customerDebtDateInput = document.getElementById("customer-debt-date");
+const customerTransactionForm = document.getElementById(
+  "customer-transaction-form"
+);
+const customerTransactionDateInput = document.getElementById(
+  "customer-transaction-date"
+);
 const customerJobForm = document.getElementById("customer-job-form");
 const customerJobDateInput = document.getElementById("customer-job-date");
-const customerPaymentDateInput = document.getElementById(
-  "customer-payment-date"
+const transactionCustomerSelect = document.getElementById(
+  "transaction-customer"
 );
-const debtCustomerSelect = document.getElementById("debt-customer");
-const paymentCustomerSelect = document.getElementById("payment-customer");
+const transactionTypeSelect = document.getElementById("transaction-type");
+const transactionHint = document.getElementById("transaction-hint");
+const supplierActions = document.getElementById("supplier-actions");
+const supplierPaymentAction = document.getElementById("supplier-payment-action");
+const customerDetailSupplierPayment = document.getElementById(
+  "customer-detail-supplier-payment"
+);
+const salesPanel = document.getElementById("sales-panel");
+const contentScroll = document.querySelector(".content__scroll");
+const customerTypeSelect = document.querySelector(
+  "#customer-form select[name='type']"
+);
 const customersTable = document.getElementById("customers-table");
 const customerSearchInput = document.getElementById("customer-search");
 const customerSearchButton = document.getElementById("customer-search-btn");
 const customerSearchSuggestion = document.getElementById(
   "customer-search-suggestion"
 );
+const customerDetailCard = document.getElementById("customer-detail-card");
+const customerDetailTitle = document.getElementById("customer-detail-title");
+const customerDetailClose = document.getElementById("customer-detail-close");
+const customerDetailOffer = document.getElementById("customer-detail-offer");
+const customerDetailStatement = document.getElementById(
+  "customer-detail-statement"
+);
+const customerDetailCollect = document.getElementById("customer-detail-collect");
+const customerDetailJob = document.getElementById("customer-detail-job");
 const stockForm = document.getElementById("stock-form");
+const stockCreatedAtInput = document.getElementById("stock-created-at");
 const stocksTable = document.getElementById("stocks-table");
 const stocksTotalEl = document.getElementById("stocks-total");
 const stockReceiptToggle = document.getElementById("stock-receipt-toggle");
@@ -46,11 +75,61 @@ const stockReceiptDateInput = document.getElementById("stock-receipt-date");
 const stockReceiptSupplierInput = document.getElementById(
   "stock-receipt-supplier"
 );
+const stockReceiptWarehouseSelect = document.getElementById(
+  "stock-receipt-warehouse"
+);
+const stockReceiptFileInput = document.getElementById("stock-receipt-file");
 const stockSearchInput = document.getElementById("stock-search");
 const stockSearchButton = document.getElementById("stock-search-btn");
 const stockSearchSuggestion = document.getElementById("stock-search-suggestion");
 const stockExportCsvButton = document.getElementById("stock-export-csv");
 const stockExportPdfButton = document.getElementById("stock-export-pdf");
+const stockImportFileInput = document.getElementById("stock-import-file");
+const stockImportWarehouseSelect = document.getElementById(
+  "stock-import-warehouse"
+);
+const stockImportPreviewButton = document.getElementById(
+  "stock-import-preview"
+);
+const stockImportApplyButton = document.getElementById("stock-import-apply");
+const stockImportResetButton = document.getElementById("stock-import-reset");
+const stockImportSummaryEl = document.getElementById("stock-import-summary");
+const stockImportTable = document.getElementById("stock-import-table");
+const stockReceiptsTable = document.getElementById("stock-receipts-table");
+const stockReceiptsTransferButton = document.getElementById(
+  "stock-receipts-transfer"
+);
+const receiptFilterStartInput = document.getElementById("receipt-filter-start");
+const receiptFilterEndInput = document.getElementById("receipt-filter-end");
+const receiptFilterSupplierInput = document.getElementById(
+  "receipt-filter-supplier"
+);
+const receiptFilterWarehouseSelect = document.getElementById(
+  "receipt-filter-warehouse"
+);
+const receiptFilterStatusSelect = document.getElementById(
+  "receipt-filter-status"
+);
+const stockListSearchInput = document.getElementById("stock-list-search");
+const stockListSearchButton = document.getElementById("stock-list-search-btn");
+const stockListAddToSaleButton = document.getElementById(
+  "stock-list-add-to-sale"
+);
+const stockListTable = document.getElementById("stock-list-table");
+const stockListEmptyEl = document.getElementById("stock-list-empty");
+const inventoryCountCard = document.getElementById("inventory-count-card");
+const inventoryCountAddRow = document.getElementById("inventory-count-add-row");
+const inventoryCountBody = document.getElementById("inventory-count-body");
+const inventoryCountTransfer = document.getElementById(
+  "inventory-count-transfer"
+);
+const inventoryCountWarehouse = document.getElementById(
+  "inventory-count-warehouse"
+);
+const inventoryCountDate = document.getElementById("inventory-count-date");
+const inventoryCountNote = document.getElementById("inventory-count-note");
+const unitConversionForm = document.getElementById("unit-conversion-form");
+const unitConversionTable = document.getElementById("unit-conversion-table");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
@@ -65,6 +144,9 @@ const reportStockMovementsButton = document.getElementById(
   "report-stock-movements"
 );
 const reportCashSummaryButton = document.getElementById("report-cash-summary");
+const customerBalanceReportButton = document.getElementById(
+  "customer-balance-report"
+);
 const reportPathEl = document.getElementById("report-path");
 const assistantDailyEl = document.getElementById("assistant-daily");
 const assistantRemindersEl = document.getElementById("assistant-reminders");
@@ -90,6 +172,7 @@ const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const autoBackupEnabledSelect = document.getElementById("auto-backup-enabled");
+const stockValuationSelect = document.getElementById("stock-valuation");
 const lastAutoBackupEl = document.getElementById("last-auto-backup");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
@@ -99,10 +182,101 @@ const logoFileInput = document.getElementById("logo-file");
 const logoPreview = document.getElementById("logo-preview");
 const brandTitle = document.getElementById("brand-title");
 const brandLogo = document.getElementById("brand-logo");
+const topbarLogo = document.getElementById("topbar-logo");
 const userRoleEl = document.getElementById("user-role");
 const userNameEl = document.getElementById("user-name");
+const dashboardUserEl = document.getElementById("dashboard-user");
+const companyForm = document.getElementById("company-form");
+const companyNameInput = document.getElementById("company-name");
+const companyOwnerInput = document.getElementById("company-owner");
+const companyTaxOfficeInput = document.getElementById("company-tax-office");
+const companyTaxNumberInput = document.getElementById("company-tax-number");
+const companyPhoneInput = document.getElementById("company-phone");
+const companyIbanInput = document.getElementById("company-iban");
+const companyBankInput = document.getElementById("company-bank");
+const companyAddressInput = document.getElementById("company-address");
+const footerCompanyName = document.getElementById("footer-company-name");
+const footerCompanyOwner = document.getElementById("footer-company-owner");
+const loginPasswordInput = document.getElementById("login-password");
+const loginToggleButton = document.getElementById("login-toggle");
+const logoutButton = document.getElementById("logout-button");
+const backupSecondaryButton = document.getElementById("backup-now-secondary");
+const exitAppButton = document.getElementById("exit-app");
 const licenseKeyInput = document.getElementById("license-key");
 const licenseCheckButton = document.getElementById("license-check");
+const invoiceForm = document.getElementById("invoice-form");
+const invoiceDateInput = document.getElementById("invoice-date");
+const invoiceFileInput = document.getElementById("invoice-file");
+const invoicesTable = document.getElementById("invoices-table");
+const invoiceTypeSelect = document.getElementById("invoice-type");
+const customerTabButtons = document.querySelectorAll("[data-customer-tab]");
+const customerTabPanels = document.querySelectorAll(
+  "[data-customer-tab-panel]"
+);
+const aiReminderForm = document.getElementById("ai-reminder-form");
+const aiReminderList = document.getElementById("ai-reminder-list");
+const assistantPaymentsEl = document.getElementById("assistant-payments");
+const offerMarginInput = document.getElementById("offer-margin");
+const offerApplyMarginButton = document.getElementById("offer-apply-margin");
+const stockSuggestions = document.getElementById("stock-suggestions");
+const stockColumnToggles = document.querySelectorAll("[data-stock-column]");
+const accountForm = document.getElementById("account-form");
+const accountsTable = document.getElementById("accounts-table");
+const ledgerTable = document.getElementById("ledger-table");
+const auditLogTable = document.getElementById("audit-log-table");
+const splashScreen = document.getElementById("splash-screen");
+const splashLogo = document.getElementById("splash-logo");
+const loginLogo = document.getElementById("login-logo");
+const offerTabs = document.querySelectorAll("[data-offer-tab]");
+const offerPanels = document.querySelectorAll("[data-offer-tab-panel]");
+const offerTitleInput = document.getElementById("offer-title");
+const offerDateInput = document.getElementById("offer-date");
+const offerWaybillInput = document.getElementById("offer-waybill");
+const offerVatManualInput = document.getElementById("offer-vat-manual");
+const offerSaveProposalButton = document.getElementById("offer-save-proposal");
+const offerLogo = document.getElementById("offer-logo");
+const offerCompanyName = document.getElementById("offer-company-name");
+const offerCompanyMeta = document.getElementById("offer-company-meta");
+const offerCompanyAddress = document.getElementById("offer-company-address");
+const offerBodyIndustrial = document.getElementById("offer-body-industrial");
+const offerVatIndustrial = document.getElementById("offer-vat-industrial");
+const offerVatManualIndustrial = document.getElementById("offer-vat-manual-industrial");
+const offerSubtotalIndustrial = document.getElementById("offer-subtotal-industrial");
+const offerVatTotalIndustrial = document.getElementById("offer-vat-total-industrial");
+const offerTotalIndustrial = document.getElementById("offer-total-industrial");
+const offerPdfIndustrialButton = document.getElementById("offer-pdf-industrial");
+const addRowIndustrialButton = document.getElementById("add-row-industrial");
+const offerSaveProposalIndustrialButton = document.getElementById("offer-save-proposal-industrial");
+const offerLogoIndustrial = document.getElementById("offer-logo-industrial");
+const offerCompanyNameIndustrial = document.getElementById("offer-company-name-industrial");
+const offerCompanyMetaIndustrial = document.getElementById("offer-company-meta-industrial");
+const offerCompanyAddressIndustrial = document.getElementById("offer-company-address-industrial");
+const offerTitleIndustrial = document.getElementById("offer-title-industrial");
+const offerDateIndustrial = document.getElementById("offer-date-industrial");
+const offerWaybillIndustrial = document.getElementById("offer-waybill-industrial");
+const offerTableBody = document.getElementById("offer-table");
+const offerRefreshButton = document.getElementById("offer-refresh");
+const offerHome = document.getElementById("offer-home");
+const offerWorkspace = document.getElementById("offer-workspace");
+const offerWorkspaceTitle = document.getElementById("offer-workspace-title");
+const offerHomeButtons = document.querySelectorAll("[data-offer-home]");
+const offerBackButtons = document.querySelectorAll("[data-offer-back]");
+const offerStockSearchInput = document.getElementById("offer-stock-search");
+const offerStockSearchButton = document.getElementById("offer-stock-search-btn");
+const offerStockList = document.getElementById("offer-stock-list");
+const offerStockSearchInputIndustrial = document.getElementById(
+  "offer-stock-search-industrial"
+);
+const offerStockSearchButtonIndustrial = document.getElementById(
+  "offer-stock-search-industrial-btn"
+);
+const offerStockListIndustrial = document.getElementById(
+  "offer-stock-list-industrial"
+);
+const restoreBackupFileInput = document.getElementById("restore-backup-file");
+const restoreBackupButton = document.getElementById("restore-backup");
+const restoreBackupStatus = document.getElementById("restore-backup-status");
+const globalStatusEl = document.getElementById("global-status");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -119,6 +293,24 @@ const escapeHtml = (value) =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+let statusTimeout = null;
+const setStatus = (message) => {
+  if (reportPathEl) {
+    reportPathEl.textContent = message;
+  }
+  if (!globalStatusEl) {
+    return;
+  }
+  globalStatusEl.textContent = message;
+  globalStatusEl.classList.add("is-visible");
+  if (statusTimeout) {
+    window.clearTimeout(statusTimeout);
+  }
+  statusTimeout = window.setTimeout(() => {
+    globalStatusEl.classList.remove("is-visible");
+  }, 4500);
+};
+
 let users = [
   { username: "mtn", password: "1453" },
   { username: "muhasebe", password: "1453" }
@@ -131,6 +323,15 @@ let cachedCustomerDebts = [];
 let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
+let cachedStockReceipts = [];
+let lastManualBackupDir = "";
+let cachedInvoices = [];
+let cachedImportRows = [];
+let editingStockId = "";
+const activeOfferRows = {
+  internal: null,
+  industrial: null
+};
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 
@@ -171,7 +372,7 @@ const getSuggestion = (term, items, getLabel) => {
 };
 
 const applyBranding = (settings) => {
-  const companyName = settings.companyName || "MTN Muhasebe";
+  const companyName = settings.companyName || "MTN Masaüstü";
   if (brandTitle) {
     brandTitle.textContent = companyName.toUpperCase();
   }
@@ -187,15 +388,206 @@ const applyBranding = (settings) => {
       brandLogo.style.display = "block";
     }
   }
+  if (splashLogo) {
+    splashLogo.src = settings.logoDataUrl || "assets/logo.svg";
+  }
+  if (loginLogo) {
+    loginLogo.src = settings.logoDataUrl || "assets/logo.svg";
+  }
+  if (topbarLogo) {
+    topbarLogo.src = brandLogo?.src || "assets/logo.svg";
+    topbarLogo.style.display = "block";
+  }
+  if (footerCompanyName) {
+    footerCompanyName.textContent = companyName;
+  }
+  if (footerCompanyOwner) {
+    footerCompanyOwner.textContent = settings.companyOwner || "Metin Döş";
+  }
+  if (offerLogo) {
+    offerLogo.src = brandLogo?.src || "assets/logo.svg";
+  }
+  if (offerCompanyName) {
+    offerCompanyName.textContent = companyName;
+  }
+  if (offerCompanyMeta) {
+    offerCompanyMeta.textContent = `Vergi Dairesi: ${settings.taxOffice || ""} • Vergi No: ${settings.taxNumber || ""}`;
+  }
+  if (offerCompanyAddress) {
+    offerCompanyAddress.textContent = settings.companyAddress || "";
+  }
+  if (offerLogoIndustrial) {
+    offerLogoIndustrial.src = brandLogo?.src || "assets/logo.svg";
+  }
+  if (offerCompanyNameIndustrial) {
+    offerCompanyNameIndustrial.textContent = companyName;
+  }
+  if (offerCompanyMetaIndustrial) {
+    offerCompanyMetaIndustrial.textContent = `Vergi Dairesi: ${settings.taxOffice || ""} • Vergi No: ${settings.taxNumber || ""}`;
+  }
+  if (offerCompanyAddressIndustrial) {
+    offerCompanyAddressIndustrial.textContent = settings.companyAddress || "";
+  }
 };
 
 const applyUserProfile = (profile) => {
+  const displayName = profile?.displayName || profile?.username || "Kullanıcı";
   if (userNameEl) {
-    userNameEl.textContent = profile?.displayName || profile?.username || "Kullanıcı";
+    userNameEl.textContent = displayName;
+  }
+  if (dashboardUserEl) {
+    dashboardUserEl.textContent = displayName.toUpperCase();
   }
   if (userRoleEl) {
-    userRoleEl.textContent = `Rol: ${profile?.role || "kullanıcı"}`;
+    userRoleEl.textContent = profile?.role || "kullanıcı";
   }
+};
+
+const reminderStorageKey = "mtn-payment-reminders";
+
+const loadReminders = () => {
+  try {
+    const raw = localStorage.getItem(reminderStorageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveReminders = (items) => {
+  localStorage.setItem(reminderStorageKey, JSON.stringify(items));
+};
+
+const formatReminderDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString("tr-TR");
+};
+
+const getReminderLabel = (reminder) =>
+  `${reminder.category || "Şahsi Ödeme"} • ${formatReminderDate(
+    reminder.dueDate
+  )}`;
+
+const renderReminderList = (targetEl, reminders, emptyMessage) => {
+  if (!targetEl) {
+    return;
+  }
+  targetEl.innerHTML = "";
+  if (!reminders.length) {
+    const li = document.createElement("li");
+    li.textContent = emptyMessage;
+    targetEl.appendChild(li);
+    return;
+  }
+  reminders.forEach((reminder) => {
+    if (targetEl === aiReminderList) {
+      const item = document.createElement("li");
+      item.className = "ai-reminder-item";
+      item.innerHTML = `
+        <strong>${escapeHtml(reminder.title || "Hatırlatma")}</strong>
+        <div class="ai-reminder-meta">
+          <span>${escapeHtml(reminder.category || "Şahsi Ödeme")}</span>
+          <span>${formatReminderDate(reminder.dueDate)}</span>
+        </div>
+        <div class="ai-reminder-actions">
+          <button class="ai-reminder-delete" data-reminder-id="${reminder.id}">
+            Sil
+          </button>
+        </div>
+      `;
+      item
+        .querySelector("[data-reminder-id]")
+        ?.addEventListener("click", () => {
+          const next = loadReminders().filter(
+            (entry) => entry.id !== reminder.id
+          );
+          saveReminders(next);
+          updateReminderUI();
+        });
+      targetEl.appendChild(item);
+      return;
+    }
+    const li = document.createElement("li");
+    li.textContent = `${reminder.title} (${getReminderLabel(reminder)})`;
+    targetEl.appendChild(li);
+  });
+};
+
+const updateReminderUI = () => {
+  const reminders = loadReminders().sort(
+    (a, b) => new Date(a.dueDate) - new Date(b.dueDate)
+  );
+  renderReminderList(
+    aiReminderList,
+    reminders,
+    "Henüz ödeme hatırlatıcısı yok."
+  );
+  renderReminderList(
+    assistantPaymentsEl,
+    reminders,
+    "Ödeme takvimi boş."
+  );
+  return reminders;
+};
+
+const loginAnimationMs = 350;
+const splashDurationMs = 2600;
+
+const hideSplash = () => {
+  if (!splashScreen) {
+    return;
+  }
+  splashScreen.style.opacity = "0";
+  setTimeout(() => {
+    splashScreen.remove();
+  }, 800);
+};
+
+const showLoginScreen = () => {
+  if (!loginScreen) {
+    return;
+  }
+  loginScreen.style.display = "grid";
+  requestAnimationFrame(() => {
+    loginScreen.classList.add("login--ready");
+    loginScreen.classList.remove("login--leaving");
+  });
+};
+
+const hideLoginScreen = () => {
+  if (!loginScreen) {
+    return;
+  }
+  loginScreen.classList.add("login--leaving");
+  loginScreen.classList.remove("login--ready");
+  setTimeout(() => {
+    loginScreen.style.display = "none";
+  }, loginAnimationMs);
+};
+
+const showCustomerTab = (tabId) => {
+  if (!customerTabButtons.length || !customerTabPanels.length) {
+    return;
+  }
+  customerTabButtons.forEach((button) => {
+    button.classList.toggle(
+      "tab-button--active",
+      button.dataset.customerTab === tabId
+    );
+  });
+  customerTabPanels.forEach((panel) => {
+    panel.classList.toggle(
+      "tab-panel--hidden",
+      panel.dataset.customerTabPanel !== tabId
+    );
+  });
 };
 
 const handleLogin = (event) => {
@@ -207,13 +599,77 @@ const handleLogin = (event) => {
   );
 
   if (matchedUser) {
-    loginScreen.style.display = "none";
     appShell.classList.remove("app--hidden");
+    hideLoginScreen();
     applyUserProfile(matchedUser);
+    try {
+      localStorage.setItem("mtn-last-user", matchedUser.username);
+    } catch (error) {
+      // ignore localStorage errors
+    }
   } else {
     loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
   }
 };
+
+if (loginToggleButton && loginPasswordInput) {
+  loginToggleButton.addEventListener("click", () => {
+    const isHidden = loginPasswordInput.type === "password";
+    loginPasswordInput.type = isHidden ? "text" : "password";
+    loginToggleButton.textContent = isHidden ? "🙈" : "👁️";
+  });
+}
+
+if (logoutButton) {
+  logoutButton.addEventListener("click", () => {
+    appShell.classList.add("app--hidden");
+    showLoginScreen();
+    try {
+      localStorage.removeItem("mtn-last-user");
+    } catch (error) {
+      // ignore localStorage errors
+    }
+  });
+}
+
+if (transactionCustomerSelect) {
+  transactionCustomerSelect.addEventListener("change", () => {
+    updateSupplierUI(transactionCustomerSelect.value);
+  });
+}
+
+if (supplierPaymentAction) {
+  supplierPaymentAction.addEventListener("click", () => {
+    showCustomerTab("transaction");
+    if (transactionCustomerSelect) {
+      transactionCustomerSelect.focus();
+    }
+    setStatus("Tedarikçi ödemesi için cari seçin.");
+  });
+}
+
+if (customerDetailSupplierPayment) {
+  customerDetailSupplierPayment.addEventListener("click", () => {
+    showCustomerTab("transaction");
+    if (transactionCustomerSelect) {
+      transactionCustomerSelect.value = detailCustomerSelect?.value || "";
+      updateSupplierUI(transactionCustomerSelect.value);
+    }
+    setStatus("Tedarikçiye ödeme işlemi başlatıldı.");
+  });
+}
+
+if (customerTypeSelect && supplierActions) {
+  const syncSupplierActions = () => {
+    supplierActions.classList.toggle(
+      "is-hidden",
+      customerTypeSelect.value !== "tedarikci"
+    );
+  };
+  customerTypeSelect.addEventListener("change", syncSupplierActions);
+  syncSupplierActions();
+}
+
 
 const calculateTotal = () => {
   const rows = Array.from(offerBody.querySelectorAll("tr"));
@@ -233,12 +689,81 @@ const calculateTotal = () => {
   }, 0);
 
   const vatRate = Number(vatInput?.value || 0) / 100;
-  const vatTotal = subtotal * vatRate;
+  const vatManual = Number(offerVatManualInput?.value || 0);
+  const vatTotal = vatManual || subtotal * vatRate;
   const total = subtotal + vatTotal;
 
   subtotalEl.textContent = formatCurrency(subtotal);
   vatTotalEl.textContent = formatCurrency(vatTotal);
   totalEl.textContent = formatCurrency(total);
+};
+
+const calculateIndustrialTotals = () => {
+  if (!offerBodyIndustrial) {
+    return;
+  }
+  const rows = Array.from(offerBodyIndustrial.querySelectorAll("tr"));
+  const subtotal = rows.reduce((sum, row) => {
+    const quantity = Number(
+      row.querySelector("[data-field='quantity']")?.value || 0
+    );
+    const price = Number(
+      row.querySelector("[data-field='price']")?.value || 0
+    );
+    const totalInput = row.querySelector("[data-field='total']");
+    const rowTotal = quantity * price;
+    if (totalInput) {
+      totalInput.value = rowTotal ? rowTotal.toFixed(2) : "";
+    }
+    return sum + rowTotal;
+  }, 0);
+
+  const vatRate = Number(offerVatIndustrial?.value || 0) / 100;
+  const vatManual = Number(offerVatManualIndustrial?.value || 0);
+  const vatTotal = vatManual || subtotal * vatRate;
+  const total = subtotal + vatTotal;
+
+  if (offerSubtotalIndustrial) {
+    offerSubtotalIndustrial.textContent = formatCurrency(subtotal);
+  }
+  if (offerVatTotalIndustrial) {
+    offerVatTotalIndustrial.textContent = formatCurrency(vatTotal);
+  }
+  if (offerTotalIndustrial) {
+    offerTotalIndustrial.textContent = formatCurrency(total);
+  }
+};
+
+const findStockMatch = (value) => {
+  const raw = String(value || "").trim();
+  const codePart = raw.includes("-") ? raw.split("-")[0].trim() : "";
+  const term = normalizeText(raw);
+  const codeTerm = normalizeText(codePart);
+  if (!term) {
+    return null;
+  }
+  return (
+    cachedStocks.find(
+      (stock) => normalizeText(stock.code) === term
+    ) ||
+    cachedStocks.find(
+      (stock) => codeTerm && normalizeText(stock.code) === codeTerm
+    ) ||
+    cachedStocks.find(
+      (stock) => normalizeText(stock.normalizedName || stock.name) === term
+    ) ||
+    cachedStocks.find((stock) =>
+      normalizeText(stock.normalizedName || stock.name).includes(term)
+    )
+  );
+};
+
+const setActiveOfferRow = (panel, row) => {
+  if (activeOfferRows[panel]) {
+    activeOfferRows[panel].classList.remove("offer-row--active");
+  }
+  activeOfferRows[panel] = row;
+  row.classList.add("offer-row--active");
 };
 
 const createRow = () => {
@@ -249,6 +774,7 @@ const createRow = () => {
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
     <td><input data-field="total" type="number" min="0" step="0.01" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-offer-row-remove>Sil</button></td>
   `;
 
   const inputs = row.querySelectorAll("input");
@@ -264,6 +790,74 @@ const createRow = () => {
     });
   });
 
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("focus", () => {
+      setActiveOfferRow("internal", row);
+    });
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const priceInput = row.querySelector("[data-field='price']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = matched.salePrice || matched.purchasePrice || "";
+      }
+      calculateTotal();
+    });
+  }
+
+  row.querySelector("[data-offer-row-remove]")?.addEventListener("click", () => {
+    row.remove();
+    calculateTotal();
+  });
+
+  return row;
+};
+
+const createIndustrialRow = () => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input data-field="name" placeholder="Malzeme adı" /></td>
+    <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="unit" placeholder="Birim" /></td>
+    <td><input data-field="price" type="number" min="0" step="0.01" /></td>
+    <td><input data-field="total" type="number" min="0" step="0.01" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-offer-row-remove>Sil</button></td>
+  `;
+  row.querySelectorAll("input").forEach((input) => {
+    input.addEventListener("input", calculateIndustrialTotals);
+  });
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("focus", () => {
+      setActiveOfferRow("industrial", row);
+    });
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const priceInput = row.querySelector("[data-field='price']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = matched.salePrice || matched.purchasePrice || "";
+      }
+      calculateIndustrialTotals();
+    });
+  }
+  row.querySelector("[data-offer-row-remove]")?.addEventListener("click", () => {
+    row.remove();
+    calculateIndustrialTotals();
+  });
   return row;
 };
 
@@ -276,8 +870,22 @@ addRowButton.addEventListener("click", () => {
 offerBody.appendChild(createRow());
 calculateTotal();
 
+if (offerBodyIndustrial) {
+  offerBodyIndustrial.appendChild(createIndustrialRow());
+  calculateIndustrialTotals();
+}
+
 if (vatInput) {
   vatInput.addEventListener("input", calculateTotal);
+}
+if (offerVatManualInput) {
+  offerVatManualInput.addEventListener("input", calculateTotal);
+}
+if (offerVatIndustrial) {
+  offerVatIndustrial.addEventListener("input", calculateIndustrialTotals);
+}
+if (offerVatManualIndustrial) {
+  offerVatManualIndustrial.addEventListener("input", calculateIndustrialTotals);
 }
 
 if (window.mtnApp) {
@@ -292,7 +900,12 @@ const renderCustomers = (items) => {
     ? items.filter((item) => {
         const name = normalizeText(item.name);
         const code = normalizeText(item.code);
-        return name.includes(searchTerm) || code.includes(searchTerm);
+        const normalized = normalizeText(item.normalizedName);
+        return (
+          name.includes(searchTerm) ||
+          code.includes(searchTerm) ||
+          normalized.includes(searchTerm)
+        );
       })
     : items;
   if (offerCustomerSelect) {
@@ -302,19 +915,12 @@ const renderCustomers = (items) => {
     defaultOption.textContent = "Genel";
     offerCustomerSelect.appendChild(defaultOption);
   }
-  if (paymentCustomerSelect) {
-    paymentCustomerSelect.innerHTML = "";
+  if (transactionCustomerSelect) {
+    transactionCustomerSelect.innerHTML = "";
     const defaultOption = document.createElement("option");
     defaultOption.value = "";
     defaultOption.textContent = "Cari Seç";
-    paymentCustomerSelect.appendChild(defaultOption);
-  }
-  if (debtCustomerSelect) {
-    debtCustomerSelect.innerHTML = "";
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "";
-    defaultOption.textContent = "Cari Seç";
-    debtCustomerSelect.appendChild(defaultOption);
+    transactionCustomerSelect.appendChild(defaultOption);
   }
   if (detailCustomerSelect) {
     detailCustomerSelect.innerHTML = "";
@@ -324,16 +930,43 @@ const renderCustomers = (items) => {
     detailCustomerSelect.appendChild(defaultOption);
   }
   filtered.forEach((item) => {
+    const isActive = item.isActive !== false;
     const row = document.createElement("tr");
     row.dataset.customerId = item.id || "";
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
+      <td>${item.type === "tedarikci" ? "Tedarikçi" : "Müşteri"}</td>
       <td>${item.phone || "-"}</td>
       <td>${item.taxNumber || "-"}</td>
       <td>${item.email || "-"}</td>
       <td>${formatCurrency(Number(item.balance) || 0)}</td>
+      <td>
+        <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
+          ${isActive ? "Aktif" : "Pasif"}
+        </span>
+      </td>
+      <td>
+        <button class="ghost" data-toggle-status="${
+          item.id
+        }" data-active="${isActive ? "true" : "false"}">
+          ${isActive ? "Pasife Al" : "Aktifleştir"}
+        </button>
+      </td>
     `;
+    row.querySelector("[data-toggle-status]")?.addEventListener("click", async () => {
+      if (!window.mtnApp?.toggleCustomerStatus) {
+        setStatus("Cari servisi hazır değil.");
+        return;
+      }
+      const nextActive = !isActive;
+      const result = await window.mtnApp.toggleCustomerStatus({
+        customerId: item.id,
+        isActive: nextActive
+      });
+      renderCustomers(result || []);
+      setStatus(nextActive ? "Cari aktifleştirildi." : "Cari pasife alındı.");
+    });
     row.addEventListener("dblclick", () => {
       if (detailCustomerSelect && item.id) {
         detailCustomerSelect.value = item.id;
@@ -345,12 +978,22 @@ const renderCustomers = (items) => {
         cashTransactions: cachedCashTransactions,
         sales: cachedSales
       });
+      showCustomerTab("detail");
+      if (customerDetailCard) {
+        customerDetailCard.classList.remove("is-hidden");
+      }
+      if (customerDetailTitle) {
+        customerDetailTitle.textContent = `${item.code || ""} ${item.name || ""}`.trim();
+      }
       const detailModule = document.getElementById("customer-detail-module");
       detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     customersTable.appendChild(row);
   });
   items.forEach((item) => {
+    if (item.isActive === false) {
+      return;
+    }
     if (offerCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
@@ -359,21 +1002,13 @@ const renderCustomers = (items) => {
         : item.name || "Cari";
       offerCustomerSelect.appendChild(option);
     }
-    if (paymentCustomerSelect) {
+    if (transactionCustomerSelect) {
       const option = document.createElement("option");
       option.value = item.id || item.name || "";
       option.textContent = item.code
         ? `${item.code} - ${item.name || "Cari"}`
         : item.name || "Cari";
-      paymentCustomerSelect.appendChild(option);
-    }
-    if (debtCustomerSelect) {
-      const option = document.createElement("option");
-      option.value = item.id || item.name || "";
-      option.textContent = item.code
-        ? `${item.code} - ${item.name || "Cari"}`
-        : item.name || "Cari";
-      debtCustomerSelect.appendChild(option);
+      transactionCustomerSelect.appendChild(option);
     }
     if (detailCustomerSelect) {
       const option = document.createElement("option");
@@ -397,6 +1032,88 @@ const renderCustomers = (items) => {
   }
 };
 
+const updateSupplierUI = (customerId) => {
+  const customer = cachedCustomers.find((item) => item.id === customerId);
+  const isSupplier = customer?.type === "tedarikci";
+  if (transactionTypeSelect) {
+    transactionTypeSelect.value = isSupplier ? "odeme" : "tahsilat";
+  }
+  if (transactionHint) {
+    transactionHint.textContent = isSupplier
+      ? "Tedarikçi için ödeme kaydı giriyorsunuz."
+      : "Müşteri için tahsilat kaydı giriyorsunuz.";
+  }
+  if (customerDetailSupplierPayment) {
+    customerDetailSupplierPayment.classList.toggle("is-hidden", !isSupplier);
+  }
+};
+
+const updateStockSuggestions = (items) => {
+  if (!stockSuggestions) {
+    return;
+  }
+  stockSuggestions.innerHTML = "";
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.code
+      ? `${item.code} - ${item.normalizedName || item.name || ""}`.trim()
+      : item.normalizedName || item.name || "";
+    stockSuggestions.appendChild(option);
+  });
+};
+
+const renderOfferStockPicker = (panel, items) => {
+  const listEl =
+    panel === "industrial" ? offerStockListIndustrial : offerStockList;
+  const searchInput =
+    panel === "industrial" ? offerStockSearchInputIndustrial : offerStockSearchInput;
+  if (!listEl) {
+    return;
+  }
+  const term = normalizeText(searchInput?.value || "");
+  const filtered = term
+    ? items.filter((item) => {
+        const name = normalizeText(item.normalizedName || item.name || "");
+        const code = normalizeText(item.code || "");
+        return name.includes(term) || code.includes(term);
+      })
+    : items;
+  listEl.innerHTML = "";
+  filtered.slice(0, 60).forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "offer-stock-item";
+    button.innerHTML = `
+      <span>${item.normalizedName || item.name || "Malzeme"}</span>
+      <span class="muted">${item.code || item.unit || ""}</span>
+    `;
+    button.addEventListener("click", () => {
+      let targetRow = activeOfferRows[panel];
+      if (!targetRow) {
+        targetRow =
+          panel === "industrial" && offerBodyIndustrial
+            ? offerBodyIndustrial.appendChild(createIndustrialRow())
+            : offerBody.appendChild(createRow());
+      }
+      setActiveOfferRow(panel, targetRow);
+      const nameInput = targetRow.querySelector("[data-field='name']");
+      const unitInput = targetRow.querySelector("[data-field='unit']");
+      const priceInput = targetRow.querySelector("[data-field='price']");
+      if (nameInput) {
+        nameInput.value = item.normalizedName || item.name || "";
+      }
+      if (unitInput) {
+        unitInput.value = item.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = item.salePrice || item.purchasePrice || "";
+      }
+      panel === "industrial" ? calculateIndustrialTotals() : calculateTotal();
+    });
+    listEl.appendChild(button);
+  });
+};
+
 const renderStocks = (items) => {
   cachedStocks = items;
   stocksTable.innerHTML = "";
@@ -416,24 +1133,72 @@ const renderStocks = (items) => {
     movementStockSelect.appendChild(defaultOption);
   }
   filtered.forEach((item) => {
+    const quantity = Number(item.quantity || 0);
+    const threshold = Number(item.threshold || 0);
+    const isLow = threshold > 0 && quantity <= threshold;
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${item.code || "-"}</td>
-      <td>${item.name || "-"}</td>
+      <td>${item.normalizedName || item.name || "-"}</td>
       <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
-      <td>${item.quantity || 0}</td>
-      <td>${item.threshold || 0}</td>
+      <td>${quantity}</td>
+      <td data-stock-col="purchase">${formatCurrency(Number(item.purchasePrice || 0))}</td>
+      <td data-stock-col="sale">${formatCurrency(Number(item.salePrice || 0))}</td>
+      <td data-stock-col="vat">${Number(item.vatRate || 0)}</td>
+      <td>${threshold || 0}</td>
+      <td>
+        <span class="badge ${isLow ? "badge--danger" : "badge--income"}">
+          ${isLow ? "Kritik" : "Normal"} • ${quantity}
+        </span>
+      </td>
+      <td>
+        <button class="ghost" data-edit-stock="${item.id}">Düzenle</button>
+        <button class="ghost ghost--danger" data-delete-stock="${item.id}">Sil</button>
+      </td>
     `;
+    row.querySelector("[data-edit-stock]")?.addEventListener("click", () => {
+      editingStockId = item.id;
+      if (!stockForm) {
+        return;
+      }
+      stockForm.elements.code.value = item.code || "";
+      stockForm.elements.name.value = item.name || "";
+      stockForm.elements.diameter.value = item.diameter || "";
+      stockForm.elements.unit.value = item.unit || "";
+      stockForm.elements.quantity.value = item.quantity || 0;
+      stockForm.elements.purchasePrice.value = item.purchasePrice || "";
+      stockForm.elements.salePrice.value = item.salePrice || "";
+      stockForm.elements.vatRate.value = item.vatRate || "";
+      stockForm.elements.description.value = item.description || "";
+      stockForm.elements.threshold.value = item.threshold || "";
+      stockForm.elements.createdAt.value = item.createdAt || "";
+      setStatus("Stok düzenleme modunda. Güncellemek için kaydet.");
+    });
+    row.querySelector("[data-delete-stock]")?.addEventListener("click", async () => {
+      if (!window.confirm("Bu stoğu silmek istiyor musunuz?")) {
+        return;
+      }
+      if (!window.mtnApp?.deleteStock) {
+        setStatus("Stok silme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.deleteStock({ stockId: item.id });
+      renderStocks(result || []);
+      setStatus("Stok silindi.");
+    });
     stocksTable.appendChild(row);
   });
   items.forEach((item) => {
+    if (item.isActive === false) {
+      return;
+    }
     if (movementStockSelect) {
       const option = document.createElement("option");
-      option.value = item.name || "";
+      option.value = item.normalizedName || item.name || "";
       option.textContent = item.code
-        ? `${item.code} - ${item.name || "Malzeme"}`
-        : item.name || "Malzeme";
+        ? `${item.code} - ${item.normalizedName || item.name || "Malzeme"}`
+        : item.normalizedName || item.name || "Malzeme";
       movementStockSelect.appendChild(option);
     }
   });
@@ -448,13 +1213,354 @@ const renderStocks = (items) => {
     const suggestion = getSuggestion(
       searchTerm,
       items,
-      (item) => item.name || ""
+      (item) => item.normalizedName || item.name || ""
     );
     stockSearchSuggestion.textContent =
       searchTerm && !filtered.length && suggestion
         ? `Şunu mu demek istediniz: ${suggestion}`
         : "";
   }
+  updateStockSuggestions(items);
+  renderOfferStockPicker("internal", items);
+  renderOfferStockPicker("industrial", items);
+  applyStockColumnVisibility();
+  renderStockList(items);
+};
+
+const renderStockList = (items) => {
+  if (!stockListTable) {
+    return;
+  }
+  stockListTable.innerHTML = "";
+  const searchTerm = normalizeText(stockListSearchInput?.value);
+  const filtered = searchTerm
+    ? items.filter((item) => {
+        const name = normalizeText(item.name);
+        const code = normalizeText(item.code);
+        const normalized = normalizeText(item.normalizedName);
+        return (
+          name.includes(searchTerm) ||
+          code.includes(searchTerm) ||
+          normalized.includes(searchTerm)
+        );
+      })
+    : items;
+  filtered.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><input type="checkbox" data-stock-id="${item.id || ""}" /></td>
+      <td>${item.code || "-"}</td>
+      <td>${item.normalizedName || item.name || "-"}</td>
+      <td>${item.warehouse || "Ana Depo"}</td>
+      <td>${item.quantity || 0}</td>
+      <td>${item.unit || "-"}</td>
+      <td>${item.isActive === false ? "Pasif" : "Aktif"}</td>
+      <td>${
+        item.updatedAt
+          ? new Date(item.updatedAt).toLocaleDateString("tr-TR")
+          : "-"
+      }</td>
+    `;
+    stockListTable.appendChild(row);
+  });
+  if (stockListEmptyEl) {
+    stockListEmptyEl.textContent =
+      searchTerm && !filtered.length
+        ? "Aradığınız kriterlere uygun stok bulunamadı."
+        : "";
+  }
+};
+
+const applyStockColumnVisibility = () => {
+  if (!stockColumnToggles.length) {
+    return;
+  }
+  stockColumnToggles.forEach((toggle) => {
+    const column = toggle.dataset.stockColumn;
+    if (!column) {
+      return;
+    }
+    const cells = document.querySelectorAll(`[data-stock-col='${column}']`);
+    cells.forEach((cell) => {
+      cell.classList.toggle("is-hidden", !toggle.checked);
+    });
+  });
+};
+
+const renderStockReceipts = (items) => {
+  cachedStockReceipts = items || [];
+  if (!stockReceiptsTable) {
+    return;
+  }
+  stockReceiptsTable.innerHTML = "";
+  const supplierTerm = normalizeText(receiptFilterSupplierInput?.value);
+  const warehouseFilter = receiptFilterWarehouseSelect?.value || "";
+  const statusFilter = receiptFilterStatusSelect?.value || "";
+  const startDate = receiptFilterStartInput?.value
+    ? new Date(receiptFilterStartInput.value)
+    : null;
+  const endDate = receiptFilterEndInput?.value
+    ? new Date(receiptFilterEndInput.value)
+    : null;
+  if (endDate) {
+    endDate.setHours(23, 59, 59, 999);
+  }
+  const filtered = cachedStockReceipts.filter((receipt) => {
+    if (
+      supplierTerm &&
+      !normalizeText(receipt.supplier).includes(supplierTerm)
+    ) {
+      return false;
+    }
+    if (warehouseFilter && receipt.warehouse !== warehouseFilter) {
+      return false;
+    }
+    if (statusFilter === "transferred" && !receipt.transferredAt) {
+      return false;
+    }
+    if (statusFilter === "pending" && receipt.transferredAt) {
+      return false;
+    }
+    const createdAt = receipt.createdAt ? new Date(receipt.createdAt) : null;
+    if (startDate && createdAt && createdAt < startDate) {
+      return false;
+    }
+    if (endDate && createdAt && createdAt > endDate) {
+      return false;
+    }
+    return true;
+  });
+  filtered.forEach((receipt) => {
+    const row = document.createElement("tr");
+    const total = (receipt.items || []).reduce(
+      (sum, item) =>
+        sum + Number(item.purchasePrice || 0) * Number(item.quantity || 0),
+      0
+    );
+    row.innerHTML = `
+      <td><input type="checkbox" data-receipt-id="${receipt.id}" ${
+        receipt.transferredAt ? "disabled" : ""
+      } /></td>
+      <td>${new Date(receipt.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${receipt.warehouse || "Ana Depo"}</td>
+      <td>${receipt.supplier || "-"}</td>
+      <td>${receipt.items?.length || 0}</td>
+      <td>${formatCurrency(total)}</td>
+      <td>${
+        receipt.transferredAt ? "Aktarıldı" : "Bekliyor"
+      }</td>
+    `;
+    row.addEventListener("dblclick", async () => {
+      if (!receipt.attachment?.path) {
+        return;
+      }
+      const result = await window.mtnApp?.openFile?.(receipt.attachment.path);
+      if (result && !result.ok) {
+        setStatus("Dosya açılamadı.");
+      }
+    });
+    stockReceiptsTable.appendChild(row);
+  });
+};
+
+const renderInvoices = (items) => {
+  cachedInvoices = items || [];
+  if (!invoicesTable) {
+    return;
+  }
+  invoicesTable.innerHTML = "";
+  const sorted = [...cachedInvoices].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.forEach((invoice) => {
+    const row = document.createElement("tr");
+    const fileLabel = invoice.attachment?.name || "-";
+    const typeLabel =
+      invoice.invoiceType === "satis"
+        ? "Satış"
+        : invoice.invoiceType === "alis"
+          ? "Alış"
+          : invoice.type || "-";
+    row.innerHTML = `
+      <td>${typeLabel}</td>
+      <td>${new Date(invoice.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${invoice.vendor || "-"}</td>
+      <td>${formatCurrency(Number(invoice.amount || 0))}</td>
+      <td><button class="ghost" data-open-path="${
+        invoice.attachment?.path || ""
+      }">${fileLabel}</button></td>
+      <td>${invoice.note || "-"}</td>
+      <td>
+        <button class="ghost ghost--danger" data-delete-invoice="${invoice.id}">
+          Sil
+        </button>
+      </td>
+    `;
+    row
+      .querySelector("[data-open-path]")
+      ?.addEventListener("click", async () => {
+        if (!invoice.attachment?.path) {
+          return;
+        }
+        const result = await window.mtnApp?.openFile?.(invoice.attachment.path);
+        if (result && !result.ok) {
+          setStatus("Dosya açılamadı.");
+        }
+      });
+    row
+      .querySelector("[data-delete-invoice]")
+      ?.addEventListener("click", async () => {
+        if (!window.mtnApp?.deleteInvoice) {
+          setStatus("Fatura silme servisi hazır değil.");
+          return;
+        }
+        if (!confirm("Fatura kaydını silmek istiyor musunuz?")) {
+          return;
+        }
+        const result = await window.mtnApp.deleteInvoice({
+          invoiceId: invoice.id
+        });
+        renderInvoices(result.invoices || []);
+        setStatus("Fatura silindi.");
+      });
+    invoicesTable.appendChild(row);
+  });
+};
+
+const renderAccounts = (items) => {
+  if (!accountsTable) {
+    return;
+  }
+  accountsTable.innerHTML = "";
+  (items || []).forEach((account) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${account.code || "-"}</td>
+      <td>${account.name || "-"}</td>
+      <td>${account.type || "-"}</td>
+      <td>${account.description || "-"}</td>
+    `;
+    accountsTable.appendChild(row);
+  });
+};
+
+const renderLedgerEntries = (items) => {
+  if (!ledgerTable) {
+    return;
+  }
+  ledgerTable.innerHTML = "";
+  const sorted = [...(items || [])].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.forEach((entry) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(entry.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${entry.accountCode || ""} ${entry.accountName || ""}</td>
+      <td>${formatCurrency(Number(entry.debit || 0))}</td>
+      <td>${formatCurrency(Number(entry.credit || 0))}</td>
+      <td>${entry.note || "-"}</td>
+    `;
+    ledgerTable.appendChild(row);
+  });
+};
+
+const renderUnitConversions = (items) => {
+  if (!unitConversionTable) {
+    return;
+  }
+  unitConversionTable.innerHTML = "";
+  (items || []).forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.baseUnit || "-"}</td>
+      <td>${item.targetUnit || "-"}</td>
+      <td>${Number(item.factor || 0)}</td>
+      <td>${item.note || "-"}</td>
+    `;
+    unitConversionTable.appendChild(row);
+  });
+};
+
+const renderAuditLogs = (items) => {
+  if (!auditLogTable) {
+    return;
+  }
+  auditLogTable.innerHTML = "";
+  const sorted = [...(items || [])].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.slice(0, 200).forEach((log) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(log.createdAt).toLocaleString("tr-TR")}</td>
+      <td>${log.module || "-"}</td>
+      <td>${log.action || "-"}</td>
+      <td>${log.message || "-"}</td>
+    `;
+    auditLogTable.appendChild(row);
+  });
+};
+
+const refreshAccountingPanels = (data) => {
+  if (!data) {
+    return;
+  }
+  renderAccounts(data.accounts || []);
+  renderLedgerEntries(data.ledgerEntries || []);
+  renderUnitConversions(data.unitConversions || []);
+  renderAuditLogs(data.auditLogs || []);
+};
+
+const renderOffers = (items) => {
+  if (!offerTableBody) {
+    return;
+  }
+  offerTableBody.innerHTML = "";
+  const sorted = [...(items || [])].sort((a, b) => {
+    const nameA = normalizeText(a.customerName || "");
+    const nameB = normalizeText(b.customerName || "");
+    if (nameA === nameB) {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    }
+    return nameA.localeCompare(nameB, "tr");
+  });
+  sorted.forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${item.title || "-"}</td>
+      <td>${item.customerName || "Genel"}</td>
+      <td>${formatCurrency(Number(item.total || 0))}</td>
+      <td><button class="ghost" data-open-path="${item.pdfPath || ""}">PDF</button></td>
+      <td><button class="ghost ghost--danger" data-delete-offer="${item.id}">Sil</button></td>
+    `;
+    const openPdf = async () => {
+      if (!item.pdfPath) {
+        setStatus("PDF dosyası bulunamadı.");
+        return;
+      }
+      const result = await window.mtnApp?.openFile?.(item.pdfPath);
+      if (result && !result.ok) {
+        setStatus("Dosya açılamadı.");
+      }
+    };
+    row.querySelector("[data-open-path]")?.addEventListener("click", openPdf);
+    row.addEventListener("dblclick", openPdf);
+    row.querySelector("[data-delete-offer]")?.addEventListener("click", async () => {
+      if (!window.confirm("Teklifi silmek istiyor musunuz?")) {
+        return;
+      }
+      if (!window.mtnApp?.deleteProposal) {
+        setStatus("Teklif silme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.deleteProposal({ proposalId: item.id });
+      renderOffers(result?.proposals || []);
+      setStatus("Teklif silindi.");
+    });
+    offerTableBody.appendChild(row);
+  });
 };
 
 const renderStockMovements = (items) => {
@@ -492,8 +1598,51 @@ const createReceiptRow = () => {
     <td><input data-field="diameter" placeholder="Çap" /></td>
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
     <td><input data-field="threshold" type="number" min="0" step="1" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-receipt-row-remove>Sil</button></td>
   `;
+  row
+    .querySelector("[data-receipt-row-remove]")
+    ?.addEventListener("click", () => {
+      row.remove();
+      if (!stockReceiptBody?.children.length) {
+        stockReceiptBody?.appendChild(createReceiptRow());
+      }
+    });
+  return row;
+};
+
+const createInventoryCountRow = () => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
+    <td><input data-field="unit" placeholder="Birim" /></td>
+    <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
+    <td><input data-field="salePrice" type="number" min="0" step="0.01" /></td>
+  `;
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const purchaseInput = row.querySelector("[data-field='purchasePrice']");
+      const saleInput = row.querySelector("[data-field='salePrice']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (purchaseInput && !purchaseInput.value) {
+        purchaseInput.value = matched.purchasePrice || "";
+      }
+      if (saleInput && !saleInput.value) {
+        saleInput.value = matched.salePrice || "";
+      }
+    });
+  }
   return row;
 };
 
@@ -551,6 +1700,7 @@ const renderCash = (items) => {
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
       <td><span class="${badgeClass}">${item.type || "-"}</span></td>
       <td>${item.customerName || "-"}</td>
+      <td>${item.paymentMethod || "-"}</td>
       <td>${formatCurrency(Number(item.amount) || 0)}</td>
       <td>${item.note || "-"}</td>
     `;
@@ -603,6 +1753,12 @@ const renderCustomerDetail = (data) => {
   const customer = (data.customers || []).find(
     (item) => item.id === customerId
   );
+  if (customerDetailSupplierPayment) {
+    customerDetailSupplierPayment.classList.toggle(
+      "is-hidden",
+      customer?.type !== "tedarikci"
+    );
+  }
   const totalSales = sales.reduce(
     (sum, sale) => sum + Number(sale.total || 0),
     0
@@ -709,6 +1865,20 @@ const renderSummary = (data) => {
     (sum, item) => sum + Number(item.balance || 0),
     0
   );
+  const totalReceivables = (data.customers || []).reduce((sum, item) => {
+    const balance = Number(item.balance || 0);
+    return balance > 0 ? sum + balance : sum;
+  }, 0);
+  const totalStocks = (data.stocks || []).length;
+  const lowStocks = (data.stocks || []).filter((item) => {
+    const threshold = Number(item.threshold || 0);
+    return threshold > 0 && Number(item.quantity || 0) <= threshold;
+  });
+  const paymentReminders = loadReminders();
+  const today = new Date().toISOString().split("T")[0];
+  const dueToday = paymentReminders.filter(
+    (reminder) => reminder.dueDate === today
+  );
 
   summaryCollectionsEl.textContent = formatCurrency(totalCollections);
   summaryCashEl.textContent = formatCurrency(cashBalance);
@@ -717,10 +1887,6 @@ const renderSummary = (data) => {
 
   if (summaryAlertsEl) {
     summaryAlertsEl.innerHTML = "";
-    const lowStocks = (data.stocks || []).filter((item) => {
-      const threshold = Number(item.threshold || 0);
-      return threshold > 0 && Number(item.quantity || 0) <= threshold;
-    });
     const pendingBalances = (data.customers || [])
       .filter((item) => Number(item.balance || 0) > 0)
       .slice(0, 3);
@@ -744,6 +1910,22 @@ const renderSummary = (data) => {
       li.textContent = "Yeni hatırlatıcı yok.";
       summaryAlertsEl.appendChild(li);
     }
+  }
+
+  if (execReceivablesEl) {
+    execReceivablesEl.textContent = formatCurrency(totalReceivables);
+  }
+  if (execCashEl) {
+    execCashEl.textContent = formatCurrency(cashBalance);
+  }
+  if (execStocksEl) {
+    execStocksEl.textContent = totalStocks;
+  }
+  if (execLowStocksEl) {
+    execLowStocksEl.textContent = lowStocks.length;
+  }
+  if (execPaymentsEl) {
+    execPaymentsEl.textContent = dueToday.length;
   }
 };
 
@@ -809,6 +1991,10 @@ const renderAssistant = (data) => {
       )})`
     )
   ];
+  const paymentReminders = loadReminders().slice(0, 5).map(
+    (item) => `Ödeme: ${item.title} (${getReminderLabel(item)})`
+  );
+  reminders.push(...paymentReminders);
 
   const suggestions = [];
   if (!currentSettings.enableAutoBackup) {
@@ -842,13 +2028,23 @@ const loadInitialData = async () => {
   const data = await window.mtnApp.getData();
   renderCustomers(data.customers || []);
   renderStocks(data.stocks || []);
+  renderStockList(data.stocks || []);
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
   renderStockMovements(data.stockMovements || []);
+  renderAccounts(data.accounts || []);
+  renderLedgerEntries(data.ledgerEntries || []);
+  renderUnitConversions(data.unitConversions || []);
+  renderAuditLogs(data.auditLogs || []);
   cachedCustomerDebts = data.customerDebts || [];
   cachedCustomerJobs = data.customerJobs || [];
+  cachedStockReceipts = data.stockReceipts || [];
+  cachedInvoices = data.invoices || [];
   renderSummary(data);
   renderCustomerDetail(data);
+  renderStockReceipts(data.stockReceipts || []);
+  renderInvoices(data.invoices || []);
+  renderOffers(data.proposals || []);
 };
 
 const readLogoFile = (file) =>
@@ -870,17 +2066,29 @@ const setTodayDate = () => {
   if (stockMovementDateInput) {
     stockMovementDateInput.value = today;
   }
+  if (stockCreatedAtInput) {
+    stockCreatedAtInput.value = today;
+  }
   if (stockReceiptDateInput) {
     stockReceiptDateInput.value = today;
-  }
-  if (customerDebtDateInput) {
-    customerDebtDateInput.value = today;
   }
   if (customerJobDateInput) {
     customerJobDateInput.value = today;
   }
-  if (customerPaymentDateInput) {
-    customerPaymentDateInput.value = today;
+  if (customerTransactionDateInput) {
+    customerTransactionDateInput.value = today;
+  }
+  if (invoiceDateInput) {
+    invoiceDateInput.value = today;
+  }
+  if (inventoryCountDate) {
+    inventoryCountDate.value = today;
+  }
+  if (offerDateInput) {
+    offerDateInput.value = today;
+  }
+  if (offerDateIndustrial) {
+    offerDateIndustrial.value = today;
   }
 };
 
@@ -909,8 +2117,40 @@ const initApp = async () => {
   if (settings.users?.length) {
     users = settings.users;
   }
+  if (stockReceiptWarehouseSelect) {
+    stockReceiptWarehouseSelect.value =
+      settings.defaultWarehouse || "Ana Depo";
+  }
+  if (stockImportWarehouseSelect) {
+    stockImportWarehouseSelect.value =
+      settings.defaultWarehouse || "Ana Depo";
+  }
   if (licenseKeyInput) {
     licenseKeyInput.value = settings.licenseKey || "";
+  }
+  if (companyNameInput) {
+    companyNameInput.value = settings.companyName || "";
+  }
+  if (companyOwnerInput) {
+    companyOwnerInput.value = settings.companyOwner || "";
+  }
+  if (companyTaxOfficeInput) {
+    companyTaxOfficeInput.value = settings.taxOffice || "";
+  }
+  if (companyTaxNumberInput) {
+    companyTaxNumberInput.value = settings.taxNumber || "";
+  }
+  if (companyPhoneInput) {
+    companyPhoneInput.value = settings.companyPhone || "";
+  }
+  if (companyIbanInput) {
+    companyIbanInput.value = settings.companyIban || "";
+  }
+  if (companyBankInput) {
+    companyBankInput.value = settings.companyBank || "";
+  }
+  if (companyAddressInput) {
+    companyAddressInput.value = settings.companyAddress || "";
   }
   if (autoSyncPathInput) {
     autoSyncPathInput.value = settings.autoSyncPath || "";
@@ -927,10 +2167,26 @@ const initApp = async () => {
   if (autoBackupEnabledSelect) {
     autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
   }
+  if (stockValuationSelect) {
+    stockValuationSelect.value = settings.stockValuationMethod || "ortalama";
+  }
   if (lastAutoBackupEl) {
     lastAutoBackupEl.textContent = settings.lastAutoBackupAt
       ? new Date(settings.lastAutoBackupAt).toLocaleString("tr-TR")
       : "Henüz yok";
+  }
+  if (settings.hasOnboarded && loginScreen && appShell) {
+    try {
+      const rememberedUser = localStorage.getItem("mtn-last-user");
+      const matchedUser = users.find((user) => user.username === rememberedUser);
+      if (matchedUser) {
+        appShell.classList.remove("app--hidden");
+        hideLoginScreen();
+        applyUserProfile(matchedUser);
+      }
+    } catch (error) {
+      // ignore localStorage errors
+    }
   }
   setTodayDate();
   setAutoCodes();
@@ -938,6 +2194,7 @@ const initApp = async () => {
   if (!settings.hasOnboarded && firstRunScreen) {
     firstRunScreen.classList.remove("first-run--hidden");
     loginScreen.style.display = "none";
+    loginScreen.classList.remove("login--ready", "login--leaving");
     if (logoPreview && settings.logoDataUrl) {
       logoPreview.src = settings.logoDataUrl;
     }
@@ -946,6 +2203,13 @@ const initApp = async () => {
     }
     if (firstRunForm) {
       firstRunForm.companyName.value = settings.companyName || "";
+      firstRunForm.companyOwner.value = settings.companyOwner || "";
+      firstRunForm.companyPhone.value = settings.companyPhone || "";
+      firstRunForm.companyIban.value = settings.companyIban || "";
+      firstRunForm.companyBank.value = settings.companyBank || "";
+      firstRunForm.companyAddress.value = settings.companyAddress || "";
+      firstRunForm.taxOffice.value = settings.taxOffice || "";
+      firstRunForm.taxNumber.value = settings.taxNumber || "";
       firstRunForm.defaultCashName.value = settings.defaultCashName || "";
     }
   }
@@ -1056,6 +2320,73 @@ const buildInvoiceHtml = (title, rows) => {
   `;
 };
 
+const buildOfferHtml = (title, rows, totals) => {
+  const rowHtml = rows
+    .map(
+      (row) =>
+        `<tr>${row
+          .map((cell) => `<td>${escapeHtml(cell)}</td>`)
+          .join("")}</tr>`
+    )
+    .join("");
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
+  const logoSrc = currentSettings.logoDataUrl || "";
+  const companyOwner = currentSettings.companyOwner || "";
+  const companyPhone = currentSettings.companyPhone || "";
+  const companyAddress = currentSettings.companyAddress || "";
+  const companyIban = currentSettings.companyIban || "";
+  const logoHtml = logoSrc
+    ? `<img class="report-logo-img report-logo-img--mono" src="${logoSrc}" alt="Firma logosu" />`
+    : `<div class="report-logo">MTN</div>`;
+  return `
+    <div class="report-frame">
+      <div class="report-header report-header--offer">
+        <div class="report-meta">
+          <h1>${escapeHtml(companyName)}</h1>
+          <p>${escapeHtml(title)}</p>
+          <p><strong>Vergi Dairesi:</strong> ${escapeHtml(taxOffice)}</p>
+          <p><strong>Vergi No:</strong> ${escapeHtml(taxNumber)}</p>
+          <p><strong>Yetkili:</strong> ${escapeHtml(companyOwner || "-")}</p>
+          <p><strong>Telefon:</strong> ${escapeHtml(companyPhone || "-")}</p>
+          <p><strong>IBAN:</strong> ${escapeHtml(companyIban || "-")}</p>
+          <p><strong>Adres:</strong> ${escapeHtml(companyAddress || "-")}</p>
+        </div>
+        <div class="report-logo-block">${logoHtml}</div>
+      </div>
+      <div class="report-watermark">${
+        logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
+      }</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Malzeme</th>
+            <th>Miktar</th>
+            <th>Birim</th>
+            <th>Birim Fiyat</th>
+            <th>Tutar</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml}</tbody>
+      </table>
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+            totals.subtotal
+          )}</td></tr>
+          <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+            totals.vat
+          )}</td></tr>
+          <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+            totals.total
+          )}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+  `;
+};
+
 const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
   const rowHtml = jobs
     .map(
@@ -1147,7 +2478,7 @@ const generateReport = async (type) => {
     headers = ["Kod", "Malzeme", "Çap", "Birim", "Stok", "Kritik Seviye"];
     rows = (data.stocks || []).map((item) => [
       item.code || "-",
-      item.name || "-",
+      item.normalizedName || item.name || "-",
       item.diameter || "-",
       item.unit || "-",
       item.quantity || 0,
@@ -1195,11 +2526,35 @@ const generateReport = async (type) => {
     ];
   }
 
+  if (type === "customer-balance") {
+    title = "Borçlular Listesi";
+    headers = ["Cari Adı", "Borç", "Alacak", "Net"];
+    const balances = (data.customers || []).map((customer) => {
+      const balance = Number(customer.balance || 0);
+      return [
+        customer.name || "-",
+        balance > 0 ? formatCurrency(balance) : formatCurrency(0),
+        balance < 0 ? formatCurrency(Math.abs(balance)) : formatCurrency(0),
+        formatCurrency(balance)
+      ];
+    });
+    const totalNet = (data.customers || []).reduce(
+      (sum, customer) => sum + Number(customer.balance || 0),
+      0
+    );
+    rows = [
+      ...balances,
+      ["GENEL TOPLAM", "-", "-", formatCurrency(totalNet)]
+    ];
+  }
+
   const html = buildReportTable(title, headers, rows, {
-    includeWatermark: type === "customers" || type === "cash"
+    includeWatermark:
+      type === "customers" || type === "cash" || type === "customer-balance"
   });
   const result = await window.mtnApp.generateReport({ title, html });
   reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  await window.mtnApp?.openFile?.(result.reportFile);
 };
 
 if (customerForm) {
@@ -1207,71 +2562,54 @@ if (customerForm) {
     event.preventDefault();
     const formData = new FormData(customerForm);
     const payload = Object.fromEntries(formData.entries());
+    const normalizedName = normalizeText(payload.name);
+    const hasDuplicate = cachedCustomers.some(
+      (customer) => normalizeText(customer.name) === normalizedName
+    );
+    if (hasDuplicate) {
+      setStatus("Bu isimde bir cari zaten mevcut. Lütfen kontrol edin.");
+      return;
+    }
     await window.mtnApp.createCustomer(payload);
     const data = await window.mtnApp.getData();
     renderCustomers(data.customers || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
     customerForm.reset();
     setAutoCodes();
+    setStatus("Cari kaydedildi.");
   });
 }
 
-if (customerPaymentForm) {
-  customerPaymentForm.addEventListener("submit", async (event) => {
+if (customerTransactionForm) {
+  customerTransactionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!window.mtnApp?.collectPayment) {
-      reportPathEl.textContent = "Tahsilat servisi hazır değil.";
+    if (!window.mtnApp?.createCustomerTransaction) {
+      setStatus("Cari işlem servisi hazır değil.");
       return;
     }
-    const formData = new FormData(customerPaymentForm);
+    const formData = new FormData(customerTransactionForm);
     const payload = Object.fromEntries(formData.entries());
-    const customerId = paymentCustomerSelect?.value || "";
+    const customerId = transactionCustomerSelect?.value || "";
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.");
       return;
     }
-    const result = await window.mtnApp.collectPayment({
+    const result = await window.mtnApp.createCustomerTransaction({
       customerId,
-      amount: payload.amount,
-      note: payload.note,
-      createdAt: payload.createdAt
-    });
-    renderCustomers(result.customers || []);
-    renderCash(result.cashTransactions || []);
-    renderSummary(result);
-    renderCustomerDetail(result);
-    reportPathEl.textContent = "Tahsilat kaydedildi.";
-    customerPaymentForm.reset();
-    setTodayDate();
-  });
-}
-
-if (customerDebtForm) {
-  customerDebtForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!window.mtnApp?.addDebt) {
-      reportPathEl.textContent = "Borç servisi hazır değil.";
-      return;
-    }
-    const formData = new FormData(customerDebtForm);
-    const payload = Object.fromEntries(formData.entries());
-    const customerId = debtCustomerSelect?.value || "";
-    if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
-      return;
-    }
-    const result = await window.mtnApp.addDebt({
-      customerId,
+      type: payload.type,
       amount: payload.amount,
       note: payload.note,
       createdAt: payload.createdAt
     });
     cachedCustomerDebts = result.customerDebts || [];
     renderCustomers(result.customers || []);
+    renderCash(result.cashTransactions || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "Borç kaydedildi.";
-    customerDebtForm.reset();
+    refreshAccountingPanels(result);
+    setStatus("Cari işlem kaydedildi.");
+    customerTransactionForm.reset();
     setTodayDate();
   });
 }
@@ -1307,6 +2645,10 @@ if (customerJobForm) {
     updateJobTotal();
     const formData = new FormData(customerJobForm);
     const payload = Object.fromEntries(formData.entries());
+    if (!payload.title || Number(payload.quantity || 0) <= 0) {
+      setStatus("İş kalemi için zorunlu alanları doldurun.");
+      return;
+    }
     const result = await window.mtnApp.addCustomerJob({
       customerId,
       title: payload.title,
@@ -1321,9 +2663,54 @@ if (customerJobForm) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "İş kalemi kaydedildi.";
     customerJobForm.reset();
     setTodayDate();
+  });
+}
+
+if (accountForm) {
+  accountForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createAccount) {
+      setStatus("Hesap planı servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(accountForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.code || !payload.name) {
+      setStatus("Hesap kodu ve adı zorunludur.");
+      return;
+    }
+    const result = await window.mtnApp.createAccount(payload);
+    renderAccounts(result || []);
+    const data = await window.mtnApp.getData();
+    renderAuditLogs(data.auditLogs || []);
+    setStatus("Hesap planı güncellendi.");
+    accountForm.reset();
+  });
+}
+
+if (unitConversionForm) {
+  unitConversionForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createUnitConversion) {
+      setStatus("Birim dönüşüm servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(unitConversionForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.baseUnit || !payload.targetUnit || !payload.factor) {
+      setStatus("Birim dönüşüm için tüm alanları doldurun.");
+      return;
+    }
+    const result = await window.mtnApp.createUnitConversion(payload);
+    renderUnitConversions(result || []);
+    const data = await window.mtnApp.getData();
+    renderAuditLogs(data.auditLogs || []);
+    setStatus("Birim dönüşüm kaydedildi.");
+    unitConversionForm.reset();
   });
 }
 
@@ -1332,13 +2719,75 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
+    if (editingStockId) {
+      if (!window.mtnApp?.updateStock) {
+        setStatus("Stok güncelleme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.updateStock({
+        stockId: editingStockId,
+        updates: payload
+      });
+      renderStocks(result || []);
+      const data = await window.mtnApp.getData();
+      renderStockMovements(data.stockMovements || []);
+      renderSummary(data);
+      refreshAccountingPanels(data);
+      setStatus("Stok güncellendi.");
+      editingStockId = "";
+      stockForm.reset();
+      setAutoCodes();
+      setTodayDate();
+      return;
+    }
+    const normalizedName = normalizeText(payload.name);
+    const existingStock = cachedStocks.find(
+      (item) => normalizeText(item.name) === normalizedName
+    );
+    if (existingStock && window.mtnApp?.createStockReceipt) {
+      const approved = window.confirm(
+        "Bu malzeme zaten mevcut. Sayımı depoya aktarıp stoğu güncellemek ister misiniz?"
+      );
+      if (!approved) {
+        return;
+      }
+      const result = await window.mtnApp.createStockReceipt({
+        items: [
+          {
+            name: payload.name,
+            unit: payload.unit,
+            quantity: payload.quantity,
+            purchasePrice: payload.purchasePrice,
+            salePrice: payload.salePrice,
+            threshold: payload.threshold
+          }
+        ],
+        note: payload.description || "Manuel stok güncelleme",
+        supplier: "",
+        warehouse: existingStock.warehouse || "Ana Depo",
+        createdAt: payload.createdAt || new Date().toISOString().split("T")[0]
+      });
+      renderStocks(result.stocks || []);
+      renderStockMovements(result.stockMovements || []);
+      renderStockReceipts(result.stockReceipts || []);
+      renderSummary(result);
+      refreshAccountingPanels(result);
+      setStatus("Stok güncellendi.");
+      stockForm.reset();
+      setAutoCodes();
+      setTodayDate();
+      return;
+    }
     await window.mtnApp.createStock(payload);
     const data = await window.mtnApp.getData();
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
+    setStatus("Stok kaydedildi.");
     stockForm.reset();
     setAutoCodes();
+    setTodayDate();
   });
 
   stockForm.addEventListener("keydown", (event) => {
@@ -1372,7 +2821,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
   stockReceiptSubmit.addEventListener("click", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.createStockReceipt) {
-      reportPathEl.textContent = "Fiş servisi hazır değil.";
+      setStatus("Fiş servisi hazır değil.");
       return;
     }
     const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
@@ -1381,19 +2830,22 @@ if (stockReceiptSubmit && stockReceiptBody) {
         diameter: row.querySelector("[data-field='diameter']")?.value || "",
         unit: row.querySelector("[data-field='unit']")?.value || "",
         quantity: row.querySelector("[data-field='quantity']")?.value || "",
+        purchasePrice:
+          row.querySelector("[data-field='purchasePrice']")?.value || "",
         threshold: row.querySelector("[data-field='threshold']")?.value || ""
       })
     );
     const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
     if (!items.length) {
-      reportPathEl.textContent = "Fiş için en az bir malzeme girin.";
+      setStatus("Fiş için en az bir malzeme girin.");
       return;
     }
-    const approved = window.confirm("Fiş depoya aktarılsın mı?");
+    const approved = window.confirm("Fiş kaydedilsin ve depoya aktarılsın mı?");
     if (!approved) {
       return;
     }
     const supplierName = stockReceiptSupplierInput?.value?.trim();
+    const warehouseName = stockReceiptWarehouseSelect?.value || "Ana Depo";
     const noteParts = [];
     if (supplierName) {
       noteParts.push(`Malzemeci: ${supplierName}`);
@@ -1401,16 +2853,30 @@ if (stockReceiptSubmit && stockReceiptBody) {
     if (stockReceiptNote?.value) {
       noteParts.push(stockReceiptNote.value);
     }
+    let attachment = null;
+    const file = stockReceiptFileInput?.files?.[0];
+    if (file && window.mtnApp?.saveAttachment) {
+      attachment = await window.mtnApp.saveAttachment({
+        path: file.path,
+        name: file.name,
+        category: "stock-receipt"
+      });
+    }
     const result = await window.mtnApp.createStockReceipt({
       items,
       note: noteParts.join(" • "),
+      supplier: supplierName,
+      warehouse: warehouseName,
+      attachment,
       createdAt:
         stockReceiptDateInput?.value || new Date().toISOString().split("T")[0]
     });
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
-    reportPathEl.textContent = "Fiş depoya aktarıldı.";
+    refreshAccountingPanels(result);
+    setStatus("Fiş kaydedildi ve depoya aktarıldı.");
     stockReceiptBody.innerHTML = "";
     stockReceiptBody.appendChild(createReceiptRow());
     if (stockReceiptNote) {
@@ -1418,6 +2884,9 @@ if (stockReceiptSubmit && stockReceiptBody) {
     }
     if (stockReceiptSupplierInput) {
       stockReceiptSupplierInput.value = "";
+    }
+    if (stockReceiptFileInput) {
+      stockReceiptFileInput.value = "";
     }
   });
 }
@@ -1431,7 +2900,43 @@ if (cashForm) {
     const data = await window.mtnApp.getData();
     renderCash(data.cashTransactions || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
     cashForm.reset();
+    setTodayDate();
+  });
+}
+
+if (invoiceForm) {
+  invoiceForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createInvoice) {
+      setStatus("Fatura servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(invoiceForm);
+    const payload = Object.fromEntries(formData.entries());
+    const file = invoiceFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Fatura dosyası seçin.");
+      return;
+    }
+    const attachment = await window.mtnApp.saveAttachment({
+      path: file.path,
+      name: file.name,
+      category: "invoice"
+    });
+    const result = await window.mtnApp.createInvoice({
+      invoiceType: payload.invoiceType || invoiceTypeSelect?.value || "alis",
+      vendor: payload.vendor,
+      amount: payload.amount,
+      note: payload.note,
+      createdAt: payload.createdAt,
+      attachment
+    });
+    renderInvoices(result.invoices || []);
+    refreshAccountingPanels(result);
+    setStatus("Fatura kaydedildi.");
+    invoiceForm.reset();
     setTodayDate();
   });
 }
@@ -1460,6 +2965,50 @@ if (customerSearchButton) {
   });
 }
 
+if (customerDetailClose) {
+  customerDetailClose.addEventListener("click", () => {
+    customerDetailCard?.classList.add("is-hidden");
+    showCustomerTab("list");
+  });
+}
+
+if (customerDetailOffer) {
+  customerDetailOffer.addEventListener("click", () => {
+    showPanel("sales-panel", "Teklif");
+    activateMenuByPanel("sales-panel");
+  });
+}
+
+if (customerDetailStatement) {
+  customerDetailStatement.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    showCustomerTab("detail");
+    document.getElementById("customer-detail-module")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
+
+if (customerDetailCollect) {
+  customerDetailCollect.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    showCustomerTab("list");
+    customerTransactionForm?.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  });
+}
+
+if (customerDetailJob) {
+  customerDetailJob.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    showCustomerTab("detail");
+    customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
 const handleStockSearch = () => {
   renderStocks(cachedStocks);
 };
@@ -1472,6 +3021,264 @@ if (stockSearchButton) {
   stockSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleStockSearch();
+  });
+}
+
+const resetStockImport = () => {
+  cachedImportRows = [];
+  if (stockImportSummaryEl) {
+    stockImportSummaryEl.textContent = "Dosya seçilmedi.";
+  }
+  if (stockImportTable) {
+    stockImportTable.innerHTML = "";
+  }
+  if (stockImportFileInput) {
+    stockImportFileInput.value = "";
+  }
+};
+
+const renderStockImportPreview = (report) => {
+  if (!stockImportTable) {
+    return;
+  }
+  stockImportTable.innerHTML = "";
+  if (stockImportSummaryEl) {
+    stockImportSummaryEl.textContent = `Yeni: ${report.summary.newCount}, Güncellenecek: ${report.summary.updateCount}, Hatalı: ${report.summary.errorCount}`;
+  }
+  report.rows.forEach((row) => {
+    const tableRow = document.createElement("tr");
+    tableRow.innerHTML = `
+      <td>${row.statusLabel}</td>
+      <td>${row.code || "-"}</td>
+      <td>${row.name || "-"}</td>
+      <td>${row.quantity || "-"}</td>
+      <td>${row.unit || "-"}</td>
+    `;
+    stockImportTable.appendChild(tableRow);
+  });
+};
+
+if (stockImportPreviewButton) {
+  stockImportPreviewButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.previewStockImport) {
+      setStatus("Toplu aktarım servisi hazır değil.");
+      return;
+    }
+    const file = stockImportFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Lütfen bir dosya seçin.");
+      return;
+    }
+    const result = await window.mtnApp.previewStockImport({
+      path: file.path,
+      warehouse: stockImportWarehouseSelect?.value || "Ana Depo"
+    });
+    if (result.error) {
+      setStatus(result.error);
+      return;
+    }
+    cachedImportRows = result.rows || [];
+    renderStockImportPreview(result.report);
+  });
+}
+
+if (stockImportApplyButton) {
+  stockImportApplyButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.applyStockImport) {
+      setStatus("Toplu aktarım servisi hazır değil.");
+      return;
+    }
+    if (!cachedImportRows.length) {
+      setStatus("Önce önizleme alın.");
+      return;
+    }
+    const approved = window.confirm("Toplu aktarım onaylansın mı?");
+    if (!approved) {
+      return;
+    }
+    const result = await window.mtnApp.applyStockImport({
+      rows: cachedImportRows,
+      warehouse: stockImportWarehouseSelect?.value || "Ana Depo"
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    refreshAccountingPanels(result);
+    renderStockImportPreview(result.report);
+    setStatus("Toplu aktarım tamamlandı.");
+  });
+}
+
+if (stockImportResetButton) {
+  stockImportResetButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    resetStockImport();
+  });
+}
+
+const handleStockListSearch = () => {
+  renderStockList(cachedStocks);
+};
+
+if (stockListSearchInput) {
+  stockListSearchInput.addEventListener("input", handleStockListSearch);
+}
+
+if (stockListSearchButton) {
+  stockListSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    handleStockListSearch();
+  });
+}
+
+if (stockColumnToggles.length) {
+  stockColumnToggles.forEach((toggle) => {
+    toggle.addEventListener("change", applyStockColumnVisibility);
+  });
+}
+
+const addOfferRowFromStock = (stock) => {
+  if (!stock || !offerBody) {
+    return;
+  }
+  const row = createRow();
+  offerBody.appendChild(row);
+  const nameInput = row.querySelector("[data-field='name']");
+  const unitInput = row.querySelector("[data-field='unit']");
+  const priceInput = row.querySelector("[data-field='price']");
+  const qtyInput = row.querySelector("[data-field='quantity']");
+  if (nameInput) {
+    nameInput.value = stock.code
+      ? `${stock.code} - ${stock.normalizedName || stock.name || ""}`.trim()
+      : stock.normalizedName || stock.name || "";
+  }
+  if (unitInput) {
+    unitInput.value = stock.unit || "";
+  }
+  if (priceInput) {
+    priceInput.value = stock.salePrice || stock.purchasePrice || "";
+  }
+  if (qtyInput && !qtyInput.value) {
+    qtyInput.value = 1;
+  }
+  calculateTotal();
+};
+
+if (stockListAddToSaleButton) {
+  stockListAddToSaleButton.addEventListener("click", () => {
+    const selectedIds = Array.from(
+      stockListTable?.querySelectorAll("input[type='checkbox']:checked") || []
+    ).map((input) => input.dataset.stockId);
+    if (!selectedIds.length) {
+      setStatus("Toplu satış için stok seçin.");
+      return;
+    }
+    selectedIds.forEach((id) => {
+      const stock = cachedStocks.find((item) => String(item.id) === String(id));
+      addOfferRowFromStock(stock);
+    });
+    showPanel("sales-panel", "Teklif");
+    activateMenuByPanel("sales-panel");
+  });
+}
+
+if (inventoryCountAddRow && inventoryCountBody) {
+  inventoryCountAddRow.addEventListener("click", (event) => {
+    event.preventDefault();
+    inventoryCountBody.appendChild(createInventoryCountRow());
+  });
+}
+
+if (inventoryCountBody && inventoryCountBody.children.length === 0) {
+  inventoryCountBody.appendChild(createInventoryCountRow());
+}
+
+if (inventoryCountTransfer) {
+  inventoryCountTransfer.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createStockReceipt) {
+      setStatus("Depo sayım servisi hazır değil.");
+      return;
+    }
+    const rows = Array.from(
+      inventoryCountBody?.querySelectorAll("tr") || []
+    ).map((row) => ({
+      name: row.querySelector("[data-field='name']")?.value || "",
+      unit: row.querySelector("[data-field='unit']")?.value || "",
+      quantity: row.querySelector("[data-field='quantity']")?.value || "",
+      purchasePrice:
+        row.querySelector("[data-field='purchasePrice']")?.value || "",
+      salePrice: row.querySelector("[data-field='salePrice']")?.value || ""
+    }));
+    const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
+    if (!items.length) {
+      setStatus("Sayım listesi için en az bir malzeme girin.");
+      return;
+    }
+    const result = await window.mtnApp.createStockReceipt({
+      items,
+      note: inventoryCountNote?.value || "Depo sayım listesi",
+      supplier: "",
+      warehouse: inventoryCountWarehouse?.value || "Ana Depo",
+      createdAt:
+        inventoryCountDate?.value || new Date().toISOString().split("T")[0]
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    refreshAccountingPanels(result);
+    setStatus("Depo sayımı aktarıldı.");
+    inventoryCountBody.innerHTML = "";
+    inventoryCountBody.appendChild(createInventoryCountRow());
+    if (inventoryCountNote) {
+      inventoryCountNote.value = "";
+    }
+    setTodayDate();
+  });
+}
+
+const handleReceiptFilter = () => {
+  renderStockReceipts(cachedStockReceipts);
+};
+
+[
+  receiptFilterStartInput,
+  receiptFilterEndInput,
+  receiptFilterSupplierInput,
+  receiptFilterWarehouseSelect,
+  receiptFilterStatusSelect
+].forEach((input) => {
+  input?.addEventListener("input", handleReceiptFilter);
+  input?.addEventListener("change", handleReceiptFilter);
+});
+
+if (stockReceiptsTransferButton) {
+  stockReceiptsTransferButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.transferStockReceipts) {
+      setStatus("Depo aktarım servisi hazır değil.");
+      return;
+    }
+    const selectedIds = Array.from(
+      stockReceiptsTable?.querySelectorAll("input[type='checkbox']:checked") ||
+        []
+    ).map((input) => input.dataset.receiptId);
+    if (!selectedIds.length) {
+      setStatus("Aktarım için fiş seçin.");
+      return;
+    }
+    const result = await window.mtnApp.transferStockReceipts({
+      receiptIds: selectedIds
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    refreshAccountingPanels(result);
+    setStatus(result.message || "Fişler depoya aktarıldı.");
   });
 }
 
@@ -1499,6 +3306,7 @@ if (stockMovementForm) {
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "Stok hareketi kaydedildi.";
     stockMovementForm.reset();
     setTodayDate();
@@ -1517,13 +3325,32 @@ if (settingsForm) {
       cloudBackupPath: cloudBackupPathInput?.value || "",
       enableAutoSync: autoSyncEnabledSelect?.value === "true",
       enableCloudBackup: cloudBackupEnabledSelect?.value === "true",
-      enableAutoBackup: autoBackupEnabledSelect?.value === "true"
+      enableAutoBackup: autoBackupEnabledSelect?.value === "true",
+      stockValuationMethod: stockValuationSelect?.value || "ortalama"
     };
     const existingSettings = await window.mtnApp.getSettings();
     const nextSettings = { ...existingSettings, ...payload };
     await window.mtnApp.saveSettings(nextSettings);
     currentSettings = nextSettings;
     settingsStatusEl.textContent = "Ayarlar kaydedildi.";
+  });
+}
+
+if (companyForm) {
+  companyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.saveSettings) {
+      settingsStatusEl.textContent = "Firma servisi hazır değil.";
+      return;
+    }
+    const formData = new FormData(companyForm);
+    const payload = Object.fromEntries(formData.entries());
+    const existingSettings = await window.mtnApp.getSettings();
+    const nextSettings = { ...existingSettings, ...payload };
+    await window.mtnApp.saveSettings(nextSettings);
+    currentSettings = nextSettings;
+    applyBranding(nextSettings);
+    settingsStatusEl.textContent = "Firma bilgileri kaydedildi.";
   });
 }
 
@@ -1585,6 +3412,11 @@ if (firstRunForm) {
     const nextSettings = {
       // Varsayım: varsayılan kasa adı ileride kasa kartı eklendiğinde kullanılacak.
       companyName: payload.companyName,
+      companyOwner: payload.companyOwner || "",
+      companyAddress: payload.companyAddress || "",
+      companyPhone: payload.companyPhone || "",
+      companyIban: payload.companyIban || "",
+      companyBank: payload.companyBank || "",
       taxOffice: payload.taxOffice || "",
       taxNumber: payload.taxNumber || "",
       logoDataUrl,
@@ -1634,7 +3466,7 @@ const buildBackupPayload = () => {
   return window.mtnApp?.getData
     ? window.mtnApp.getData().then((data) => ({
         meta: {
-          appVersion: window.mtnApp?.version || "0.1.0",
+          appVersion: window.mtnApp?.version || "0.2.1",
           module: "teklif"
         },
         teklif: rows,
@@ -1643,7 +3475,7 @@ const buildBackupPayload = () => {
       }))
     : {
         meta: {
-          appVersion: window.mtnApp?.version || "0.1.0",
+          appVersion: window.mtnApp?.version || "0.2.1",
           module: "teklif"
         },
         teklif: rows,
@@ -1651,17 +3483,71 @@ const buildBackupPayload = () => {
       };
 };
 
-if (backupButton) {
-  backupButton.addEventListener("click", async () => {
-    if (!window.mtnApp?.createBackup) {
+const handleBackup = async () => {
+  if (!window.mtnApp?.createBackup) {
+    if (backupPathEl) {
       backupPathEl.textContent = "Yedekleme servisi hazır değil.";
+    }
+    return;
+  }
+
+  const payload = await buildBackupPayload();
+  const result = await window.mtnApp.createBackup(payload);
+  lastManualBackupDir = result.backupDir || "";
+  if (lastBackupEl) {
+    lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
+  }
+  if (backupPathEl) {
+    backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
+  }
+  if (backupOpenButton) {
+    backupOpenButton.disabled = !lastManualBackupDir;
+  }
+};
+
+if (backupButton) {
+  backupButton.addEventListener("click", handleBackup);
+}
+
+if (backupSecondaryButton) {
+  backupSecondaryButton.addEventListener("click", handleBackup);
+}
+
+if (backupOpenButton) {
+  backupOpenButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.openFile) {
+      if (backupPathEl) {
+        backupPathEl.textContent = "Klasör açma servisi hazır değil.";
+      }
       return;
     }
+    if (!lastManualBackupDir) {
+      if (backupPathEl) {
+        backupPathEl.textContent = "Önce bir yedek alın.";
+      }
+      return;
+    }
+    const result = await window.mtnApp.openFile(lastManualBackupDir);
+    if (!result.ok && backupPathEl) {
+      backupPathEl.textContent = result.error || "Klasör açılamadı.";
+    }
+  });
+}
 
-    const payload = await buildBackupPayload();
-    const result = await window.mtnApp.createBackup(payload);
-    lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
-    backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
+if (exitAppButton) {
+  exitAppButton.addEventListener("click", async () => {
+    const shouldBackup = confirm(
+      "Çıkış yapmadan önce yedek almak ister misiniz?"
+    );
+    if (shouldBackup) {
+      await handleBackup();
+      setStatus("Yedek alındı. Uygulama kapatılıyor.");
+    }
+    if (window.mtnApp?.quitApp) {
+      window.mtnApp.quitApp();
+    } else {
+      window.close();
+    }
   });
 }
 
@@ -1696,7 +3582,7 @@ if (stockExportCsvButton) {
     ];
     const rows = (cachedStocks || []).map((item) => [
       item.code || "",
-      item.name || "",
+      item.normalizedName || item.name || "",
       item.diameter || "",
       item.unit || "",
       item.quantity || 0,
@@ -1736,6 +3622,12 @@ if (reportStockMovementsButton) {
 if (reportCashSummaryButton) {
   reportCashSummaryButton.addEventListener("click", () =>
     generateReport("cash-summary")
+  );
+}
+
+if (customerBalanceReportButton) {
+  customerBalanceReportButton.addEventListener("click", () =>
+    generateReport("customer-balance")
   );
 }
 
@@ -1815,6 +3707,7 @@ if (detailReportButton) {
         html
       });
       reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+      await window.mtnApp?.openFile?.(result.reportFile);
       return;
     }
     const rows = [
@@ -1859,6 +3752,7 @@ if (detailReportButton) {
       html
     });
     reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+    await window.mtnApp?.openFile?.(result.reportFile);
   });
 }
 
@@ -1875,7 +3769,11 @@ if (offerPdfButton) {
       row.querySelector("[data-field='price']")?.value || "0",
       row.querySelector("[data-field='total']")?.value || "0"
     ]);
-    const html = buildInvoiceHtml("Satış Faturası", rows);
+    const html = buildOfferHtml("İç Tesisat Teklif", rows, {
+      subtotal: subtotalEl.textContent,
+      vat: vatTotalEl.textContent,
+      total: totalEl.textContent
+    });
     const result = await window.mtnApp.generateReport({
       title: "Satis-Faturasi",
       html
@@ -1919,7 +3817,268 @@ if (offerSaveButton) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
+  });
+}
+
+if (offerPdfIndustrialButton) {
+  offerPdfIndustrialButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.generateReport) {
+      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      return;
+    }
+    const rows = Array.from(offerBodyIndustrial?.querySelectorAll("tr") || []).map(
+      (row) => [
+        row.querySelector("[data-field='name']")?.value || "-",
+        row.querySelector("[data-field='quantity']")?.value || "0",
+        row.querySelector("[data-field='unit']")?.value || "-",
+        row.querySelector("[data-field='price']")?.value || "0",
+        row.querySelector("[data-field='total']")?.value || "0"
+      ]
+    );
+    const html = buildOfferHtml("Endüstriyel Teklif", rows, {
+      subtotal: offerSubtotalIndustrial?.textContent || "₺0,00",
+      vat: offerVatTotalIndustrial?.textContent || "₺0,00",
+      total: offerTotalIndustrial?.textContent || "₺0,00"
+    });
+    const result = await window.mtnApp.generateReport({
+      title: "Endustriyel-Teklif",
+      html
+    });
+    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  });
+}
+
+const saveProposal = async (type) => {
+  if (!window.mtnApp?.createProposal || !window.mtnApp?.generateReport) {
+    setStatus("Teklif servisi hazır değil.");
+    return;
+  }
+  const isIndustrial = type === "industrial";
+  const rowsSource = isIndustrial ? offerBodyIndustrial : offerBody;
+  const titleInput = isIndustrial ? offerTitleIndustrial : offerTitleInput;
+  const dateInput = isIndustrial ? offerDateIndustrial : offerDateInput;
+  const waybillInput = isIndustrial ? offerWaybillIndustrial : offerWaybillInput;
+  const vatRateInput = isIndustrial ? offerVatIndustrial : vatInput;
+  const vatManualInput = isIndustrial ? offerVatManualIndustrial : offerVatManualInput;
+  const totalElTarget = isIndustrial ? offerTotalIndustrial : totalEl;
+
+  const rows = Array.from(rowsSource?.querySelectorAll("tr") || []).map((row) => [
+    row.querySelector("[data-field='name']")?.value || "-",
+    row.querySelector("[data-field='quantity']")?.value || "0",
+    row.querySelector("[data-field='unit']")?.value || "-",
+    row.querySelector("[data-field='price']")?.value || "0",
+    row.querySelector("[data-field='total']")?.value || "0"
+  ]);
+
+  const html = buildOfferHtml(
+    isIndustrial ? "Endüstriyel Teklif" : "İç Tesisat Teklif",
+    rows,
+    {
+      subtotal: isIndustrial
+        ? offerSubtotalIndustrial?.textContent || "₺0,00"
+        : subtotalEl.textContent,
+      vat: isIndustrial
+        ? offerVatTotalIndustrial?.textContent || "₺0,00"
+        : vatTotalEl.textContent,
+      total: isIndustrial
+        ? offerTotalIndustrial?.textContent || "₺0,00"
+        : totalEl.textContent
+    }
+  );
+  const report = await window.mtnApp.generateReport({
+    title: isIndustrial ? "Endustriyel-Teklif" : "Ic-Tesisat-Teklif",
+    html
+  });
+  const data = await window.mtnApp.createProposal({
+    title: titleInput?.value || (isIndustrial ? "Endüstriyel Teklif" : "İç Tesisat Teklif"),
+    type: isIndustrial ? "industrial" : "internal",
+    customerName: offerCustomerSelect?.selectedOptions?.[0]?.textContent || "Genel",
+    total: Number(
+      totalElTarget?.textContent.replace(/[^\d,.-]/g, "").replace(",", ".")
+    ),
+    vatRate: Number(vatRateInput?.value || 0),
+    vatManual: Number(vatManualInput?.value || 0),
+    waybillNo: waybillInput?.value || "",
+    createdAt: dateInput?.value || new Date().toISOString().split("T")[0],
+    pdfPath: report.reportFile
+  });
+  renderOffers(data.proposals || []);
+  refreshAccountingPanels(data);
+  setStatus("Teklif kaydedildi.");
+};
+
+if (offerSaveProposalButton) {
+  offerSaveProposalButton.addEventListener("click", () => saveProposal("internal"));
+}
+if (offerSaveProposalIndustrialButton) {
+  offerSaveProposalIndustrialButton.addEventListener("click", () => saveProposal("industrial"));
+}
+
+if (offerApplyMarginButton) {
+  offerApplyMarginButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    const margin = Number(offerMarginInput?.value || 0);
+    if (!margin) {
+      return;
+    }
+    const rows = Array.from(offerBody.querySelectorAll("tr"));
+    rows.forEach((row) => {
+      const priceInput = row.querySelector("[data-field='price']");
+      const current = Number(priceInput?.value || 0);
+      if (priceInput && current) {
+        priceInput.value = (current * (1 + margin / 100)).toFixed(2);
+      }
+    });
+    calculateTotal();
+  });
+}
+
+const offerTitles = {
+  internal: "İç Tesisat Teklif",
+  industrial: "Endüstriyel Teklif",
+  saved: "Tekliflerim"
+};
+
+const openOfferWorkspace = (target) => {
+  if (offerHome) {
+    offerHome.classList.add("is-hidden");
+  }
+  if (offerWorkspace) {
+    offerWorkspace.classList.remove("is-hidden");
+  }
+  if (salesPanel) {
+    salesPanel.classList.add("sales-panel--workspace");
+  }
+  if (contentScroll) {
+    contentScroll.scrollTop = 0;
+  }
+  if (offerWorkspaceTitle) {
+    offerWorkspaceTitle.textContent = offerTitles[target] || "Teklif";
+  }
+  offerTabs.forEach((btn) => {
+    btn.classList.toggle("tab-button--active", btn.dataset.offerTab === target);
+  });
+  offerPanels.forEach((panel) => {
+    panel.classList.toggle(
+      "tab-panel--hidden",
+      panel.dataset.offerTabPanel !== target
+    );
+  });
+};
+
+const showOfferHome = () => {
+  if (offerWorkspace) {
+    offerWorkspace.classList.add("is-hidden");
+  }
+  if (offerHome) {
+    offerHome.classList.remove("is-hidden");
+  }
+  if (salesPanel) {
+    salesPanel.classList.remove("sales-panel--workspace");
+  }
+  if (contentScroll) {
+    contentScroll.scrollTop = 0;
+  }
+};
+
+offerHomeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = button.dataset.offerHome;
+    if (target) {
+      openOfferWorkspace(target);
+      if (button.dataset.offerLabel) {
+        setStatus(`Teklif menüsü açıldı: ${button.dataset.offerLabel}.`);
+      }
+    }
+  });
+});
+
+offerBackButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    showOfferHome();
+    setStatus("Teklif menüsüne dönüldü.");
+  });
+});
+
+if (offerTabs.length) {
+  offerTabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.offerTab;
+      openOfferWorkspace(target);
+    });
+  });
+}
+
+if (addRowIndustrialButton && offerBodyIndustrial) {
+  addRowIndustrialButton.addEventListener("click", () => {
+    offerBodyIndustrial.appendChild(createIndustrialRow());
+  });
+}
+
+if (offerRefreshButton) {
+  offerRefreshButton.addEventListener("click", async () => {
+    const data = await window.mtnApp?.getData?.();
+    renderOffers(data?.proposals || []);
+  });
+}
+
+if (offerStockSearchButton) {
+  offerStockSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderOfferStockPicker("internal", cachedStocks);
+  });
+}
+
+if (offerStockSearchInput) {
+  offerStockSearchInput.addEventListener("input", () => {
+    renderOfferStockPicker("internal", cachedStocks);
+  });
+}
+
+if (offerStockSearchButtonIndustrial) {
+  offerStockSearchButtonIndustrial.addEventListener("click", (event) => {
+    event.preventDefault();
+    renderOfferStockPicker("industrial", cachedStocks);
+  });
+}
+
+if (offerStockSearchInputIndustrial) {
+  offerStockSearchInputIndustrial.addEventListener("input", () => {
+    renderOfferStockPicker("industrial", cachedStocks);
+  });
+}
+
+if (restoreBackupButton) {
+  restoreBackupButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.restoreBackup) {
+      setStatus("Geri yükleme servisi hazır değil.");
+      return;
+    }
+    const file = restoreBackupFileInput?.files?.[0];
+    if (!file) {
+      setStatus("Lütfen yedek dosyası seçin.");
+      return;
+    }
+    const result = await window.mtnApp.restoreBackup({ path: file.path });
+    if (!result.ok) {
+      setStatus(result.error || "Geri yükleme başarısız.");
+      return;
+    }
+    renderCustomers(result.data.customers || []);
+    renderStocks(result.data.stocks || []);
+    renderStockList(result.data.stocks || []);
+    renderCash(result.data.cashTransactions || []);
+    renderSales(result.data.sales || []);
+    renderStockMovements(result.data.stockMovements || []);
+    renderInvoices(result.data.invoices || []);
+    renderOffers(result.data.proposals || []);
+    refreshAccountingPanels(result.data);
+    renderSummary(result.data);
+    if (restoreBackupStatus) {
+      restoreBackupStatus.textContent = "Yedek başarıyla geri yüklendi.";
+    }
   });
 }
 
@@ -1927,20 +4086,203 @@ if (loginForm) {
   loginForm.addEventListener("submit", handleLogin);
 }
 
+if (aiReminderForm) {
+  aiReminderForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(aiReminderForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.title || !payload.dueDate) {
+      setStatus("Hatırlatma başlığı ve ödeme tarihini girin.");
+      return;
+    }
+    const reminders = loadReminders();
+    const reminder = {
+      id: `REM-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`,
+      title: payload.title.trim(),
+      dueDate: payload.dueDate,
+      category: payload.category || "Şahsi Ödeme"
+    };
+    reminders.push(reminder);
+    saveReminders(reminders);
+    aiReminderForm.reset();
+    updateReminderUI();
+  });
+  updateReminderUI();
+}
+
+if (loginScreen) {
+  showLoginScreen();
+}
+
+if (splashScreen) {
+  setTimeout(hideSplash, splashDurationMs);
+}
+
+if (customerTabButtons.length) {
+  customerTabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const tabId = button.dataset.customerTab;
+      if (!tabId) {
+        return;
+      }
+      showCustomerTab(tabId);
+    });
+  });
+  showCustomerTab("list");
+}
+
 // Menu click handler
 const menuItems = document.querySelectorAll(".menu__item");
+const menuActionItems = document.querySelectorAll(".menu__action[data-panel]");
 const panels = document.querySelectorAll(".panel");
-const quickActionButtons = document.querySelectorAll(".quick-actions button");
+const quickActionButtons = document.querySelectorAll(
+  ".action-card, .quick-pill"
+);
 const panelTitleEl = document.getElementById("panel-title");
+
+const panelTitles = {
+  "dashboard-panel": "Ana Menü",
+  "customers-panel": "Cari",
+  "stocks-panel": "Stok",
+  "stock-list-panel": "Malzeme Stok Listesi",
+  "sales-panel": "Teklif",
+  "invoices-panel": "Fatura",
+  "cash-panel": "Kasa",
+  "reports-panel": "Raporlar",
+  "assistant-panel": "Mühendislik",
+  "settings-panel": "Ayarlar"
+};
+
+const panelSubnavConfig = {
+  "stocks-panel": [
+    { id: "stok", label: "Stok", selectors: ["#stock-form"] },
+    { id: "stok-listesi", label: "Stok Listesi", selectors: ["#stock-list-card"] },
+    { id: "fis-ekle", label: "Fiş Ekle", selectors: ["#stock-receipt-card"] },
+    {
+      id: "birim-donusum",
+      label: "Birim Dönüşüm Tanımları",
+      selectors: ["#unit-conversion-card"]
+    },
+    {
+      id: "toplu-aktarim",
+      label: "Toplu Malzeme Aktarımı",
+      selectors: ["#stock-import-card"]
+    },
+    { id: "fis-listesi", label: "Fiş Listesi", selectors: ["#stock-receipts-list-card"] },
+    { id: "stok-hareket", label: "Stok Hareketi", selectors: ["#stock-movement-module"] },
+    { id: "depo-stok", label: "Depo Stok", panelTarget: "stock-list-panel" }
+  ],
+  "customers-panel": [
+    { id: "cari-listesi", label: "Cari Listesi", selectors: ["#customer-list-section"] },
+    { id: "cari-ekleme", label: "Cari Ekleme", selectors: ["#customer-form-section"] },
+    { id: "cari-islem", label: "Cari İşlem", selectors: ["#customer-transaction-section"] },
+    { id: "cari-detay", label: "Cari Detay", selectors: ["#customer-detail-section"] },
+    { id: "cari-ekstre", label: "Cari Ekstre", selectors: ["#customer-detail-module"] }
+  ],
+  "sales-panel": [
+    { id: "menu", label: "Teklif Menüsü", action: "offer-home" },
+    { id: "internal", label: "İç Tesisat", action: "offer-workspace" },
+    { id: "industrial", label: "Endüstriyel", action: "offer-workspace" },
+    { id: "saved", label: "Tekliflerim", action: "offer-workspace" }
+  ]
+};
 
 const showPanel = (panelId, title) => {
   panels.forEach((panel) => panel.classList.remove("panel--active"));
   const target = document.getElementById(panelId);
   if (target) {
     target.classList.add("panel--active");
+    setupPanelSubnav(target);
   }
-  if (panelTitleEl && title) {
-    panelTitleEl.textContent = title;
+  if (panelTitleEl) {
+    panelTitleEl.textContent = title || panelTitles[panelId] || "Panel";
+  }
+};
+
+const activateSubpanel = (panel, subpanelId) => {
+  const config = panelSubnavConfig[panel.id];
+  if (config) {
+    const target = config.find((item) => item.id === subpanelId);
+    if (panel.id === "sales-panel" && target?.action === "offer-home") {
+      showOfferHome();
+    }
+    if (panel.id === "sales-panel" && target?.action === "offer-workspace") {
+      openOfferWorkspace(subpanelId);
+    }
+    if (target?.panelTarget) {
+      showPanel(target.panelTarget, panelTitles[target.panelTarget]);
+      activateMenuByPanel(target.panelTarget);
+      return;
+    }
+    const selectors = config.flatMap((item) => item.selectors || []);
+    selectors.forEach((selector) => {
+      panel.querySelectorAll(selector).forEach((el) => el.classList.add("subpanel--hidden"));
+    });
+    (target?.selectors || []).forEach((selector) => {
+      panel.querySelectorAll(selector).forEach((el) => {
+        el.classList.remove("subpanel--hidden");
+        el.classList.remove("is-hidden");
+      });
+    });
+  } else {
+    const modules = panel.querySelectorAll(":scope > .module");
+    modules.forEach((module) => {
+      module.classList.toggle(
+        "subpanel--hidden",
+        module.dataset.subpanelId !== subpanelId
+      );
+    });
+  }
+  const buttons = panel.querySelectorAll(".panel-subnav__btn");
+  buttons.forEach((button) => {
+    button.classList.toggle(
+      "panel-subnav__btn--active",
+      button.dataset.subpanelId === subpanelId
+    );
+  });
+};
+
+const setupPanelSubnav = (panel) => {
+  const config = panelSubnavConfig[panel.id];
+  const modules = Array.from(panel.querySelectorAll(":scope > .module"));
+  if (!config && modules.length <= 1) {
+    return;
+  }
+  let subnav = panel.querySelector(".panel-subnav");
+  if (!subnav) {
+    subnav = document.createElement("div");
+    subnav.className = "panel-subnav";
+    panel.insertBefore(subnav, modules[0]);
+  }
+  subnav.innerHTML = "";
+  const entries = config
+    ? config.map((item) => ({
+        subpanelId: item.id,
+        label: item.label
+      }))
+    : modules.map((module, index) => {
+        const titleEl =
+          module.querySelector(".module__header h2") ||
+          module.querySelector(".table-actions h3") ||
+          module.querySelector("h2") ||
+          module.querySelector("h3");
+        const label = titleEl?.textContent?.trim() || `Bölüm ${index + 1}`;
+        const subpanelId =
+          module.dataset.subpanelId || `${panel.id}-section-${index + 1}`;
+        module.dataset.subpanelId = subpanelId;
+        return { subpanelId, label };
+      });
+  entries.forEach((entry) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "panel-subnav__btn";
+    button.textContent = entry.label;
+    button.dataset.subpanelId = entry.subpanelId;
+    button.addEventListener("click", () => activateSubpanel(panel, entry.subpanelId));
+    subnav.appendChild(button);
+  });
+  if (entries.length) {
+    activateSubpanel(panel, entries[0].subpanelId);
   }
 };
 
@@ -1958,12 +4300,29 @@ menuItems.forEach((item) => {
   item.addEventListener("click", (event) => {
     event.preventDefault();
     const panelId = item.dataset.panel;
-    const title = item.dataset.title || item.textContent;
+    const title = item.dataset.title || panelTitles[panelId] || item.textContent;
     if (!panelId) {
       return;
     }
     activateMenuByPanel(panelId);
     showPanel(panelId, title);
+  });
+});
+
+if (panels.length) {
+  panels.forEach((panel) => setupPanelSubnav(panel));
+}
+
+menuActionItems.forEach((item) => {
+  item.addEventListener("click", (event) => {
+    event.preventDefault();
+    const panelId = item.dataset.panel;
+    if (!panelId) {
+      return;
+    }
+    const title = panelTitles[panelId] || item.textContent.trim();
+    showPanel(panelId, title);
+    activateMenuByPanel(panelId);
   });
 });
 
@@ -1975,11 +4334,12 @@ quickActionButtons.forEach((button) => {
     }
     const title =
       document.querySelector(`[data-panel='${targetPanel}']`)?.dataset.title ||
+      panelTitles[targetPanel] ||
       "";
     showPanel(targetPanel, title);
     activateMenuByPanel(targetPanel);
   });
 });
 
-showPanel("dashboard-panel", "Ana Panel");
+showPanel("dashboard-panel", "Ana");
 initApp().then(loadInitialData);
