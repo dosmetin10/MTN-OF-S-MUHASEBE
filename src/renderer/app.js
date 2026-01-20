@@ -577,6 +577,11 @@ const handleLogin = (event) => {
     appShell.classList.remove("app--hidden");
     hideLoginScreen();
     applyUserProfile(matchedUser);
+    try {
+      localStorage.setItem("mtn-last-user", matchedUser.username);
+    } catch (error) {
+      // ignore localStorage errors
+    }
   } else {
     loginError.textContent = "Kullanıcı adı veya şifre hatalı.";
   }
@@ -594,6 +599,11 @@ if (logoutButton) {
   logoutButton.addEventListener("click", () => {
     appShell.classList.add("app--hidden");
     showLoginScreen();
+    try {
+      localStorage.removeItem("mtn-last-user");
+    } catch (error) {
+      // ignore localStorage errors
+    }
   });
 }
 
@@ -1490,7 +1500,16 @@ const createReceiptRow = () => {
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
     <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
     <td><input data-field="threshold" type="number" min="0" step="1" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-receipt-row-remove>Sil</button></td>
   `;
+  row
+    .querySelector("[data-receipt-row-remove]")
+    ?.addEventListener("click", () => {
+      row.remove();
+      if (!stockReceiptBody?.children.length) {
+        stockReceiptBody?.appendChild(createReceiptRow());
+      }
+    });
   return row;
 };
 
@@ -2050,6 +2069,19 @@ const initApp = async () => {
       ? new Date(settings.lastAutoBackupAt).toLocaleString("tr-TR")
       : "Henüz yok";
   }
+  if (settings.hasOnboarded && loginScreen && appShell) {
+    try {
+      const rememberedUser = localStorage.getItem("mtn-last-user");
+      const matchedUser = users.find((user) => user.username === rememberedUser);
+      if (matchedUser) {
+        appShell.classList.remove("app--hidden");
+        hideLoginScreen();
+        applyUserProfile(matchedUser);
+      }
+    } catch (error) {
+      // ignore localStorage errors
+    }
+  }
   setTodayDate();
   setAutoCodes();
 
@@ -2200,53 +2232,51 @@ const buildOfferHtml = (title, rows, totals) => {
   const companyAddress = currentSettings.companyAddress || "";
   const companyIban = currentSettings.companyIban || "";
   const logoHtml = logoSrc
-    ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
+    ? `<img class="report-logo-img report-logo-img--mono" src="${logoSrc}" alt="Firma logosu" />`
     : `<div class="report-logo">MTN</div>`;
   return `
-    <div class="report-header report-header--corporate">
-      <div class="report-brand">
-        ${logoHtml}
-        <div>
+    <div class="report-frame">
+      <div class="report-header report-header--offer">
+        <div class="report-meta">
           <h1>${escapeHtml(companyName)}</h1>
           <p>${escapeHtml(title)}</p>
+          <p><strong>Vergi Dairesi:</strong> ${escapeHtml(taxOffice)}</p>
+          <p><strong>Vergi No:</strong> ${escapeHtml(taxNumber)}</p>
+          <p><strong>Yetkili:</strong> ${escapeHtml(companyOwner || "-")}</p>
+          <p><strong>Telefon:</strong> ${escapeHtml(companyPhone || "-")}</p>
+          <p><strong>IBAN:</strong> ${escapeHtml(companyIban || "-")}</p>
+          <p><strong>Adres:</strong> ${escapeHtml(companyAddress || "-")}</p>
         </div>
+        <div class="report-logo-block">${logoHtml}</div>
       </div>
-      <div class="report-meta">
-        <p><strong>Vergi Dairesi:</strong> ${escapeHtml(taxOffice)}</p>
-        <p><strong>Vergi No:</strong> ${escapeHtml(taxNumber)}</p>
-        <p><strong>Yetkili:</strong> ${escapeHtml(companyOwner || "-")}</p>
-        <p><strong>Telefon:</strong> ${escapeHtml(companyPhone || "-")}</p>
-        <p><strong>IBAN:</strong> ${escapeHtml(companyIban || "-")}</p>
-        <p><strong>Adres:</strong> ${escapeHtml(companyAddress || "-")}</p>
-      </div>
-    </div>
-    <div class="report-watermark">${
-      logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
-    }</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Malzeme</th>
-          <th>Miktar</th>
-          <th>Birim</th>
-          <th>Birim Fiyat</th>
-          <th>Tutar</th>
-        </tr>
-      </thead>
-      <tbody>${rowHtml}</tbody>
-    </table>
-    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
-      <table style="width:260px;border-collapse:collapse;">
-        <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
-          totals.subtotal
-        )}</td></tr>
-        <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
-          totals.vat
-        )}</td></tr>
-        <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
-          totals.total
-        )}</strong></td></tr>
+      <div class="report-watermark">${
+        logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
+      }</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Malzeme</th>
+            <th>Miktar</th>
+            <th>Birim</th>
+            <th>Birim Fiyat</th>
+            <th>Tutar</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml}</tbody>
       </table>
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+            totals.subtotal
+          )}</td></tr>
+          <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+            totals.vat
+          )}</td></tr>
+          <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+            totals.total
+          )}</strong></td></tr>
+        </table>
+      </div>
     </div>
   `;
 };
@@ -4008,6 +4038,12 @@ const panelSubnavConfig = {
     { id: "cari-islem", label: "Cari İşlem", selectors: ["#customer-transaction-section"] },
     { id: "cari-detay", label: "Cari Detay", selectors: ["#customer-detail-section"] },
     { id: "cari-ekstre", label: "Cari Ekstre", selectors: ["#customer-detail-module"] }
+  ],
+  "sales-panel": [
+    { id: "menu", label: "Teklif Menüsü", action: "offer-home" },
+    { id: "internal", label: "İç Tesisat", action: "offer-workspace" },
+    { id: "industrial", label: "Endüstriyel", action: "offer-workspace" },
+    { id: "saved", label: "Tekliflerim", action: "offer-workspace" }
   ]
 };
 
@@ -4027,6 +4063,12 @@ const activateSubpanel = (panel, subpanelId) => {
   const config = panelSubnavConfig[panel.id];
   if (config) {
     const target = config.find((item) => item.id === subpanelId);
+    if (panel.id === "sales-panel" && target?.action === "offer-home") {
+      showOfferHome();
+    }
+    if (panel.id === "sales-panel" && target?.action === "offer-workspace") {
+      openOfferWorkspace(subpanelId);
+    }
     if (target?.panelTarget) {
       showPanel(target.panelTarget, panelTitles[target.panelTarget]);
       activateMenuByPanel(target.panelTarget);
