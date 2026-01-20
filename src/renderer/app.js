@@ -111,6 +111,8 @@ const inventoryCountWarehouse = document.getElementById(
 );
 const inventoryCountDate = document.getElementById("inventory-count-date");
 const inventoryCountNote = document.getElementById("inventory-count-note");
+const unitConversionForm = document.getElementById("unit-conversion-form");
+const unitConversionTable = document.getElementById("unit-conversion-table");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
@@ -153,6 +155,7 @@ const autoSyncEnabledSelect = document.getElementById("auto-sync-enabled");
 const cloudBackupPathInput = document.getElementById("cloud-backup-path");
 const cloudBackupEnabledSelect = document.getElementById("cloud-backup-enabled");
 const autoBackupEnabledSelect = document.getElementById("auto-backup-enabled");
+const stockValuationSelect = document.getElementById("stock-valuation");
 const lastAutoBackupEl = document.getElementById("last-auto-backup");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
@@ -199,6 +202,10 @@ const offerMarginInput = document.getElementById("offer-margin");
 const offerApplyMarginButton = document.getElementById("offer-apply-margin");
 const stockSuggestions = document.getElementById("stock-suggestions");
 const stockColumnToggles = document.querySelectorAll("[data-stock-column]");
+const accountForm = document.getElementById("account-form");
+const accountsTable = document.getElementById("accounts-table");
+const ledgerTable = document.getElementById("ledger-table");
+const auditLogTable = document.getElementById("audit-log-table");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -1026,6 +1033,91 @@ const renderInvoices = (items) => {
   });
 };
 
+const renderAccounts = (items) => {
+  if (!accountsTable) {
+    return;
+  }
+  accountsTable.innerHTML = "";
+  (items || []).forEach((account) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${account.code || "-"}</td>
+      <td>${account.name || "-"}</td>
+      <td>${account.type || "-"}</td>
+      <td>${account.description || "-"}</td>
+    `;
+    accountsTable.appendChild(row);
+  });
+};
+
+const renderLedgerEntries = (items) => {
+  if (!ledgerTable) {
+    return;
+  }
+  ledgerTable.innerHTML = "";
+  const sorted = [...(items || [])].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.forEach((entry) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(entry.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${entry.accountCode || ""} ${entry.accountName || ""}</td>
+      <td>${formatCurrency(Number(entry.debit || 0))}</td>
+      <td>${formatCurrency(Number(entry.credit || 0))}</td>
+      <td>${entry.note || "-"}</td>
+    `;
+    ledgerTable.appendChild(row);
+  });
+};
+
+const renderUnitConversions = (items) => {
+  if (!unitConversionTable) {
+    return;
+  }
+  unitConversionTable.innerHTML = "";
+  (items || []).forEach((item) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${item.baseUnit || "-"}</td>
+      <td>${item.targetUnit || "-"}</td>
+      <td>${Number(item.factor || 0)}</td>
+      <td>${item.note || "-"}</td>
+    `;
+    unitConversionTable.appendChild(row);
+  });
+};
+
+const renderAuditLogs = (items) => {
+  if (!auditLogTable) {
+    return;
+  }
+  auditLogTable.innerHTML = "";
+  const sorted = [...(items || [])].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+  sorted.slice(0, 200).forEach((log) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${new Date(log.createdAt).toLocaleString("tr-TR")}</td>
+      <td>${log.module || "-"}</td>
+      <td>${log.action || "-"}</td>
+      <td>${log.message || "-"}</td>
+    `;
+    auditLogTable.appendChild(row);
+  });
+};
+
+const refreshAccountingPanels = (data) => {
+  if (!data) {
+    return;
+  }
+  renderAccounts(data.accounts || []);
+  renderLedgerEntries(data.ledgerEntries || []);
+  renderUnitConversions(data.unitConversions || []);
+  renderAuditLogs(data.auditLogs || []);
+};
+
 const renderStockMovements = (items) => {
   cachedStockMovements = items;
   if (!stockMovementsTable) {
@@ -1454,6 +1546,10 @@ const loadInitialData = async () => {
   renderCash(data.cashTransactions || []);
   renderSales(data.sales || []);
   renderStockMovements(data.stockMovements || []);
+  renderAccounts(data.accounts || []);
+  renderLedgerEntries(data.ledgerEntries || []);
+  renderUnitConversions(data.unitConversions || []);
+  renderAuditLogs(data.auditLogs || []);
   cachedCustomerDebts = data.customerDebts || [];
   cachedCustomerJobs = data.customerJobs || [];
   cachedStockReceipts = data.stockReceipts || [];
@@ -1577,6 +1673,9 @@ const initApp = async () => {
   }
   if (autoBackupEnabledSelect) {
     autoBackupEnabledSelect.value = String(settings.enableAutoBackup);
+  }
+  if (stockValuationSelect) {
+    stockValuationSelect.value = settings.stockValuationMethod || "ortalama";
   }
   if (lastAutoBackupEl) {
     lastAutoBackupEl.textContent = settings.lastAutoBackupAt
@@ -1901,6 +2000,7 @@ if (customerForm) {
     const data = await window.mtnApp.getData();
     renderCustomers(data.customers || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
     customerForm.reset();
     setAutoCodes();
   });
@@ -1932,6 +2032,7 @@ if (customerTransactionForm) {
     renderCash(result.cashTransactions || []);
     renderSummary(result);
     renderCustomerDetail(result);
+    refreshAccountingPanels(result);
     setStatus("Cari işlem kaydedildi.");
     customerTransactionForm.reset();
     setTodayDate();
@@ -1987,9 +2088,54 @@ if (customerJobForm) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "İş kalemi kaydedildi.";
     customerJobForm.reset();
     setTodayDate();
+  });
+}
+
+if (accountForm) {
+  accountForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createAccount) {
+      setStatus("Hesap planı servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(accountForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.code || !payload.name) {
+      setStatus("Hesap kodu ve adı zorunludur.");
+      return;
+    }
+    const result = await window.mtnApp.createAccount(payload);
+    renderAccounts(result || []);
+    const data = await window.mtnApp.getData();
+    renderAuditLogs(data.auditLogs || []);
+    setStatus("Hesap planı güncellendi.");
+    accountForm.reset();
+  });
+}
+
+if (unitConversionForm) {
+  unitConversionForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createUnitConversion) {
+      setStatus("Birim dönüşüm servisi hazır değil.");
+      return;
+    }
+    const formData = new FormData(unitConversionForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.baseUnit || !payload.targetUnit || !payload.factor) {
+      setStatus("Birim dönüşüm için tüm alanları doldurun.");
+      return;
+    }
+    const result = await window.mtnApp.createUnitConversion(payload);
+    renderUnitConversions(result || []);
+    const data = await window.mtnApp.getData();
+    renderAuditLogs(data.auditLogs || []);
+    setStatus("Birim dönüşüm kaydedildi.");
+    unitConversionForm.reset();
   });
 }
 
@@ -2029,6 +2175,7 @@ if (stockForm) {
       renderStockMovements(result.stockMovements || []);
       renderStockReceipts(result.stockReceipts || []);
       renderSummary(result);
+      refreshAccountingPanels(result);
       setStatus("Stok güncellendi.");
       stockForm.reset();
       setAutoCodes();
@@ -2040,6 +2187,7 @@ if (stockForm) {
     renderStocks(data.stocks || []);
     renderStockMovements(data.stockMovements || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
     stockForm.reset();
     setAutoCodes();
     setTodayDate();
@@ -2130,6 +2278,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
     renderStockMovements(result.stockMovements || []);
     renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     setStatus("Fiş kaydedildi ve depoya aktarıldı.");
     stockReceiptBody.innerHTML = "";
     stockReceiptBody.appendChild(createReceiptRow());
@@ -2154,6 +2303,7 @@ if (cashForm) {
     const data = await window.mtnApp.getData();
     renderCash(data.cashTransactions || []);
     renderSummary(data);
+    refreshAccountingPanels(data);
     cashForm.reset();
     setTodayDate();
   });
@@ -2187,6 +2337,7 @@ if (invoiceForm) {
       attachment
     });
     renderInvoices(result.invoices || []);
+    refreshAccountingPanels(result);
     setStatus("Fatura kaydedildi.");
     invoiceForm.reset();
     setTodayDate();
@@ -2358,6 +2509,7 @@ if (stockImportApplyButton) {
     renderStockMovements(result.stockMovements || []);
     renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     renderStockImportPreview(result.report);
     setStatus("Toplu aktarım tamamlandı.");
   });
@@ -2481,6 +2633,7 @@ if (inventoryCountTransfer) {
     renderStockMovements(result.stockMovements || []);
     renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     setStatus("Depo sayımı aktarıldı.");
     inventoryCountBody.innerHTML = "";
     inventoryCountBody.appendChild(createInventoryCountRow());
@@ -2527,6 +2680,7 @@ if (stockReceiptsTransferButton) {
     renderStockMovements(result.stockMovements || []);
     renderStockReceipts(result.stockReceipts || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     setStatus(result.message || "Fişler depoya aktarıldı.");
   });
 }
@@ -2555,6 +2709,7 @@ if (stockMovementForm) {
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderSummary(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "Stok hareketi kaydedildi.";
     stockMovementForm.reset();
     setTodayDate();
@@ -2573,7 +2728,8 @@ if (settingsForm) {
       cloudBackupPath: cloudBackupPathInput?.value || "",
       enableAutoSync: autoSyncEnabledSelect?.value === "true",
       enableCloudBackup: cloudBackupEnabledSelect?.value === "true",
-      enableAutoBackup: autoBackupEnabledSelect?.value === "true"
+      enableAutoBackup: autoBackupEnabledSelect?.value === "true",
+      stockValuationMethod: stockValuationSelect?.value || "ortalama"
     };
     const existingSettings = await window.mtnApp.getSettings();
     const nextSettings = { ...existingSettings, ...payload };
@@ -3016,6 +3172,7 @@ if (offerSaveButton) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
+    refreshAccountingPanels(result);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
   });
 }

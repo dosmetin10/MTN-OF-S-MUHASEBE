@@ -15,8 +15,24 @@ const getDefaultData = () => ({
   cashTransactions: [],
   sales: [],
   stockMovements: [],
-  invoices: []
+  invoices: [],
+  accounts: [],
+  ledgerEntries: [],
+  unitConversions: [],
+  auditLogs: []
 });
+
+const getDefaultAccounts = () => [
+  { code: "100", name: "KASA", type: "varlik" },
+  { code: "102", name: "BANKALAR", type: "varlik" },
+  { code: "120", name: "ALICILAR", type: "varlik" },
+  { code: "320", name: "SATICILAR", type: "yukumluluk" },
+  { code: "153", name: "TİCARİ MALLAR", type: "varlik" },
+  { code: "600", name: "YURTİÇİ SATIŞLAR", type: "gelir" },
+  { code: "620", name: "SATILAN MALIN MALİYETİ", type: "gider" },
+  { code: "191", name: "İNDİRİLECEK KDV", type: "varlik" },
+  { code: "391", name: "HESAPLANAN KDV", type: "yukumluluk" }
+];
 
 
 const loadStorage = async () => {
@@ -69,6 +85,7 @@ const loadSettings = async () => {
     logoDataUrl: "",
     defaultCashName: "Ana Kasa",
     defaultWarehouse: "Ana Depo",
+    stockValuationMethod: "ortalama",
     users: [],
     licenseKey: ""
   };
@@ -247,8 +264,26 @@ const normalizeData = (data) => ({
   cashTransactions: data.cashTransactions || [],
   sales: data.sales || [],
   stockMovements: data.stockMovements || [],
-  invoices: data.invoices || []
+  invoices: data.invoices || [],
+  accounts: (data.accounts && data.accounts.length ? data.accounts : getDefaultAccounts()).map(
+    (account) => ({
+      ...account,
+      code: String(account.code || "").trim(),
+      name: normalizeSpaces(account.name || "")
+    })
+  ),
+  ledgerEntries: data.ledgerEntries || [],
+  unitConversions: data.unitConversions || [],
+  auditLogs: data.auditLogs || []
 });
+
+const addAuditLog = (data, entry) => {
+  data.auditLogs = createRecord(data.auditLogs, entry);
+};
+
+const addLedgerEntry = (data, entry) => {
+  data.ledgerEntries = createRecord(data.ledgerEntries, entry);
+};
 
 const detectDelimiter = (line) => {
   const counts = {
@@ -814,6 +849,7 @@ app.whenReady().then(() => {
   ipcMain.handle("data:get", async () => loadStorage());
   ipcMain.handle("data:reset", async () => {
     const data = getDefaultData();
+    data.accounts = getDefaultAccounts();
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -823,6 +859,46 @@ app.whenReady().then(() => {
   ipcMain.handle("settings:save", async (_event, payload) => {
     await saveSettings(payload);
     return payload;
+  });
+
+  ipcMain.handle("accounts:create", async (_event, payload) => {
+    const data = await loadStorage();
+    const normalizedCode = String(payload.code || "").trim();
+    const normalizedName = normalizeSpaces(payload.name || "");
+    data.accounts = createRecord(data.accounts, {
+      code: normalizedCode,
+      name: normalizedName,
+      type: payload.type || "varlik",
+      description: payload.description || ""
+    });
+    addAuditLog(data, {
+      module: "accounts",
+      action: "create",
+      message: `Hesap planı eklendi: ${normalizedCode} ${normalizedName}`
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.accounts;
+  });
+
+  ipcMain.handle("unit-conversions:create", async (_event, payload) => {
+    const data = await loadStorage();
+    data.unitConversions = createRecord(data.unitConversions, {
+      baseUnit: payload.baseUnit,
+      targetUnit: payload.targetUnit,
+      factor: Number(payload.factor || 0),
+      note: payload.note || ""
+    });
+    addAuditLog(data, {
+      module: "stocks",
+      action: "unit-conversion",
+      message: `Birim dönüşüm eklendi: ${payload.baseUnit} → ${payload.targetUnit}`
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.unitConversions;
   });
 
   ipcMain.handle("customers:create", async (_event, payload) => {
@@ -846,7 +922,19 @@ app.whenReady().then(() => {
         note: "Açılış borcu",
         createdAt: payload.createdAt
       });
+      addLedgerEntry(data, {
+        accountCode: "120",
+        accountName: "ALICILAR",
+        debit: normalizedOpeningDebt,
+        credit: 0,
+        note: "Cari açılış borcu"
+      });
     }
+    addAuditLog(data, {
+      module: "customers",
+      action: "create",
+      message: `Cari eklendi: ${normalizedName}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -900,6 +988,13 @@ app.whenReady().then(() => {
       customerId,
       customerName
     });
+    addLedgerEntry(data, {
+      accountCode: type === "tahsilat" ? "100" : "320",
+      accountName: type === "tahsilat" ? "KASA" : "SATICILAR",
+      debit: type === "tahsilat" ? normalizedAmount : 0,
+      credit: type === "tahsilat" ? 0 : normalizedAmount,
+      note: note || "Cari işlem"
+    });
     if (type !== "tahsilat") {
       data.customerDebts = createRecord(data.customerDebts, {
         customerId,
@@ -909,6 +1004,11 @@ app.whenReady().then(() => {
         createdAt
       });
     }
+    addAuditLog(data, {
+      module: "customers",
+      action: "transaction",
+      message: `Cari işlem: ${customerName} ${type}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -942,6 +1042,18 @@ app.whenReady().then(() => {
       customerId,
       customerName
     });
+    addLedgerEntry(data, {
+      accountCode: "100",
+      accountName: "KASA",
+      debit: normalizedAmount,
+      credit: 0,
+      note: note || "Cari tahsilat"
+    });
+    addAuditLog(data, {
+      module: "customers",
+      action: "payment",
+      message: `Cari tahsilat: ${customerName}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -970,6 +1082,18 @@ app.whenReady().then(() => {
       amount: normalizedAmount,
       note: note || "Cari Borç",
       createdAt
+    });
+    addLedgerEntry(data, {
+      accountCode: "120",
+      accountName: "ALICILAR",
+      debit: normalizedAmount,
+      credit: 0,
+      note: note || "Cari borç"
+    });
+    addAuditLog(data, {
+      module: "customers",
+      action: "debt",
+      message: `Cari borç eklendi: ${customerName}`
     });
     await saveStorage(data);
     await syncStorageCopies(data);
@@ -1013,6 +1137,18 @@ app.whenReady().then(() => {
         balance: Number(customer.balance || 0) + normalizedTotal
       };
     });
+    addLedgerEntry(data, {
+      accountCode: "120",
+      accountName: "ALICILAR",
+      debit: normalizedTotal,
+      credit: 0,
+      note: "İş kalemi"
+    });
+    addAuditLog(data, {
+      module: "customers",
+      action: "job",
+      message: `İş kalemi eklendi: ${customerName}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1023,6 +1159,11 @@ app.whenReady().then(() => {
     const data = await loadStorage();
     const settings = await loadSettings();
     upsertStockEntry(data, payload, { note: "Stok kartı girişi" }, settings);
+    addAuditLog(data, {
+      module: "stocks",
+      action: "create",
+      message: `Stok kartı: ${payload.name || "Malzeme"}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1078,6 +1219,11 @@ app.whenReady().then(() => {
         settings
       );
     });
+    addAuditLog(data, {
+      module: "stocks",
+      action: "receipt",
+      message: `Fiş işlendi: ${supplier || "Tedarikçi"}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1116,6 +1262,11 @@ app.whenReady().then(() => {
       receipt.transferredAt = new Date().toISOString();
       processed += 1;
     });
+    addAuditLog(data, {
+      module: "stocks",
+      action: "receipt-transfer",
+      message: `Fiş aktarımı: ${processed} kayıt`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1153,6 +1304,11 @@ app.whenReady().then(() => {
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
+    addAuditLog(data, {
+      module: "stocks",
+      action: "movement",
+      message: `Stok hareketi: ${normalizedName} (${type})`
+    });
     return data;
   });
 
@@ -1222,6 +1378,11 @@ app.whenReady().then(() => {
         row.statusLabel = "Eklendi";
       }
     });
+    addAuditLog(data, {
+      module: "stocks",
+      action: "import",
+      message: "Toplu stok aktarımı tamamlandı"
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1231,6 +1392,18 @@ app.whenReady().then(() => {
   ipcMain.handle("cash:create", async (_event, payload) => {
     const data = await loadStorage();
     data.cashTransactions = createRecord(data.cashTransactions, payload);
+    addLedgerEntry(data, {
+      accountCode: payload.type === "gider" ? "320" : "100",
+      accountName: payload.type === "gider" ? "SATICILAR" : "KASA",
+      debit: payload.type === "gider" ? 0 : normalizeNumber(payload.amount),
+      credit: payload.type === "gider" ? normalizeNumber(payload.amount) : 0,
+      note: payload.note || "Kasa hareketi"
+    });
+    addAuditLog(data, {
+      module: "cash",
+      action: "create",
+      message: `Kasa hareketi: ${payload.type}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1240,6 +1413,11 @@ app.whenReady().then(() => {
   ipcMain.handle("invoices:create", async (_event, payload) => {
     const data = await loadStorage();
     data.invoices = createRecord(data.invoices, payload);
+    addAuditLog(data, {
+      module: "invoices",
+      action: "create",
+      message: `Fatura yüklendi: ${payload.vendor || "Firma"}`
+    });
     await saveStorage(data);
     await syncStorageCopies(data);
     await maybeAutoBackup(data);
@@ -1257,6 +1435,13 @@ app.whenReady().then(() => {
       vatRate
     };
     data.sales = createRecord(data.sales, saleRecord);
+    addLedgerEntry(data, {
+      accountCode: "600",
+      accountName: "YURTİÇİ SATIŞLAR",
+      debit: 0,
+      credit: normalizeNumber(total),
+      note: `Satış: ${customerName || "Genel"}`
+    });
 
     if (customerId) {
       data.customers = data.customers.map((customer) => {
@@ -1304,6 +1489,18 @@ app.whenReady().then(() => {
       type: "gelir",
       amount: total,
       note: `Satış: ${customerName || "Genel"}`
+    });
+    addLedgerEntry(data, {
+      accountCode: "100",
+      accountName: "KASA",
+      debit: normalizeNumber(total),
+      credit: 0,
+      note: `Satış tahsilat: ${customerName || "Genel"}`
+    });
+    addAuditLog(data, {
+      module: "sales",
+      action: "create",
+      message: `Satış kaydı: ${customerName || "Genel"}`
     });
 
     await saveStorage(data);

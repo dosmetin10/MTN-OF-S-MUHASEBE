@@ -653,6 +653,42 @@
                 </p>
               </div>
 
+              <div class="table-card" id="unit-conversion-card">
+                <div class="table-actions">
+                  <h3>Birim Dönüşüm Tanımları</h3>
+                </div>
+                <form class="form-grid" id="unit-conversion-form">
+                  <label>
+                    Ana Birim
+                    <input name="baseUnit" placeholder="adet" />
+                  </label>
+                  <label>
+                    Hedef Birim
+                    <input name="targetUnit" placeholder="koli" />
+                  </label>
+                  <label>
+                    Çarpan
+                    <input name="factor" type="number" min="0" step="0.01" placeholder="12" />
+                  </label>
+                  <label class="full-width">
+                    Açıklama
+                    <input name="note" placeholder="1 koli = 12 adet" />
+                  </label>
+                  <button class="primary" type="submit">Dönüşüm Ekle</button>
+                </form>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Ana Birim</th>
+                      <th>Hedef Birim</th>
+                      <th>Çarpan</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="unit-conversion-table"></tbody>
+                </table>
+              </div>
+
               <div class="table-card" id="stock-import-card">
                 <div class="table-actions">
                   <h3>Toplu Malzeme Aktarımı</h3>
@@ -979,7 +1015,7 @@
                 </label>
                 <label>
                   Dosya
-                  <input id="invoice-file" type="file" accept=".pdf,.jpg,.jpeg,.png" />
+                  <input id="invoice-file" type="file" accept=".jpg,.jpeg" />
                 </label>
                 <label class="full-width">
                   Açıklama
@@ -1085,6 +1121,71 @@
                 <button class="primary" id="report-cash-summary">Kasa Özet Raporu</button>
               </div>
               <p class="report-path" id="report-path"></p>
+            </section>
+            <section class="module" id="accounts-module">
+              <div class="module__header">
+                <h2>Hesap Planı</h2>
+                <p>Şirket hesap planı ve fiş eşleştirmeleri.</p>
+              </div>
+              <form class="form-grid" id="account-form">
+                <label>
+                  Hesap Kodu
+                  <input name="code" required placeholder="120" />
+                </label>
+                <label>
+                  Hesap Adı
+                  <input name="name" required placeholder="Alıcılar" />
+                </label>
+                <label>
+                  Tür
+                  <select name="type">
+                    <option value="varlik">Varlık</option>
+                    <option value="yukumluluk">Yükümlülük</option>
+                    <option value="gelir">Gelir</option>
+                    <option value="gider">Gider</option>
+                    <option value="sermaye">Sermaye</option>
+                  </select>
+                </label>
+                <label class="full-width">
+                  Açıklama
+                  <input name="description" placeholder="Hesap açıklaması" />
+                </label>
+                <button class="primary" type="submit">Hesap Ekle</button>
+              </form>
+              <div class="table-card table-card--sheet">
+                <h3>Hesap Listesi</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Kod</th>
+                      <th>Hesap</th>
+                      <th>Tür</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accounts-table"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="module" id="ledger-module">
+              <div class="module__header">
+                <h2>Muhasebe Fişleri</h2>
+                <p>Gelir/gider ve stok hareketlerinden oluşan fiş özeti.</p>
+              </div>
+              <div class="table-card table-card--sheet">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Hesap</th>
+                      <th>Borç</th>
+                      <th>Alacak</th>
+                      <th>Açıklama</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ledger-table"></tbody>
+                </table>
+              </div>
             </section>
           </section>
 
@@ -1193,6 +1294,13 @@
                     <option value="true">Evet</option>
                   </select>
                 </label>
+                <label>
+                  Stok Değerleme
+                  <select id="stock-valuation">
+                    <option value="ortalama">Ortalama</option>
+                    <option value="fifo">FIFO</option>
+                  </select>
+                </label>
                 <button class="primary" type="submit">Ayarları Kaydet</button>
               </form>
               <p class="muted">
@@ -1224,6 +1332,20 @@
                 <button class="danger" id="reset-data">Tüm Verileri Sil</button>
               </div>
               <p class="report-path" id="settings-status"></p>
+              <div class="table-card">
+                <h3>İşlem Günlüğü</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Tarih</th>
+                      <th>Modül</th>
+                      <th>İşlem</th>
+                      <th>Detay</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-log-table"></tbody>
+                </table>
+              </div>
             </section>
           </section>
         </div>
