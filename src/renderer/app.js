@@ -2564,6 +2564,7 @@ if (customerForm) {
     refreshAccountingPanels(data);
     customerForm.reset();
     setAutoCodes();
+    setStatus("Cari kaydedildi.");
   });
 }
 
