@@ -66,6 +66,7 @@ const reportStockMovementsButton = document.getElementById(
 );
 const reportCashSummaryButton = document.getElementById("report-cash-summary");
 const reportPathEl = document.getElementById("report-path");
+const statusToast = document.getElementById("status-toast");
 const assistantDailyEl = document.getElementById("assistant-daily");
 const assistantRemindersEl = document.getElementById("assistant-reminders");
 const assistantSuggestionsEl = document.getElementById("assistant-suggestions");
@@ -111,6 +112,29 @@ const formatCurrency = (value) =>
     currency: "TRY",
     minimumFractionDigits: 2
   }).format(value || 0);
+
+let toastTimer;
+const showToast = (message, type = "success") => {
+  if (!statusToast) {
+    return;
+  }
+  statusToast.textContent = message;
+  statusToast.dataset.type = type;
+  statusToast.classList.add("toast--visible");
+  if (toastTimer) {
+    window.clearTimeout(toastTimer);
+  }
+  toastTimer = window.setTimeout(() => {
+    statusToast.classList.remove("toast--visible");
+  }, 4200);
+};
+
+const setStatus = (message, type = "success") => {
+  if (reportPathEl) {
+    reportPathEl.textContent = message;
+  }
+  showToast(message, type);
+};
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -1021,20 +1045,36 @@ const buildInvoiceHtml = (title, rows) => {
   const companyName = currentSettings.companyName || "MTN Enerji";
   const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
   const taxNumber = currentSettings.taxNumber || "0000000000";
+  const companyAddress =
+    currentSettings.companyAddress ||
+    "Adres bilgisi için lütfen ayarlardan güncelleyin.";
+  const companyPhone = currentSettings.companyPhone || "Telefon";
+  const companyEmail = currentSettings.companyEmail || "E-posta";
+  const companyWebsite = currentSettings.companyWebsite || "Web";
   const logoSrc = currentSettings.logoDataUrl || "";
   const logoHtml = logoSrc
     ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
     : `<div class="report-logo">MTN</div>`;
   return `
-    <div class="report-header">
-      <div>
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(companyName)}</p>
-        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
-          taxNumber
-        )}</p>
+    <div class="report-header report-header--offer">
+      <div class="report-header__brand">
+        ${logoHtml}
+        <div>
+          <h1>${escapeHtml(companyName)}</h1>
+          <p>${escapeHtml(companyAddress)}</p>
+        </div>
       </div>
-      ${logoHtml}
+      <div class="report-header__meta">
+        <p><strong>${escapeHtml(companyPhone)}</strong></p>
+        <p>${escapeHtml(companyEmail)}</p>
+        <p>${escapeHtml(companyWebsite)}</p>
+        <p>Vergi Dairesi: ${escapeHtml(taxOffice)}</p>
+        <p>Vergi No: ${escapeHtml(taxNumber)}</p>
+      </div>
+    </div>
+    <div class="report-title">
+      <h2>${escapeHtml(title)}</h2>
+      <p>İç tesisat teklif çalışması • ${new Date().toLocaleDateString("tr-TR")}</p>
     </div>
     <div class="report-watermark">${
       logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
@@ -1132,7 +1172,7 @@ const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
 
 const generateReport = async (type) => {
   if (!window.mtnApp?.getData || !window.mtnApp?.generateReport) {
-    reportPathEl.textContent = "Rapor servisi hazır değil.";
+    setStatus("Rapor servisi hazır değil.", "error");
     return;
   }
   const data = await window.mtnApp.getData();
@@ -1215,7 +1255,7 @@ const generateReport = async (type) => {
     includeWatermark: type === "customers" || type === "cash"
   });
   const result = await window.mtnApp.generateReport({ title, html });
-  reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  setStatus(`Rapor kaydedildi: ${result.reportFile}`);
 };
 
 if (customerForm) {
@@ -1236,14 +1276,14 @@ if (customerPaymentForm) {
   customerPaymentForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.collectPayment) {
-      reportPathEl.textContent = "Tahsilat servisi hazır değil.";
+      setStatus("Tahsilat servisi hazır değil.", "error");
       return;
     }
     const formData = new FormData(customerPaymentForm);
     const payload = Object.fromEntries(formData.entries());
     const customerId = paymentCustomerSelect?.value || "";
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.", "error");
       return;
     }
     const result = await window.mtnApp.collectPayment({
@@ -1256,7 +1296,7 @@ if (customerPaymentForm) {
     renderCash(result.cashTransactions || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "Tahsilat kaydedildi.";
+    setStatus("Tahsilat kaydedildi.");
     customerPaymentForm.reset();
     setTodayDate();
   });
@@ -1266,14 +1306,14 @@ if (customerDebtForm) {
   customerDebtForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.addDebt) {
-      reportPathEl.textContent = "Borç servisi hazır değil.";
+      setStatus("Borç servisi hazır değil.", "error");
       return;
     }
     const formData = new FormData(customerDebtForm);
     const payload = Object.fromEntries(formData.entries());
     const customerId = debtCustomerSelect?.value || "";
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.", "error");
       return;
     }
     const result = await window.mtnApp.addDebt({
@@ -1286,7 +1326,7 @@ if (customerDebtForm) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "Borç kaydedildi.";
+    setStatus("Borç kaydedildi.");
     customerDebtForm.reset();
     setTodayDate();
   });
@@ -1312,12 +1352,12 @@ if (customerJobForm) {
   customerJobForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.addCustomerJob) {
-      reportPathEl.textContent = "İş kalemi servisi hazır değil.";
+      setStatus("İş kalemi servisi hazır değil.", "error");
       return;
     }
     const customerId = detailCustomerSelect?.value || "";
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.", "error");
       return;
     }
     updateJobTotal();
@@ -1337,7 +1377,7 @@ if (customerJobForm) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "İş kalemi kaydedildi.";
+    setStatus("İş kalemi kaydedildi.");
     customerJobForm.reset();
     setTodayDate();
   });
@@ -1388,7 +1428,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
   stockReceiptSubmit.addEventListener("click", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.createStockReceipt) {
-      reportPathEl.textContent = "Fiş servisi hazır değil.";
+      setStatus("Fiş servisi hazır değil.", "error");
       return;
     }
     const rows = Array.from(stockReceiptBody.querySelectorAll("tr")).map(
@@ -1402,7 +1442,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
     );
     const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
     if (!items.length) {
-      reportPathEl.textContent = "Fiş için en az bir malzeme girin.";
+      setStatus("Fiş için en az bir malzeme girin.", "error");
       return;
     }
     const approved = window.confirm("Fiş depoya aktarılsın mı?");
@@ -1426,7 +1466,7 @@ if (stockReceiptSubmit && stockReceiptBody) {
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderSummary(result);
-    reportPathEl.textContent = "Fiş depoya aktarıldı.";
+    setStatus("Fiş depoya aktarıldı.");
     stockReceiptBody.innerHTML = "";
     stockReceiptBody.appendChild(createReceiptRow());
     if (stockReceiptNote) {
@@ -1495,14 +1535,14 @@ if (stockMovementForm) {
   stockMovementForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!window.mtnApp?.moveStock) {
-      reportPathEl.textContent = "Stok hareket servisi hazır değil.";
+      setStatus("Stok hareket servisi hazır değil.", "error");
       return;
     }
     const formData = new FormData(stockMovementForm);
     const payload = Object.fromEntries(formData.entries());
     const stockName = movementStockSelect?.value || "";
     if (!stockName) {
-      reportPathEl.textContent = "Lütfen malzeme seçin.";
+      setStatus("Lütfen malzeme seçin.", "error");
       return;
     }
     const result = await window.mtnApp.moveStock({
@@ -1513,13 +1553,13 @@ if (stockMovementForm) {
       note: payload.note
     });
     if (result?.error) {
-      reportPathEl.textContent = result.error;
+      setStatus(result.error, "error");
       return;
     }
     renderStocks(result.stocks || []);
     renderStockMovements(result.stockMovements || []);
     renderSummary(result);
-    reportPathEl.textContent = "Stok hareketi kaydedildi.";
+    setStatus("Stok hareketi kaydedildi.");
     stockMovementForm.reset();
     setTodayDate();
   });
@@ -1783,12 +1823,12 @@ if (detailCustomerSelect) {
 if (detailReportButton) {
   detailReportButton.addEventListener("click", async () => {
     if (!window.mtnApp?.generateReport) {
-      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      setStatus("Rapor servisi hazır değil.", "error");
       return;
     }
     const customerId = detailCustomerSelect?.value;
     if (!customerId) {
-      reportPathEl.textContent = "Lütfen cari seçin.";
+      setStatus("Lütfen cari seçin.", "error");
       return;
     }
     const data = await window.mtnApp.getData();
@@ -1835,7 +1875,7 @@ if (detailReportButton) {
         title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
         html
       });
-      reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+      setStatus(`Rapor kaydedildi: ${result.reportFile}`);
       return;
     }
     const rows = [
@@ -1879,14 +1919,14 @@ if (detailReportButton) {
       title: `Cari-Ekstre-${customerName.replace(/\s+/g, "-")}`,
       html
     });
-    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+    setStatus(`Rapor kaydedildi: ${result.reportFile}`);
   });
 }
 
 if (offerPdfButton) {
   offerPdfButton.addEventListener("click", async () => {
     if (!window.mtnApp?.generateReport) {
-      reportPathEl.textContent = "Rapor servisi hazır değil.";
+      setStatus("Rapor servisi hazır değil.", "error");
       return;
     }
     const rows = Array.from(offerBody.querySelectorAll("tr")).map((row) => [
@@ -1896,19 +1936,19 @@ if (offerPdfButton) {
       row.querySelector("[data-field='price']")?.value || "0",
       row.querySelector("[data-field='total']")?.value || "0"
     ]);
-    const html = buildInvoiceHtml("Satış Faturası", rows);
+    const html = buildInvoiceHtml("İç Tesisat Fiyat Teklifi", rows);
     const result = await window.mtnApp.generateReport({
-      title: "Satis-Faturasi",
+      title: "Ic-Tesisat-Fiyat-Teklifi",
       html
     });
-    reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+    setStatus(`Rapor kaydedildi: ${result.reportFile}`);
   });
 }
 
 if (offerSaveButton) {
   offerSaveButton.addEventListener("click", async () => {
     if (!window.mtnApp?.createSale) {
-      reportPathEl.textContent = "Satış servisi hazır değil.";
+      setStatus("Satış servisi hazır değil.", "error");
       return;
     }
     const customerId = offerCustomerSelect?.value || "";
@@ -1934,7 +1974,7 @@ if (offerSaveButton) {
       items
     });
     if (result?.error) {
-      reportPathEl.textContent = result.error;
+      setStatus(result.error, "error");
       return;
     }
     renderStocks(result.stocks || []);
@@ -1944,7 +1984,7 @@ if (offerSaveButton) {
     renderCustomers(result.customers || []);
     renderSummary(result);
     renderCustomerDetail(result);
-    reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
+    setStatus("Satış kaydedildi ve stok güncellendi.");
   });
 }
 

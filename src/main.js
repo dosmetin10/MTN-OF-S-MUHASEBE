@@ -68,6 +68,10 @@ const loadSettings = async () => {
     companyName: "MTN Enerji",
     taxOffice: "",
     taxNumber: "",
+    companyAddress: "",
+    companyPhone: "",
+    companyEmail: "",
+    companyWebsite: "",
     logoDataUrl: "",
     defaultCashName: "Ana Kasa",
     users: [],
@@ -217,6 +221,8 @@ const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    fullscreen: true,
+    autoHideMenuBar: true,
     backgroundColor: "#f5f7fb",
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
@@ -570,7 +576,7 @@ app.whenReady().then(() => {
         sandbox: false
       }
     });
-    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:140px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
+    const content = `<!DOCTYPE html><html><head><meta charset=\"utf-8\" /><style>body{font-family:Segoe UI,Arial,sans-serif;margin:24px;color:#1f2a44;position:relative}h1{font-size:20px;margin-bottom:10px}.report-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}.report-header p{margin:4px 0;font-size:11px;color:#516081}.report-header--offer{border-bottom:2px solid #1e4d91;padding-bottom:12px}.report-header__brand{display:flex;gap:12px;align-items:center}.report-header__brand h1{margin:0;font-size:18px}.report-header__meta{text-align:right;font-size:11px;color:#1f2a44}.report-header__meta strong{font-size:14px}.report-title{margin:12px 0 18px 0;padding:10px 0;border-bottom:1px solid #d7deef}.report-title h2{margin:0;font-size:18px}.report-title p{margin:6px 0 0 0;font-size:11px;color:#516081}.report-logo{font-size:28px;font-weight:700;color:#004c8c}.report-logo-img{width:140px;max-height:70px;object-fit:contain}.report-watermark{position:fixed;top:35%;left:10%;right:10%;text-align:center;font-size:48px;color:rgba(0,76,140,0.1);transform:rotate(-18deg);z-index:0}.report-watermark img{width:220px;opacity:0.08}table{width:100%;border-collapse:collapse;font-size:12px;position:relative;z-index:1}th,td{border:1px solid #d7deef;padding:8px;text-align:left}th{background:#f2f5fb}</style></head><body>${html}</body></html>`;
     await reportWindow.loadURL(
       `data:text/html;charset=utf-8,${encodeURIComponent(content)}`
     );

@@ -114,6 +114,14 @@
   .coRow{display:flex;gap:.4rem;margin-top:.4rem}
   .coBtn{border:1px solid rgba(255,255,255,.25);border-radius:.55rem;padding:.35rem .55rem;background:rgba(255,255,255,.06);cursor:pointer}
   .kbd{border:1px solid rgba(255,255,255,.2);border-radius:.35rem;padding:.05rem .35rem;margin-left:.35rem}
+
+  .toast{position:fixed;right:18px;bottom:18px;background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.16);color:#f8fafc;padding:.6rem .8rem;border-radius:.65rem;box-shadow:0 12px 30px rgba(0,0,0,.35);opacity:0;transform:translateY(10px);transition:.18s;z-index:90;max-width:320px}
+  .toast--visible{opacity:1;transform:translateY(0)}
+  .toast[data-type="error"]{background:rgba(127,29,29,.92);border-color:rgba(239,68,68,.45)}
+  .toast[data-type="success"]{background:rgba(22,101,52,.92);border-color:rgba(34,197,94,.45)}
+  .audit-list{list-style:none;padding:0;margin:0;display:grid;gap:.4rem}
+  .audit-list li{display:flex;align-items:center;gap:.4rem}
+  .audit-list li::before{content:"•";color:#22d3ee;font-weight:700}
 </style>
 </head>
 <body>
@@ -229,11 +237,23 @@
     <div class="sideR">
       <div class="card"><div class="title">HATIRLATICI OTOMATİK — YZ Destekli</div><div class="mut">Fatura/fiş, ödeme ve bakım tarihlerini takip eder, uyarı üretir.</div></div>
       <div class="card"><div class="title">METİN ŞAHSİ ÖDEME HATIRLATMA</div><div class="mut">Elektrik, su vb. kişisel ödemeler için uyarı alanı.</div></div>
+      <div class="card">
+        <div class="title">20 Yıllık Muhasebeci İncelemesi</div>
+        <ul class="audit-list mut">
+          <li>Günlük kasa kapanışı + fiş kontrolü</li>
+          <li>Cari bakiyelerde negatif/şüpheli hareket alarmı</li>
+          <li>Stok kritik seviyeleri ve satın alma önerisi</li>
+          <li>KDV oranı tutarlılığı ve belge eşleştirme</li>
+          <li>Teklif → sipariş → fatura zinciri izleme</li>
+        </ul>
+      </div>
     </div>
   </div>
 
   <div class="footer"><div></div><div class="center">Bu program <b>MTN Enerji Mühendislik</b> / <b>Metin Döş</b> tarafından <b>kodlanmış ve tasarlanmıştır</b>. <b>© Tüm hakları saklıdır.</b></div><div class="dot"></div></div>
 </div>
+
+<div class="toast" id="status-toast" data-type="success"></div>
 
 <!-- Login -->
 <div class="overlay" id="login">
@@ -320,7 +340,9 @@ setTimeout(goLogin, 2600);
 
 // Login
 function setHi(){ const role=LS.getItem('role')||'muhasebe'; $('#hi').textContent=`Hoş geldiniz: ${LS.getItem('user')||'mtn'} • rol: ${role}`; }
-function doLogin(){ const u=($('#u').value||'').trim().toLowerCase(), p=($('#p').value||'').trim(); const e=$('#err'); if(u==='mtn'&&p==='1453'){ LS.setItem('user',u); setHi(); goShell(); }else{ e.textContent='Hatalı giriş (mtn/1453)'; e.style.display='block'; suggest('Giriş başarısız. Kullanıcı adı “mtn”, şifre “1453” olmalı. Unuttuysanız Ayarlar→“Kullanıcı şifre sıfırla” (demo).', 'fix-login'); } }
+const toastEl=$('#status-toast'); let toastTimer;
+function showToast(msg,type='success'){ if(!toastEl) return; toastEl.textContent=msg; toastEl.dataset.type=type; toastEl.classList.add('toast--visible'); if(toastTimer) clearTimeout(toastTimer); toastTimer=setTimeout(()=> toastEl.classList.remove('toast--visible'), 4200); }
+function doLogin(){ const u=($('#u').value||'').trim().toLowerCase(), p=($('#p').value||'').trim(); const e=$('#err'); if(u==='mtn'&&p==='1453'){ LS.setItem('user',u); setHi(); goShell(); showToast('Giriş başarılı. ERP paneli hazır.', 'success'); }else{ e.textContent='Hatalı giriş (mtn/1453)'; e.style.display='block'; showToast('Hatalı giriş. Kullanıcı adı “mtn”, şifre “1453” olmalı.', 'error'); suggest('Giriş başarısız. Kullanıcı adı “mtn”, şifre “1453” olmalı. Unuttuysanız Ayarlar→“Kullanıcı şifre sıfırla” (demo).', 'fix-login'); } }
 $('#go').addEventListener('click',doLogin);
 $('#p').addEventListener('keydown',ev=>{ if(ev.key==='Enter') doLogin(); if(ev.getModifierState&&ev.getModifierState('CapsLock')) $('#caps').style.display='inline'; else $('#caps').style.display='none'; });
 let peek=false; $('#eye').addEventListener('mousedown',()=>{ $('#p').type='text'; peek=true; }); window.addEventListener('mouseup',()=>{ if(peek){ $('#p').type='password'; peek=false; } });
@@ -383,7 +405,7 @@ document.body.addEventListener('click',(e)=>{
   alert('Demo: '+txt);
 });
 $('#lastAction').textContent=LS.getItem('lastAction')||'-'; $('#lastCustomer').textContent=LS.getItem('lastCustomer')||'-';
-function logAction(t){ LS.setItem('lastAction', t); $('#lastAction').textContent=t; appendLog(t); }
+function logAction(t){ LS.setItem('lastAction', t); $('#lastAction').textContent=t; appendLog(t); showToast(t, 'success'); }
 
 // Arama önerileri (YZ)
 $('#araBtn').addEventListener('click',()=>{
@@ -393,9 +415,9 @@ $('#araBtn').addEventListener('click',()=>{
 });
 
 // Yedek/Çıkış
-$('#btnYedek').addEventListener('click',()=> { alert('Demo: Yedek alındı (yerel dosyaya)'); suggest('Haftalık otomatik yedek zamanlayayım mı? (demo)'); });
+$('#btnYedek').addEventListener('click',()=> { alert('Demo: Yedek alındı (yerel dosyaya)'); showToast('Yedekleme tamamlandı.', 'success'); suggest('Haftalık otomatik yedek zamanlayayım mı? (demo)'); });
 $('#btnCikis').addEventListener('click',()=>{
-  if(confirm('Çıkmadan önce yedek almak ister misiniz?')) alert('Demo: Yedek alındı');
+  if(confirm('Çıkmadan önce yedek almak ister misiniz?')) { alert('Demo: Yedek alındı'); showToast('Çıkış öncesi yedek alındı.', 'success'); }
   suggest('Çıkış yapıldı. Bir sonraki açılış için güncel kurulum denetimi hazır.', 'exit');
   window.close?.();
 });
@@ -410,15 +432,16 @@ applyTheme();
 
 $('#roleLogin').addEventListener('click',()=>{
   const role=$('#roleSel').value, user=($('#roleUser').value||'').trim().toLowerCase(), pass=$('#rolePass').value||'';
-  if(pass!=='1453'){ $('#roleMsg').textContent='Hatalı şifre (1453)'; suggest('Şifre hatalı. Tüm roller için demo parolası 1453.', 'fix-role'); return; }
-  if(role==='yonetici' && user!=='mtn'){ $('#roleMsg').textContent='Yönetici kullanıcı mtn olmalı'; suggest('Yönetici için kullanıcı adı “mtn” olmalı.'); return; }
+  if(pass!=='1453'){ $('#roleMsg').textContent='Hatalı şifre (1453)'; showToast('Hatalı şifre. Demo parolası 1453.', 'error'); suggest('Şifre hatalı. Tüm roller için demo parolası 1453.', 'fix-role'); return; }
+  if(role==='yonetici' && user!=='mtn'){ $('#roleMsg').textContent='Yönetici kullanıcı mtn olmalı'; showToast('Yönetici için kullanıcı adı “mtn” olmalı.', 'error'); suggest('Yönetici için kullanıcı adı “mtn” olmalı.'); return; }
   LS.setItem('role', role); LS.setItem('user', user||'mtn'); setHi(); $('#roleMsg').textContent='Oturum güncellendi'; refreshAdminBox(); logAction('Rol değişti: '+role);
+  showToast('Rol güncellendi: '+role.toUpperCase(), 'success');
   suggest('Rol güncellendi. '+role.toUpperCase()+' için yetkiler uygulandı.', 'role'); 
 });
 function refreshAdminBox(){ const role=LS.getItem('role')||'muhasebe'; $('#adminBox').style.display = (role==='yonetici' ? 'block':'none'); }
 
-$('#applyTheme').addEventListener('click',()=>{ const t=$('#themeSel').value; LS.setItem('theme',t); applyTheme(); appendLog('Tema değişti: '+t); suggest('Tema güncellendi: '+t+'.'); });
-$('#doReset').addEventListener('click',()=>{ const u=$('#resetUser').value||''; if(!u){appendLog('Kullanıcı adı girilmedi'); suggest('Önce kullanıcı adını yazın.'); return;} appendLog(`Kullanıcı ${u} şifresi 1453 yapıldı (demo)`); alert('Demo: '+u+' şifresi 1453 yapıldı'); suggest('Şifre sıfırlandı (demo). Gerçekte log’a kayıt edilir, kullanıcıya bildirim gider.'); });
+$('#applyTheme').addEventListener('click',()=>{ const t=$('#themeSel').value; LS.setItem('theme',t); applyTheme(); appendLog('Tema değişti: '+t); showToast('Tema güncellendi: '+t+'.', 'success'); suggest('Tema güncellendi: '+t+'.'); });
+$('#doReset').addEventListener('click',()=>{ const u=$('#resetUser').value||''; if(!u){appendLog('Kullanıcı adı girilmedi'); showToast('Kullanıcı adı girmediniz.', 'error'); suggest('Önce kullanıcı adını yazın.'); return;} appendLog(`Kullanıcı ${u} şifresi 1453 yapıldı (demo)`); alert('Demo: '+u+' şifresi 1453 yapıldı'); showToast('Şifre sıfırlandı (demo).', 'success'); suggest('Şifre sıfırlandı (demo). Gerçekte log’a kayıt edilir, kullanıcıya bildirim gider.'); });
 
 // YZ panel
 const coach=$('#coach'), coachBtn=$('#coachBtn'), coachBody=$('#coachBody');
