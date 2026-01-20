@@ -874,7 +874,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle("customers:transaction", async (_event, payload) => {
     const data = await loadStorage();
-    const { customerId, amount, note, createdAt, type } = payload;
+    const { customerId, amount, note, createdAt, type, paymentMethod } = payload;
     const normalizedAmount = normalizeNumber(amount);
     const customerName = data.customers.find(
       (customer) => customer.id === customerId
@@ -894,6 +894,7 @@ app.whenReady().then(() => {
     data.cashTransactions = createRecord(data.cashTransactions, {
       type: type === "tahsilat" ? "gelir" : "gider",
       amount: normalizedAmount,
+      paymentMethod: paymentMethod || "nakit",
       note: note || "Cari İşlem",
       createdAt,
       customerId,

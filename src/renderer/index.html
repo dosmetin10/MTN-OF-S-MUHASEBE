@@ -315,6 +315,17 @@
                   </select>
                 </label>
                 <label>
+                  Ödeme Türü
+                  <select name="paymentMethod" id="transaction-method">
+                    <option value="nakit">Nakit</option>
+                    <option value="eft">EFT</option>
+                    <option value="havale">Havale</option>
+                    <option value="cek">Çek</option>
+                    <option value="kart">Kart</option>
+                    <option value="senet">Senet</option>
+                  </select>
+                </label>
+                <label>
                   Tutar
                   <input name="amount" type="number" min="0" step="0.01" />
                 </label>
@@ -914,6 +925,7 @@
                       <th>Tarih</th>
                       <th>Tür</th>
                       <th>Cari</th>
+                      <th>Ödeme Türü</th>
                       <th>Tutar</th>
                       <th>Açıklama</th>
                     </tr>

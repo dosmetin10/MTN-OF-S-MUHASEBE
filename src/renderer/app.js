@@ -859,6 +859,7 @@ const renderCash = (items) => {
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
       <td><span class="${badgeClass}">${item.type || "-"}</span></td>
       <td>${item.customerName || "-"}</td>
+      <td>${item.paymentMethod || "-"}</td>
       <td>${formatCurrency(Number(item.amount) || 0)}</td>
       <td>${item.note || "-"}</td>
     `;
