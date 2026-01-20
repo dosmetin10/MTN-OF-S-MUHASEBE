@@ -822,7 +822,10 @@ const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    backgroundColor: "#f5f7fb",
+    backgroundColor: "#0a1222",
+    fullscreen: true,
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js")
     }

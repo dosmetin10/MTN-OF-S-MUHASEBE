@@ -141,36 +141,79 @@
           <span class="brand__subtitle">Kurumsal Stok & Finans Yönetimi</span>
         </div>
         <nav class="menu">
-          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana">
-            <span class="menu__icon">A</span>
-            Ana
+          <button class="menu__item menu__item--active" data-panel="dashboard-panel" data-title="Ana Menü">
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M3 11.5L12 4l9 7.5" />
+                <path d="M5 10.5V20h14v-9.5" />
+              </svg>
+            </span>
+            Ana Menü
           </button>
           <button class="menu__item" data-panel="customers-panel" data-title="Cari">
-            <span class="menu__icon">C</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M4 20c1.4-3.5 5-5.5 8-5.5s6.6 2 8 5.5" />
+              </svg>
+            </span>
             Cari
           </button>
           <button class="menu__item" data-panel="stocks-panel" data-title="Stok">
-            <span class="menu__icon">S</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="4" y="4" width="16" height="16" rx="3" />
+                <path d="M8 9h8M8 13h8M8 17h6" />
+              </svg>
+            </span>
             Stok
           </button>
           <button class="menu__item" data-panel="stock-list-panel" data-title="Depo Stok">
-            <span class="menu__icon">D</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M3 9h18" />
+                <path d="M5 9V20h14V9" />
+                <path d="M8 13h8M8 17h6" />
+              </svg>
+            </span>
             Depo Stok
           </button>
           <button class="menu__item" data-panel="sales-panel" data-title="Teklif">
-            <span class="menu__icon">T</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M6 4h9l3 3v13H6z" />
+                <path d="M9 12h6M9 16h6M9 8h3" />
+              </svg>
+            </span>
             Teklif
           </button>
           <button class="menu__item" data-panel="invoices-panel" data-title="Fatura">
-            <span class="menu__icon">F</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+                <path d="M8 8h8M8 12h8M8 16h5" />
+              </svg>
+            </span>
             Fatura
           </button>
           <button class="menu__item" data-panel="cash-panel" data-title="Kasa">
-            <span class="menu__icon">K</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="3" y="7" width="18" height="12" rx="2" />
+                <path d="M7 7V5h10v2" />
+                <circle cx="12" cy="13" r="2.5" />
+              </svg>
+            </span>
             Kasa
           </button>
           <button class="menu__item" data-panel="assistant-panel" data-title="Mühendislik">
-            <span class="menu__icon">M</span>
+            <span class="menu__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M6 12c0-3.3 2.7-6 6-6s6 2.7 6 6" />
+                <path d="M5 12h14v5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" />
+                <path d="M9 9.5h6" />
+              </svg>
+            </span>
             Mühendislik
           </button>
         </nav>
@@ -190,7 +233,7 @@
           <div class="topbar__brand">
             <img class="topbar__logo" id="topbar-logo" alt="Firma logosu" />
             <div>
-              <h1 id="panel-title">Ana</h1>
+              <h1 id="panel-title">Ana Menü</h1>
               <p>
                 Hoş geldiniz, <span id="user-name">Metin</span> • Rol:
                 <span id="user-role">Muhasebe</span>
@@ -336,6 +379,32 @@
                   <input id="customer-search" class="search" placeholder="Cari ara (ad/ünvan/vergi/telefon)..." />
                   <button class="ghost" id="customer-search-btn">Ara</button>
                 </div>
+                <div class="customer-summary">
+                  <div class="customer-summary__stats">
+                    <div class="summary-pill">
+                      <span>Toplam Cari</span>
+                      <strong id="customer-total-count">0</strong>
+                    </div>
+                    <div class="summary-pill summary-pill--debt">
+                      <span>Borçlu</span>
+                      <strong id="customer-debtor-count">0</strong>
+                      <small id="customer-debtor-total">₺0,00</small>
+                    </div>
+                    <div class="summary-pill summary-pill--credit">
+                      <span>Alacaklı</span>
+                      <strong id="customer-creditor-count">0</strong>
+                      <small id="customer-creditor-total">₺0,00</small>
+                    </div>
+                  </div>
+                  <div class="customer-summary__actions">
+                    <button class="ghost ghost--mini" id="customer-quick-collect">Tahsilat Yap</button>
+                    <button class="ghost ghost--mini" id="customer-quick-pay">Ödeme Yap</button>
+                  </div>
+                </div>
+                <div class="customer-filters">
+                  <button class="chip chip--active" data-balance-filter="debtors">Borçlular</button>
+                  <button class="chip chip--active" data-balance-filter="creditors">Alacaklılar</button>
+                </div>
                 <p class="search-hint" id="customer-search-suggestion"></p>
                 <div class="table-card">
                   <h3>Mevcut Cariler</h3>
@@ -410,17 +479,6 @@
                   Not
                   <input name="note" placeholder="Cari notu" />
                 </label>
-                <div class="supplier-actions is-hidden" id="supplier-actions">
-                  <p class="muted">
-                    Tedarikçi cariler için borçlandırma ve ödeme işlemlerini buradan
-                    başlatabilirsiniz.
-                  </p>
-                  <div class="supplier-actions__buttons">
-                    <button class="ghost" type="button" id="supplier-payment-action">
-                      Tedarikçiye Ödeme
-                    </button>
-                  </div>
-                </div>
                 <button class="primary" type="submit">Cari Kaydet</button>
                 </form>
               </div>
