@@ -2234,16 +2234,17 @@ const buildReportTable = (title, headers, rows, options = {}) => {
     ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
     : `<div class="report-logo">MTN</div>`;
   const companyHtml = `
-    <div class="report-header">
-      <div>
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(companyName)}</p>
-        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
-          taxNumber
-        )}</p>
+    <div class="report-frame">
+      <div class="report-header">
+        <div class="report-logo-block">${logoHtml}</div>
+        <div class="report-meta">
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(companyName)}</p>
+          <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+            taxNumber
+          )}</p>
+        </div>
       </div>
-      ${logoHtml}
-    </div>
   `;
   const watermark = includeWatermark
     ? `<div class="report-watermark">${
@@ -2254,11 +2255,12 @@ const buildReportTable = (title, headers, rows, options = {}) => {
     : "";
   return `
     ${companyHtml}
-    ${watermark}
-    <table>
-      <thead><tr>${headerCells}</tr></thead>
-      <tbody>${rowHtml}</tbody>
-    </table>
+      ${watermark}
+      <table>
+        <thead><tr>${headerCells}</tr></thead>
+        <tbody>${rowHtml}</tbody>
+      </table>
+    </div>
   `;
 };
 
@@ -2279,43 +2281,45 @@ const buildInvoiceHtml = (title, rows) => {
     ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
     : `<div class="report-logo">MTN</div>`;
   return `
-    <div class="report-header">
-      <div>
-        <h1>${escapeHtml(title)}</h1>
-        <p>${escapeHtml(companyName)}</p>
-        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
-          taxNumber
-        )}</p>
+    <div class="report-frame">
+      <div class="report-header">
+        <div class="report-logo-block">${logoHtml}</div>
+        <div class="report-meta">
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(companyName)}</p>
+          <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+            taxNumber
+          )}</p>
+        </div>
       </div>
-      ${logoHtml}
-    </div>
-    <div class="report-watermark">${
-      logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
-    }</div>
-    <table>
-      <thead>
-        <tr>
-          <th>Malzeme</th>
-          <th>Miktar</th>
-          <th>Birim</th>
-          <th>Birim Fiyat</th>
-          <th>Tutar</th>
-        </tr>
-      </thead>
-      <tbody>${rowHtml}</tbody>
-    </table>
-    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
-      <table style="width:260px;border-collapse:collapse;">
-        <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
-          subtotalEl.textContent
-        )}</td></tr>
-        <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
-          vatTotalEl.textContent
-        )}</td></tr>
-        <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
-          totalEl.textContent
-        )}</strong></td></tr>
+      <div class="report-watermark">${
+        logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
+      }</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Malzeme</th>
+            <th>Miktar</th>
+            <th>Birim</th>
+            <th>Birim Fiyat</th>
+            <th>Tutar</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml}</tbody>
       </table>
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr><td>Ara Toplam</td><td style="text-align:right;">${escapeHtml(
+            subtotalEl.textContent
+          )}</td></tr>
+          <tr><td>KDV</td><td style="text-align:right;">${escapeHtml(
+            vatTotalEl.textContent
+          )}</td></tr>
+          <tr><td><strong>Genel Toplam</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+            totalEl.textContent
+          )}</strong></td></tr>
+        </table>
+      </div>
     </div>
   `;
 };
@@ -2343,6 +2347,7 @@ const buildOfferHtml = (title, rows, totals) => {
   return `
     <div class="report-frame">
       <div class="report-header report-header--offer">
+        <div class="report-logo-block">${logoHtml}</div>
         <div class="report-meta">
           <h1>${escapeHtml(companyName)}</h1>
           <p>${escapeHtml(title)}</p>
@@ -2353,7 +2358,6 @@ const buildOfferHtml = (title, rows, totals) => {
           <p><strong>IBAN:</strong> ${escapeHtml(companyIban || "-")}</p>
           <p><strong>Adres:</strong> ${escapeHtml(companyAddress || "-")}</p>
         </div>
-        <div class="report-logo-block">${logoHtml}</div>
       </div>
       <div class="report-watermark">${
         logoSrc ? `<img src="${logoSrc}" alt="Firma logosu" />` : escapeHtml(companyName)
@@ -2411,41 +2415,43 @@ const buildCustomerJobsInvoiceHtml = (customerName, jobs, totals) => {
     ? `<div class="report-watermark"><img src="${logoSrc}" alt="Firma logosu" /></div>`
     : `<div class="report-watermark">${escapeHtml(companyName)}</div>`;
   return `
-    <div class="report-header">
-      <div>
-        <h1>${escapeHtml(customerName)} - Cari Ekstre</h1>
-        <p>${escapeHtml(companyName)}</p>
-        <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
-          taxNumber
-        )}</p>
+    <div class="report-frame">
+      <div class="report-header">
+        <div class="report-logo-block">${logoHtml}</div>
+        <div class="report-meta">
+          <h1>${escapeHtml(customerName)} - Cari Ekstre</h1>
+          <p>${escapeHtml(companyName)}</p>
+          <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+            taxNumber
+          )}</p>
+        </div>
       </div>
-      ${logoHtml}
-    </div>
-    ${watermark}
-    <table>
-      <thead>
-        <tr>
-          <th>İş Kalemi</th>
-          <th>Miktar</th>
-          <th>Birim</th>
-          <th>Birim Fiyat</th>
-          <th>Tutar</th>
-        </tr>
-      </thead>
-      <tbody>${rowHtml}</tbody>
-    </table>
-    <div style="margin-top:16px;display:flex;justify-content:flex-end;">
-      <table style="width:260px;border-collapse:collapse;">
-        <tr><td>İş Kalemleri Toplamı</td><td style="text-align:right;">${escapeHtml(
-          totals.jobsTotal
-        )}</td></tr>
-        <tr><td>Tahsilat Toplamı</td><td style="text-align:right;">${escapeHtml(
-          totals.paymentsTotal
-        )}</td></tr>
-        <tr><td><strong>Genel Bakiye</strong></td><td style="text-align:right;"><strong>${escapeHtml(
-          totals.balanceTotal
-        )}</strong></td></tr>
+      ${watermark}
+      <table>
+        <thead>
+          <tr>
+            <th>İş Kalemi</th>
+            <th>Miktar</th>
+            <th>Birim</th>
+            <th>Birim Fiyat</th>
+            <th>Tutar</th>
+          </tr>
+        </thead>
+        <tbody>${rowHtml}</tbody>
       </table>
+      <div style="margin-top:16px;display:flex;justify-content:flex-end;">
+        <table style="width:260px;border-collapse:collapse;">
+          <tr><td>İş Kalemleri Toplamı</td><td style="text-align:right;">${escapeHtml(
+            totals.jobsTotal
+          )}</td></tr>
+          <tr><td>Tahsilat Toplamı</td><td style="text-align:right;">${escapeHtml(
+            totals.paymentsTotal
+          )}</td></tr>
+          <tr><td><strong>Genel Bakiye</strong></td><td style="text-align:right;"><strong>${escapeHtml(
+            totals.balanceTotal
+          )}</strong></td></tr>
+        </table>
+      </div>
     </div>
   `;
 };
