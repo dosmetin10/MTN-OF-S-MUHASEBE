@@ -45,6 +45,7 @@ const customerDetailStatement = document.getElementById(
 const customerDetailCollect = document.getElementById("customer-detail-collect");
 const customerDetailJob = document.getElementById("customer-detail-job");
 const stockForm = document.getElementById("stock-form");
+const stockCreatedAtInput = document.getElementById("stock-created-at");
 const stocksTable = document.getElementById("stocks-table");
 const stocksTotalEl = document.getElementById("stocks-total");
 const stockReceiptToggle = document.getElementById("stock-receipt-toggle");
@@ -94,8 +95,22 @@ const receiptFilterStatusSelect = document.getElementById(
 );
 const stockListSearchInput = document.getElementById("stock-list-search");
 const stockListSearchButton = document.getElementById("stock-list-search-btn");
+const stockListAddToSaleButton = document.getElementById(
+  "stock-list-add-to-sale"
+);
 const stockListTable = document.getElementById("stock-list-table");
 const stockListEmptyEl = document.getElementById("stock-list-empty");
+const inventoryCountCard = document.getElementById("inventory-count-card");
+const inventoryCountAddRow = document.getElementById("inventory-count-add-row");
+const inventoryCountBody = document.getElementById("inventory-count-body");
+const inventoryCountTransfer = document.getElementById(
+  "inventory-count-transfer"
+);
+const inventoryCountWarehouse = document.getElementById(
+  "inventory-count-warehouse"
+);
+const inventoryCountDate = document.getElementById("inventory-count-date");
+const inventoryCountNote = document.getElementById("inventory-count-note");
 const cashForm = document.getElementById("cash-form");
 const cashTable = document.getElementById("cash-table");
 const cashStartInput = document.getElementById("cash-start");
@@ -172,6 +187,7 @@ const invoiceForm = document.getElementById("invoice-form");
 const invoiceDateInput = document.getElementById("invoice-date");
 const invoiceFileInput = document.getElementById("invoice-file");
 const invoicesTable = document.getElementById("invoices-table");
+const invoiceTypeSelect = document.getElementById("invoice-type");
 const customerTabButtons = document.querySelectorAll("[data-customer-tab]");
 const customerTabPanels = document.querySelectorAll(
   "[data-customer-tab-panel]"
@@ -179,6 +195,10 @@ const customerTabPanels = document.querySelectorAll(
 const aiReminderForm = document.getElementById("ai-reminder-form");
 const aiReminderList = document.getElementById("ai-reminder-list");
 const assistantPaymentsEl = document.getElementById("assistant-payments");
+const offerMarginInput = document.getElementById("offer-margin");
+const offerApplyMarginButton = document.getElementById("offer-apply-margin");
+const stockSuggestions = document.getElementById("stock-suggestions");
+const stockColumnToggles = document.querySelectorAll("[data-stock-column]");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -492,10 +512,34 @@ const calculateTotal = () => {
   totalEl.textContent = formatCurrency(total);
 };
 
+const findStockMatch = (value) => {
+  const raw = String(value || "").trim();
+  const codePart = raw.includes("-") ? raw.split("-")[0].trim() : "";
+  const term = normalizeText(raw);
+  const codeTerm = normalizeText(codePart);
+  if (!term) {
+    return null;
+  }
+  return (
+    cachedStocks.find(
+      (stock) => normalizeText(stock.code) === term
+    ) ||
+    cachedStocks.find(
+      (stock) => codeTerm && normalizeText(stock.code) === codeTerm
+    ) ||
+    cachedStocks.find(
+      (stock) => normalizeText(stock.normalizedName || stock.name) === term
+    ) ||
+    cachedStocks.find((stock) =>
+      normalizeText(stock.normalizedName || stock.name).includes(term)
+    )
+  );
+};
+
 const createRow = () => {
   const row = document.createElement("tr");
   row.innerHTML = `
-    <td><input data-field="name" placeholder="Malzeme adı" /></td>
+    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
     <td><input data-field="quantity" type="number" min="0" step="1" /></td>
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
@@ -514,6 +558,25 @@ const createRow = () => {
       }
     });
   });
+
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const priceInput = row.querySelector("[data-field='price']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (priceInput) {
+        priceInput.value = matched.salePrice || matched.purchasePrice || "";
+      }
+      calculateTotal();
+    });
+  }
 
   return row;
 };
@@ -675,6 +738,20 @@ const renderCustomers = (items) => {
   }
 };
 
+const updateStockSuggestions = (items) => {
+  if (!stockSuggestions) {
+    return;
+  }
+  stockSuggestions.innerHTML = "";
+  items.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.code
+      ? `${item.code} - ${item.normalizedName || item.name || ""}`.trim()
+      : item.normalizedName || item.name || "";
+    stockSuggestions.appendChild(option);
+  });
+};
+
 const renderStocks = (items) => {
   cachedStocks = items;
   stocksTable.innerHTML = "";
@@ -702,9 +779,9 @@ const renderStocks = (items) => {
       <td>${item.diameter || "-"}</td>
       <td>${item.unit || "-"}</td>
       <td>${item.quantity || 0}</td>
-      <td>${formatCurrency(Number(item.purchasePrice || 0))}</td>
-      <td>${formatCurrency(Number(item.salePrice || 0))}</td>
-      <td>${Number(item.vatRate || 0)}</td>
+      <td data-stock-col="purchase">${formatCurrency(Number(item.purchasePrice || 0))}</td>
+      <td data-stock-col="sale">${formatCurrency(Number(item.salePrice || 0))}</td>
+      <td data-stock-col="vat">${Number(item.vatRate || 0)}</td>
       <td>${item.threshold || 0}</td>
       <td>
         <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
@@ -765,6 +842,8 @@ const renderStocks = (items) => {
         ? `Şunu mu demek istediniz: ${suggestion}`
         : "";
   }
+  updateStockSuggestions(items);
+  applyStockColumnVisibility();
   renderStockList(items);
 };
 
@@ -789,6 +868,7 @@ const renderStockList = (items) => {
   filtered.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
+      <td><input type="checkbox" data-stock-id="${item.id || ""}" /></td>
       <td>${item.code || "-"}</td>
       <td>${item.normalizedName || item.name || "-"}</td>
       <td>${item.warehouse || "Ana Depo"}</td>
@@ -809,6 +889,22 @@ const renderStockList = (items) => {
         ? "Aradığınız kriterlere uygun stok bulunamadı."
         : "";
   }
+};
+
+const applyStockColumnVisibility = () => {
+  if (!stockColumnToggles.length) {
+    return;
+  }
+  stockColumnToggles.forEach((toggle) => {
+    const column = toggle.dataset.stockColumn;
+    if (!column) {
+      return;
+    }
+    const cells = document.querySelectorAll(`[data-stock-col='${column}']`);
+    cells.forEach((cell) => {
+      cell.classList.toggle("is-hidden", !toggle.checked);
+    });
+  });
 };
 
 const renderStockReceipts = (items) => {
@@ -899,7 +995,14 @@ const renderInvoices = (items) => {
   sorted.forEach((invoice) => {
     const row = document.createElement("tr");
     const fileLabel = invoice.attachment?.name || "-";
+    const typeLabel =
+      invoice.invoiceType === "satis"
+        ? "Satış"
+        : invoice.invoiceType === "alis"
+          ? "Alış"
+          : invoice.type || "-";
     row.innerHTML = `
+      <td>${typeLabel}</td>
       <td>${new Date(invoice.createdAt).toLocaleDateString("tr-TR")}</td>
       <td>${invoice.vendor || "-"}</td>
       <td>${formatCurrency(Number(invoice.amount || 0))}</td>
@@ -961,6 +1064,39 @@ const createReceiptRow = () => {
     <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
     <td><input data-field="threshold" type="number" min="0" step="1" /></td>
   `;
+  return row;
+};
+
+const createInventoryCountRow = () => {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input data-field="name" placeholder="Malzeme adı" list="stock-suggestions" /></td>
+    <td><input data-field="unit" placeholder="Birim" /></td>
+    <td><input data-field="quantity" type="number" min="0" step="1" /></td>
+    <td><input data-field="purchasePrice" type="number" min="0" step="0.01" /></td>
+    <td><input data-field="salePrice" type="number" min="0" step="0.01" /></td>
+  `;
+  const nameInput = row.querySelector("[data-field='name']");
+  if (nameInput) {
+    nameInput.addEventListener("change", () => {
+      const matched = findStockMatch(nameInput.value);
+      if (!matched) {
+        return;
+      }
+      const unitInput = row.querySelector("[data-field='unit']");
+      const purchaseInput = row.querySelector("[data-field='purchasePrice']");
+      const saleInput = row.querySelector("[data-field='salePrice']");
+      if (unitInput && !unitInput.value) {
+        unitInput.value = matched.unit || "";
+      }
+      if (purchaseInput && !purchaseInput.value) {
+        purchaseInput.value = matched.purchasePrice || "";
+      }
+      if (saleInput && !saleInput.value) {
+        saleInput.value = matched.salePrice || "";
+      }
+    });
+  }
   return row;
 };
 
@@ -1347,6 +1483,9 @@ const setTodayDate = () => {
   if (stockMovementDateInput) {
     stockMovementDateInput.value = today;
   }
+  if (stockCreatedAtInput) {
+    stockCreatedAtInput.value = today;
+  }
   if (stockReceiptDateInput) {
     stockReceiptDateInput.value = today;
   }
@@ -1358,6 +1497,9 @@ const setTodayDate = () => {
   }
   if (invoiceDateInput) {
     invoiceDateInput.value = today;
+  }
+  if (inventoryCountDate) {
+    inventoryCountDate.value = today;
   }
 };
 
@@ -1856,6 +1998,43 @@ if (stockForm) {
     event.preventDefault();
     const formData = new FormData(stockForm);
     const payload = Object.fromEntries(formData.entries());
+    const normalizedName = normalizeText(payload.name);
+    const existingStock = cachedStocks.find(
+      (item) => normalizeText(item.name) === normalizedName
+    );
+    if (existingStock && window.mtnApp?.createStockReceipt) {
+      const approved = window.confirm(
+        "Bu malzeme zaten mevcut. Sayımı depoya aktarıp stoğu güncellemek ister misiniz?"
+      );
+      if (!approved) {
+        return;
+      }
+      const result = await window.mtnApp.createStockReceipt({
+        items: [
+          {
+            name: payload.name,
+            unit: payload.unit,
+            quantity: payload.quantity,
+            purchasePrice: payload.purchasePrice,
+            salePrice: payload.salePrice,
+            threshold: payload.threshold
+          }
+        ],
+        note: payload.description || "Manuel stok güncelleme",
+        supplier: "",
+        warehouse: existingStock.warehouse || "Ana Depo",
+        createdAt: payload.createdAt || new Date().toISOString().split("T")[0]
+      });
+      renderStocks(result.stocks || []);
+      renderStockMovements(result.stockMovements || []);
+      renderStockReceipts(result.stockReceipts || []);
+      renderSummary(result);
+      setStatus("Stok güncellendi.");
+      stockForm.reset();
+      setAutoCodes();
+      setTodayDate();
+      return;
+    }
     await window.mtnApp.createStock(payload);
     const data = await window.mtnApp.getData();
     renderStocks(data.stocks || []);
@@ -1863,6 +2042,7 @@ if (stockForm) {
     renderSummary(data);
     stockForm.reset();
     setAutoCodes();
+    setTodayDate();
   });
 
   stockForm.addEventListener("keydown", (event) => {
@@ -1999,6 +2179,7 @@ if (invoiceForm) {
       category: "invoice"
     });
     const result = await window.mtnApp.createInvoice({
+      invoiceType: payload.invoiceType || invoiceTypeSelect?.value || "alis",
       vendor: payload.vendor,
       amount: payload.amount,
       note: payload.note,
@@ -2201,6 +2382,112 @@ if (stockListSearchButton) {
   stockListSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleStockListSearch();
+  });
+}
+
+if (stockColumnToggles.length) {
+  stockColumnToggles.forEach((toggle) => {
+    toggle.addEventListener("change", applyStockColumnVisibility);
+  });
+}
+
+const addOfferRowFromStock = (stock) => {
+  if (!stock || !offerBody) {
+    return;
+  }
+  const row = createRow();
+  offerBody.appendChild(row);
+  const nameInput = row.querySelector("[data-field='name']");
+  const unitInput = row.querySelector("[data-field='unit']");
+  const priceInput = row.querySelector("[data-field='price']");
+  const qtyInput = row.querySelector("[data-field='quantity']");
+  if (nameInput) {
+    nameInput.value = stock.code
+      ? `${stock.code} - ${stock.normalizedName || stock.name || ""}`.trim()
+      : stock.normalizedName || stock.name || "";
+  }
+  if (unitInput) {
+    unitInput.value = stock.unit || "";
+  }
+  if (priceInput) {
+    priceInput.value = stock.salePrice || stock.purchasePrice || "";
+  }
+  if (qtyInput && !qtyInput.value) {
+    qtyInput.value = 1;
+  }
+  calculateTotal();
+};
+
+if (stockListAddToSaleButton) {
+  stockListAddToSaleButton.addEventListener("click", () => {
+    const selectedIds = Array.from(
+      stockListTable?.querySelectorAll("input[type='checkbox']:checked") || []
+    ).map((input) => input.dataset.stockId);
+    if (!selectedIds.length) {
+      setStatus("Toplu satış için stok seçin.");
+      return;
+    }
+    selectedIds.forEach((id) => {
+      const stock = cachedStocks.find((item) => String(item.id) === String(id));
+      addOfferRowFromStock(stock);
+    });
+    showPanel("sales-panel", "Teklif");
+    activateMenuByPanel("sales-panel");
+  });
+}
+
+if (inventoryCountAddRow && inventoryCountBody) {
+  inventoryCountAddRow.addEventListener("click", (event) => {
+    event.preventDefault();
+    inventoryCountBody.appendChild(createInventoryCountRow());
+  });
+}
+
+if (inventoryCountBody && inventoryCountBody.children.length === 0) {
+  inventoryCountBody.appendChild(createInventoryCountRow());
+}
+
+if (inventoryCountTransfer) {
+  inventoryCountTransfer.addEventListener("click", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.createStockReceipt) {
+      setStatus("Depo sayım servisi hazır değil.");
+      return;
+    }
+    const rows = Array.from(
+      inventoryCountBody?.querySelectorAll("tr") || []
+    ).map((row) => ({
+      name: row.querySelector("[data-field='name']")?.value || "",
+      unit: row.querySelector("[data-field='unit']")?.value || "",
+      quantity: row.querySelector("[data-field='quantity']")?.value || "",
+      purchasePrice:
+        row.querySelector("[data-field='purchasePrice']")?.value || "",
+      salePrice: row.querySelector("[data-field='salePrice']")?.value || ""
+    }));
+    const items = rows.filter((item) => item.name && Number(item.quantity) > 0);
+    if (!items.length) {
+      setStatus("Sayım listesi için en az bir malzeme girin.");
+      return;
+    }
+    const result = await window.mtnApp.createStockReceipt({
+      items,
+      note: inventoryCountNote?.value || "Depo sayım listesi",
+      supplier: "",
+      warehouse: inventoryCountWarehouse?.value || "Ana Depo",
+      createdAt:
+        inventoryCountDate?.value || new Date().toISOString().split("T")[0]
+    });
+    renderStocks(result.stocks || []);
+    renderStockMovements(result.stockMovements || []);
+    renderStockReceipts(result.stockReceipts || []);
+    renderSummary(result);
+    setStatus("Depo sayımı aktarıldı.");
+    inventoryCountBody.innerHTML = "";
+    inventoryCountBody.appendChild(createInventoryCountRow());
+    if (inventoryCountNote) {
+      inventoryCountNote.value = "";
+    }
+    setTodayDate();
   });
 }
 
@@ -2730,6 +3017,25 @@ if (offerSaveButton) {
     renderSummary(result);
     renderCustomerDetail(result);
     reportPathEl.textContent = "Satış kaydedildi ve stok güncellendi.";
+  });
+}
+
+if (offerApplyMarginButton) {
+  offerApplyMarginButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    const margin = Number(offerMarginInput?.value || 0);
+    if (!margin) {
+      return;
+    }
+    const rows = Array.from(offerBody.querySelectorAll("tr"));
+    rows.forEach((row) => {
+      const priceInput = row.querySelector("[data-field='price']");
+      const current = Number(priceInput?.value || 0);
+      if (priceInput && current) {
+        priceInput.value = (current * (1 + margin / 100)).toFixed(2);
+      }
+    });
+    calculateTotal();
   });
 }
 

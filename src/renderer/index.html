@@ -508,6 +508,10 @@
               </div>
               <form class="form-grid" id="stock-form">
                 <label>
+                  Giriş Tarihi
+                  <input name="createdAt" type="date" id="stock-created-at" />
+                </label>
+                <label>
                   Stok Kodu
                   <input name="code" placeholder="Otomatik" readonly />
                 </label>
@@ -610,6 +614,21 @@
                   <button class="ghost" id="stock-export-csv">Excel (CSV)</button>
                   <button class="ghost" id="stock-export-pdf">PDF</button>
                 </div>
+                <div class="table-actions table-actions--compact">
+                  <span class="muted">Görünüm:</span>
+                  <label class="toggle-chip">
+                    <input type="checkbox" data-stock-column="purchase" checked />
+                    Alış Fiyatı
+                  </label>
+                  <label class="toggle-chip">
+                    <input type="checkbox" data-stock-column="sale" checked />
+                    Satış Fiyatı
+                  </label>
+                  <label class="toggle-chip">
+                    <input type="checkbox" data-stock-column="vat" checked />
+                    KDV
+                  </label>
+                </div>
                 <p class="search-hint" id="stock-search-suggestion"></p>
                 <table>
                   <thead>
@@ -619,9 +638,9 @@
                       <th>Çap</th>
                       <th>Birim</th>
                       <th>Adet</th>
-                      <th>Alış</th>
-                      <th>Satış</th>
-                      <th>KDV</th>
+                      <th data-stock-col="purchase">Alış</th>
+                      <th data-stock-col="sale">Satış</th>
+                      <th data-stock-col="vat">KDV</th>
                       <th>Kritik Seviye</th>
                       <th>Durum</th>
                       <th>İşlem</th>
@@ -784,12 +803,14 @@
                 <div class="table-actions">
                   <input id="stock-list-search" class="search" placeholder="Stok adı / kodu / Q-DN ara..." />
                   <button class="ghost" id="stock-list-search-btn">Ara</button>
+                  <button class="primary" id="stock-list-add-to-sale">Toplu Satışa Aktar</button>
                 </div>
                 <p class="search-hint" id="stock-list-empty"></p>
                 <div class="table-card table-card--sheet">
                   <table>
                   <thead>
                     <tr>
+                      <th></th>
                       <th>Stok Kodu</th>
                       <th>Stok Adı</th>
                       <th>Depo</th>
@@ -801,6 +822,45 @@
                   </thead>
                     <tbody id="stock-list-table"></tbody>
                   </table>
+                </div>
+              </div>
+              <div class="table-card" id="inventory-count-card">
+                <div class="table-actions">
+                  <h3>Depo Sayım Listesi</h3>
+                  <button class="ghost" id="inventory-count-add-row">+ Satır</button>
+                </div>
+                <div class="filter-bar">
+                  <label>
+                    Depo
+                    <select id="inventory-count-warehouse">
+                      <option value="Ana Depo">Ana Depo</option>
+                      <option value="Şantiye">Şantiye</option>
+                      <option value="Atölye">Atölye</option>
+                    </select>
+                  </label>
+                  <label>
+                    Sayım Tarihi
+                    <input type="date" id="inventory-count-date" />
+                  </label>
+                  <label class="full-width">
+                    Açıklama
+                    <input id="inventory-count-note" placeholder="Sayım notu" />
+                  </label>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Malzeme</th>
+                      <th>Birim</th>
+                      <th>Adet</th>
+                      <th>Alış</th>
+                      <th>Satış</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inventory-count-body"></tbody>
+                </table>
+                <div class="table-actions">
+                  <button class="primary" id="inventory-count-transfer">Depoya Aktar</button>
                 </div>
               </div>
             </section>
@@ -827,7 +887,7 @@
               </div>
             </section>
 
-            <section class="offer">
+          <section class="offer">
               <div class="offer__header">
                 <h2>Teklif / Fatura Kalemleri (Enter ile yeni satır)</h2>
                 <div class="offer__actions">
@@ -849,6 +909,11 @@
                   </select>
                 </label>
                 <button class="primary" id="offer-save">Satış Kaydet</button>
+                <label>
+                  Kar Marjı (%)
+                  <input id="offer-margin" type="number" min="0" step="0.1" value="0" />
+                </label>
+                <button class="ghost" id="offer-apply-margin">Tümüne Uygula</button>
               </div>
               <table class="offer__table">
                 <thead>
@@ -862,6 +927,7 @@
                 </thead>
                 <tbody id="offer-body"></tbody>
               </table>
+              <datalist id="stock-suggestions"></datalist>
               <div class="offer__summary">
                 <label>
                   KDV Oranı (%)
@@ -893,6 +959,13 @@
               </div>
               <form class="form-grid" id="invoice-form">
                 <label>
+                  Fatura Türü
+                  <select name="invoiceType" id="invoice-type">
+                    <option value="alis">Alış</option>
+                    <option value="satis">Satış</option>
+                  </select>
+                </label>
+                <label>
                   Fatura Tarihi
                   <input type="date" name="createdAt" id="invoice-date" />
                 </label>
@@ -919,6 +992,7 @@
                 <table>
                   <thead>
                     <tr>
+                      <th>Tür</th>
                       <th>Tarih</th>
                       <th>Firma</th>
                       <th>Tutar</th>
