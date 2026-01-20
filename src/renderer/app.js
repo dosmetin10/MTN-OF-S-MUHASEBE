@@ -16,6 +16,11 @@ const summaryCollectionsEl = document.getElementById("summary-collections");
 const summaryCashEl = document.getElementById("summary-cash");
 const summaryBalanceEl = document.getElementById("summary-balance");
 const summaryAlertsEl = document.getElementById("summary-alerts");
+const execReceivablesEl = document.getElementById("exec-receivables");
+const execCashEl = document.getElementById("exec-cash");
+const execStocksEl = document.getElementById("exec-stocks");
+const execLowStocksEl = document.getElementById("exec-low-stocks");
+const execPaymentsEl = document.getElementById("exec-payments");
 const customerForm = document.getElementById("customer-form");
 const customerTransactionForm = document.getElementById(
   "customer-transaction-form"
@@ -1405,6 +1410,20 @@ const renderSummary = (data) => {
     (sum, item) => sum + Number(item.balance || 0),
     0
   );
+  const totalReceivables = (data.customers || []).reduce((sum, item) => {
+    const balance = Number(item.balance || 0);
+    return balance > 0 ? sum + balance : sum;
+  }, 0);
+  const totalStocks = (data.stocks || []).length;
+  const lowStocks = (data.stocks || []).filter((item) => {
+    const threshold = Number(item.threshold || 0);
+    return threshold > 0 && Number(item.quantity || 0) <= threshold;
+  });
+  const paymentReminders = loadReminders();
+  const today = new Date().toISOString().split("T")[0];
+  const dueToday = paymentReminders.filter(
+    (reminder) => reminder.dueDate === today
+  );
 
   summaryCollectionsEl.textContent = formatCurrency(totalCollections);
   summaryCashEl.textContent = formatCurrency(cashBalance);
@@ -1413,10 +1432,6 @@ const renderSummary = (data) => {
 
   if (summaryAlertsEl) {
     summaryAlertsEl.innerHTML = "";
-    const lowStocks = (data.stocks || []).filter((item) => {
-      const threshold = Number(item.threshold || 0);
-      return threshold > 0 && Number(item.quantity || 0) <= threshold;
-    });
     const pendingBalances = (data.customers || [])
       .filter((item) => Number(item.balance || 0) > 0)
       .slice(0, 3);
@@ -1440,6 +1455,22 @@ const renderSummary = (data) => {
       li.textContent = "Yeni hatırlatıcı yok.";
       summaryAlertsEl.appendChild(li);
     }
+  }
+
+  if (execReceivablesEl) {
+    execReceivablesEl.textContent = formatCurrency(totalReceivables);
+  }
+  if (execCashEl) {
+    execCashEl.textContent = formatCurrency(cashBalance);
+  }
+  if (execStocksEl) {
+    execStocksEl.textContent = totalStocks;
+  }
+  if (execLowStocksEl) {
+    execLowStocksEl.textContent = lowStocks.length;
+  }
+  if (execPaymentsEl) {
+    execPaymentsEl.textContent = dueToday.length;
   }
 };
 
