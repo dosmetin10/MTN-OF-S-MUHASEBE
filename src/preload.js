@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld("mtnApp", {
   createSale: (payload) => ipcRenderer.invoke("sales:create", payload),
   createInvoice: (payload) => ipcRenderer.invoke("invoices:create", payload),
   createProposal: (payload) => ipcRenderer.invoke("proposals:create", payload),
+  deleteProposal: (payload) => ipcRenderer.invoke("proposals:delete", payload),
   generateReport: (payload) => ipcRenderer.invoke("report:generate", payload),
   getSettings: () => ipcRenderer.invoke("settings:get"),
   saveSettings: (payload) => ipcRenderer.invoke("settings:save", payload),

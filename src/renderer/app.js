@@ -693,6 +693,7 @@ const createRow = () => {
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
     <td><input data-field="total" type="number" min="0" step="0.01" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-offer-row-remove>Sil</button></td>
   `;
 
   const inputs = row.querySelectorAll("input");
@@ -730,6 +731,11 @@ const createRow = () => {
     });
   }
 
+  row.querySelector("[data-offer-row-remove]")?.addEventListener("click", () => {
+    row.remove();
+    calculateTotal();
+  });
+
   return row;
 };
 
@@ -741,6 +747,7 @@ const createIndustrialRow = () => {
     <td><input data-field="unit" placeholder="Birim" /></td>
     <td><input data-field="price" type="number" min="0" step="0.01" /></td>
     <td><input data-field="total" type="number" min="0" step="0.01" /></td>
+    <td><button type="button" class="ghost ghost--danger" data-offer-row-remove>Sil</button></td>
   `;
   row.querySelectorAll("input").forEach((input) => {
     input.addEventListener("input", calculateIndustrialTotals);
@@ -766,6 +773,10 @@ const createIndustrialRow = () => {
       calculateIndustrialTotals();
     });
   }
+  row.querySelector("[data-offer-row-remove]")?.addEventListener("click", () => {
+    row.remove();
+    calculateIndustrialTotals();
+  });
   return row;
 };
 
@@ -1388,7 +1399,15 @@ const renderOffers = (items) => {
     return;
   }
   offerTableBody.innerHTML = "";
-  (items || []).forEach((item) => {
+  const sorted = [...(items || [])].sort((a, b) => {
+    const nameA = normalizeText(a.customerName || "");
+    const nameB = normalizeText(b.customerName || "");
+    if (nameA === nameB) {
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    }
+    return nameA.localeCompare(nameB, "tr");
+  });
+  sorted.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
       <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
@@ -1396,18 +1415,32 @@ const renderOffers = (items) => {
       <td>${item.customerName || "Genel"}</td>
       <td>${formatCurrency(Number(item.total || 0))}</td>
       <td><button class="ghost" data-open-path="${item.pdfPath || ""}">PDF</button></td>
+      <td><button class="ghost ghost--danger" data-delete-offer="${item.id}">Sil</button></td>
     `;
-    row
-      .querySelector("[data-open-path]")
-      ?.addEventListener("click", async () => {
-        if (!item.pdfPath) {
-          return;
-        }
-        const result = await window.mtnApp?.openFile?.(item.pdfPath);
-        if (result && !result.ok) {
-          setStatus("Dosya açılamadı.");
-        }
-      });
+    const openPdf = async () => {
+      if (!item.pdfPath) {
+        setStatus("PDF dosyası bulunamadı.");
+        return;
+      }
+      const result = await window.mtnApp?.openFile?.(item.pdfPath);
+      if (result && !result.ok) {
+        setStatus("Dosya açılamadı.");
+      }
+    };
+    row.querySelector("[data-open-path]")?.addEventListener("click", openPdf);
+    row.addEventListener("dblclick", openPdf);
+    row.querySelector("[data-delete-offer]")?.addEventListener("click", async () => {
+      if (!window.confirm("Teklifi silmek istiyor musunuz?")) {
+        return;
+      }
+      if (!window.mtnApp?.deleteProposal) {
+        setStatus("Teklif silme servisi hazır değil.");
+        return;
+      }
+      const result = await window.mtnApp.deleteProposal({ proposalId: item.id });
+      renderOffers(result?.proposals || []);
+      setStatus("Teklif silindi.");
+    });
     offerTableBody.appendChild(row);
   });
 };

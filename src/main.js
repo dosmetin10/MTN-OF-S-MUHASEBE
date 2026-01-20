@@ -1508,6 +1508,21 @@ app.whenReady().then(() => {
     return data;
   });
 
+  ipcMain.handle("proposals:delete", async (_event, payload) => {
+    const data = await loadStorage();
+    const { proposalId } = payload || {};
+    data.proposals = data.proposals.filter((proposal) => proposal.id !== proposalId);
+    addAuditLog(data, {
+      module: "proposals",
+      action: "delete",
+      message: "Teklif silindi."
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
   ipcMain.handle("sales:create", async (_event, payload) => {
     const data = await loadStorage();
     const { customerId, customerName, items, total, vatRate } = payload;

@@ -1399,6 +1399,6 @@ body {
 .form-grid select option,
 .filter-bar select option,
 .offer__meta select option {
-  background: #f5f7fb;
-  color: #1f2a44;
+  background: #0f172a;
+  color: #f8fafc;
 }
