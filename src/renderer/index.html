@@ -1405,6 +1405,18 @@
                 <p>Başka bilgisayara otomatik kopya ve bulut yedekleme ayarları.</p>
               </div>
               <div class="table-card">
+                <h3>Manuel Yedek</h3>
+                <p class="muted">Tek tıkla yedek alıp klasöre erişebilirsiniz.</p>
+                <div class="backup-actions">
+                  <button class="primary" id="backup-now">Yedek Al</button>
+                  <button class="ghost" id="backup-open" disabled>Yedek Klasörünü Aç</button>
+                </div>
+                <p class="muted">
+                  Son yedek: <strong id="last-backup">Henüz yok</strong>
+                </p>
+                <p class="report-path" id="backup-path"></p>
+              </div>
+              <div class="table-card">
                 <h3>Firma Bilgileri</h3>
                 <form class="form-grid" id="company-form">
                   <label>

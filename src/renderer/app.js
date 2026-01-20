@@ -10,6 +10,7 @@ const offerPaymentSelect = document.getElementById("offer-payment");
 const offerSaveButton = document.getElementById("offer-save");
 const versionEl = document.getElementById("app-version");
 const backupButton = document.getElementById("backup-now");
+const backupOpenButton = document.getElementById("backup-open");
 const lastBackupEl = document.getElementById("last-backup");
 const backupPathEl = document.getElementById("backup-path");
 const summaryCollectionsEl = document.getElementById("summary-collections");
@@ -279,6 +280,7 @@ let cachedCustomerJobs = [];
 let cachedCashTransactions = [];
 let cachedSales = [];
 let cachedStockReceipts = [];
+let lastManualBackupDir = "";
 let cachedInvoices = [];
 let cachedImportRows = [];
 
@@ -3155,11 +3157,15 @@ const handleBackup = async () => {
 
   const payload = await buildBackupPayload();
   const result = await window.mtnApp.createBackup(payload);
+  lastManualBackupDir = result.backupDir || "";
   if (lastBackupEl) {
     lastBackupEl.textContent = new Date(result.createdAt).toLocaleString("tr-TR");
   }
   if (backupPathEl) {
     backupPathEl.textContent = `Yedek klasörü: ${result.backupDir}`;
+  }
+  if (backupOpenButton) {
+    backupOpenButton.disabled = !lastManualBackupDir;
   }
 };
 
@@ -3169,6 +3175,27 @@ if (backupButton) {
 
 if (backupSecondaryButton) {
   backupSecondaryButton.addEventListener("click", handleBackup);
+}
+
+if (backupOpenButton) {
+  backupOpenButton.addEventListener("click", async () => {
+    if (!window.mtnApp?.openFile) {
+      if (backupPathEl) {
+        backupPathEl.textContent = "Klasör açma servisi hazır değil.";
+      }
+      return;
+    }
+    if (!lastManualBackupDir) {
+      if (backupPathEl) {
+        backupPathEl.textContent = "Önce bir yedek alın.";
+      }
+      return;
+    }
+    const result = await window.mtnApp.openFile(lastManualBackupDir);
+    if (!result.ok && backupPathEl) {
+      backupPathEl.textContent = result.error || "Klasör açılamadı.";
+    }
+  });
 }
 
 const downloadCsv = (filename, headers, rows) => {
