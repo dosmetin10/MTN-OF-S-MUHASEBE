@@ -829,6 +829,7 @@ const createWindow = () => {
   });
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+  mainWindow.maximize();
   return mainWindow;
 };
 

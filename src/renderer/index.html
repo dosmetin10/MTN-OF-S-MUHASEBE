@@ -321,37 +321,39 @@
           </section>
 
           <section class="panel" id="customers-panel">
-            <div class="tabs" id="customer-tabs">
-              <button class="tab-button tab-button--active" data-customer-tab="list">
-                Cari Listesi
-              </button>
-              <button class="tab-button" data-customer-tab="detail">
-                Cari Detay
-              </button>
-            </div>
-            <section class="module tab-panel" id="customers-module" data-customer-tab-panel="list">
+            <section class="module" id="customers-module">
               <div class="module__header">
                 <h2>Cari Yönetimi</h2>
                 <p>Müşteri ekleyin ve cari listenizi yönetin.</p>
               </div>
-              <div class="table-actions">
-                <input id="customer-search" class="search" placeholder="Cari ara (ad/ünvan/vergi/telefon)..." />
-                <button class="ghost" id="customer-search-btn">Ara</button>
-              </div>
-              <p class="search-hint" id="customer-search-suggestion"></p>
-              <div class="table-card is-hidden" id="customer-detail-card">
+              <div id="customer-list-section">
                 <div class="table-actions">
-                  <h3 id="customer-detail-title">Cari Detay</h3>
-                  <button class="ghost" id="customer-detail-close">Kapat</button>
+                  <input id="customer-search" class="search" placeholder="Cari ara (ad/ünvan/vergi/telefon)..." />
+                  <button class="ghost" id="customer-search-btn">Ara</button>
                 </div>
-                <div class="report-actions">
-                  <button class="primary" id="customer-detail-offer">📄 Teklif Oluştur</button>
-                  <button class="ghost" id="customer-detail-statement">📊 Ekstre Gör</button>
-                  <button class="ghost" id="customer-detail-collect">💰 Tahsilat Yap</button>
-                  <button class="ghost" id="customer-detail-job">🧱 İlave İş Ekle</button>
+                <p class="search-hint" id="customer-search-suggestion"></p>
+                <div class="table-card">
+                  <h3>Mevcut Cariler</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Kod</th>
+                        <th>Ünvan</th>
+                        <th>Tip</th>
+                        <th>Telefon</th>
+                        <th>Vergi No</th>
+                        <th>E-posta</th>
+                        <th>Bakiye</th>
+                        <th>Durum</th>
+                        <th>İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody id="customers-table"></tbody>
+                  </table>
                 </div>
               </div>
-              <form class="form-grid" id="customer-form">
+              <div id="customer-form-section">
+                <form class="form-grid" id="customer-form">
                 <label>
                   Cari Kodu
                   <input name="code" placeholder="Otomatik" readonly />
@@ -404,8 +406,10 @@
                   <input name="note" placeholder="Cari notu" />
                 </label>
                 <button class="primary" type="submit">Cari Kaydet</button>
-              </form>
-              <form class="form-grid" id="customer-transaction-form">
+                </form>
+              </div>
+              <div id="customer-transaction-section">
+                <form class="form-grid" id="customer-transaction-form">
                 <label>
                   Tarih
                   <input name="createdAt" type="date" id="customer-transaction-date" />
@@ -441,32 +445,28 @@
                   <input name="note" placeholder="İşlem açıklaması" />
                 </label>
                 <button class="primary" type="submit">İşlem Kaydet</button>
-              </form>
-              <div class="table-card">
-                <h3>Mevcut Cariler</h3>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Kod</th>
-                      <th>Ünvan</th>
-                      <th>Tip</th>
-                      <th>Telefon</th>
-                      <th>Vergi No</th>
-                      <th>E-posta</th>
-                      <th>Bakiye</th>
-                      <th>Durum</th>
-                      <th>İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody id="customers-table"></tbody>
-                </table>
+                </form>
+              </div>
+              <div id="customer-detail-section">
+                <div class="table-card is-hidden" id="customer-detail-card">
+                  <div class="table-actions">
+                    <h3 id="customer-detail-title">Cari Detay</h3>
+                    <button class="ghost" id="customer-detail-close">Kapat</button>
+                  </div>
+                  <div class="report-actions">
+                    <button class="primary" id="customer-detail-offer">📄 Teklif Oluştur</button>
+                    <button class="ghost" id="customer-detail-statement">📊 Ekstre Gör</button>
+                    <button class="ghost" id="customer-detail-collect">💰 Tahsilat Yap</button>
+                    <button class="ghost" id="customer-detail-job">🧱 İlave İş Ekle</button>
+                  </div>
+                </div>
               </div>
             </section>
 
             <section
-              class="module tab-panel tab-panel--hidden"
+              class="module"
               id="customer-detail-module"
-              data-customer-tab-panel="detail"
+              data-subpanel-label="Cari Ekstre"
             >
               <div class="module__header">
                 <h2>Cari Ekstre</h2>
@@ -651,7 +651,7 @@
                   </button>
                 </div>
               </div>
-              <div class="table-card table-card--sheet">
+              <div class="table-card table-card--sheet" id="stock-list-card">
                 <h3>Stok Listesi</h3>
                 <div class="table-actions">
                   <input id="stock-search" class="search" placeholder="Stok ara..." />

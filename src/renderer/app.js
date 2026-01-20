@@ -2418,6 +2418,7 @@ const generateReport = async (type) => {
   });
   const result = await window.mtnApp.generateReport({ title, html });
   reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+  await window.mtnApp?.openFile?.(result.reportFile);
 };
 
 if (customerForm) {
@@ -3552,6 +3553,7 @@ if (detailReportButton) {
         html
       });
       reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+      await window.mtnApp?.openFile?.(result.reportFile);
       return;
     }
     const rows = [
@@ -3596,6 +3598,7 @@ if (detailReportButton) {
       html
     });
     reportPathEl.textContent = `Rapor kaydedildi: ${result.reportFile}`;
+    await window.mtnApp?.openFile?.(result.reportFile);
   });
 }
 
@@ -3980,6 +3983,34 @@ const panelTitles = {
   "settings-panel": "Ayarlar"
 };
 
+const panelSubnavConfig = {
+  "stocks-panel": [
+    { id: "stok", label: "Stok", selectors: ["#stock-form"] },
+    { id: "stok-listesi", label: "Stok Listesi", selectors: ["#stock-list-card"] },
+    { id: "fis-ekle", label: "Fiş Ekle", selectors: ["#stock-receipt-card"] },
+    {
+      id: "birim-donusum",
+      label: "Birim Dönüşüm Tanımları",
+      selectors: ["#unit-conversion-card"]
+    },
+    {
+      id: "toplu-aktarim",
+      label: "Toplu Malzeme Aktarımı",
+      selectors: ["#stock-import-card"]
+    },
+    { id: "fis-listesi", label: "Fiş Listesi", selectors: ["#stock-receipts-list-card"] },
+    { id: "stok-hareket", label: "Stok Hareketi", selectors: ["#stock-movement-module"] },
+    { id: "depo-stok", label: "Depo Stok", panelTarget: "stock-list-panel" }
+  ],
+  "customers-panel": [
+    { id: "cari-listesi", label: "Cari Listesi", selectors: ["#customer-list-section"] },
+    { id: "cari-ekleme", label: "Cari Ekleme", selectors: ["#customer-form-section"] },
+    { id: "cari-islem", label: "Cari İşlem", selectors: ["#customer-transaction-section"] },
+    { id: "cari-detay", label: "Cari Detay", selectors: ["#customer-detail-section"] },
+    { id: "cari-ekstre", label: "Cari Ekstre", selectors: ["#customer-detail-module"] }
+  ]
+};
+
 const showPanel = (panelId, title) => {
   panels.forEach((panel) => panel.classList.remove("panel--active"));
   const target = document.getElementById(panelId);
@@ -3993,22 +4024,46 @@ const showPanel = (panelId, title) => {
 };
 
 const activateSubpanel = (panel, subpanelId) => {
-  const modules = panel.querySelectorAll(":scope > .module");
-  modules.forEach((module) => {
-    module.classList.toggle(
-      "subpanel--hidden",
-      module.dataset.subpanelId !== subpanelId
-    );
-  });
+  const config = panelSubnavConfig[panel.id];
+  if (config) {
+    const target = config.find((item) => item.id === subpanelId);
+    if (target?.panelTarget) {
+      showPanel(target.panelTarget, panelTitles[target.panelTarget]);
+      activateMenuByPanel(target.panelTarget);
+      return;
+    }
+    const selectors = config.flatMap((item) => item.selectors || []);
+    selectors.forEach((selector) => {
+      panel.querySelectorAll(selector).forEach((el) => el.classList.add("subpanel--hidden"));
+    });
+    (target?.selectors || []).forEach((selector) => {
+      panel.querySelectorAll(selector).forEach((el) => {
+        el.classList.remove("subpanel--hidden");
+        el.classList.remove("is-hidden");
+      });
+    });
+  } else {
+    const modules = panel.querySelectorAll(":scope > .module");
+    modules.forEach((module) => {
+      module.classList.toggle(
+        "subpanel--hidden",
+        module.dataset.subpanelId !== subpanelId
+      );
+    });
+  }
   const buttons = panel.querySelectorAll(".panel-subnav__btn");
   buttons.forEach((button) => {
-    button.classList.toggle("panel-subnav__btn--active", button.dataset.subpanelId === subpanelId);
+    button.classList.toggle(
+      "panel-subnav__btn--active",
+      button.dataset.subpanelId === subpanelId
+    );
   });
 };
 
 const setupPanelSubnav = (panel) => {
+  const config = panelSubnavConfig[panel.id];
   const modules = Array.from(panel.querySelectorAll(":scope > .module"));
-  if (modules.length <= 1) {
+  if (!config && modules.length <= 1) {
     return;
   }
   let subnav = panel.querySelector(".panel-subnav");
@@ -4018,25 +4073,35 @@ const setupPanelSubnav = (panel) => {
     panel.insertBefore(subnav, modules[0]);
   }
   subnav.innerHTML = "";
-  modules.forEach((module, index) => {
-    const titleEl =
-      module.querySelector(".module__header h2") ||
-      module.querySelector(".table-actions h3") ||
-      module.querySelector("h2") ||
-      module.querySelector("h3");
-    const label = titleEl?.textContent?.trim() || `Bölüm ${index + 1}`;
-    const subpanelId =
-      module.dataset.subpanelId || `${panel.id}-section-${index + 1}`;
-    module.dataset.subpanelId = subpanelId;
+  const entries = config
+    ? config.map((item) => ({
+        subpanelId: item.id,
+        label: item.label
+      }))
+    : modules.map((module, index) => {
+        const titleEl =
+          module.querySelector(".module__header h2") ||
+          module.querySelector(".table-actions h3") ||
+          module.querySelector("h2") ||
+          module.querySelector("h3");
+        const label = titleEl?.textContent?.trim() || `Bölüm ${index + 1}`;
+        const subpanelId =
+          module.dataset.subpanelId || `${panel.id}-section-${index + 1}`;
+        module.dataset.subpanelId = subpanelId;
+        return { subpanelId, label };
+      });
+  entries.forEach((entry) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "panel-subnav__btn";
-    button.textContent = label;
-    button.dataset.subpanelId = subpanelId;
-    button.addEventListener("click", () => activateSubpanel(panel, subpanelId));
+    button.textContent = entry.label;
+    button.dataset.subpanelId = entry.subpanelId;
+    button.addEventListener("click", () => activateSubpanel(panel, entry.subpanelId));
     subnav.appendChild(button);
   });
-  activateSubpanel(panel, modules[0].dataset.subpanelId);
+  if (entries.length) {
+    activateSubpanel(panel, entries[0].subpanelId);
+  }
 };
 
 const activateMenuByPanel = (panelId) => {
