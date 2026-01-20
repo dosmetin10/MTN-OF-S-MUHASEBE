@@ -242,6 +242,35 @@
                   <h3>METİN ŞAHSİ ÖDEME HATIRLATMA</h3>
                   <p>Elektrik, su vb. kişisel ödemeler için uyarı alanı.</p>
                 </article>
+                <article class="info-card ai-card">
+                  <h3>YZ Muhasebe Asistanı</h3>
+                  <p class="muted">
+                    Elektrik, su, doğalgaz ve malzemeci ödemelerini takip edin. YZ asistanı
+                    ödeme günlerini kaçırmamanız için sizi uyarır.
+                  </p>
+                  <form class="ai-form" id="ai-reminder-form">
+                    <label>
+                      Hatırlatma Başlığı
+                      <input name="title" required placeholder="Elektrik faturası" />
+                    </label>
+                    <label>
+                      Ödeme Tarihi
+                      <input name="dueDate" type="date" required />
+                    </label>
+                    <label>
+                      Kategori
+                      <select name="category">
+                        <option value="Şahsi Ödeme">Şahsi Ödeme</option>
+                        <option value="Elektrik">Elektrik</option>
+                        <option value="Su">Su</option>
+                        <option value="Doğalgaz">Doğalgaz</option>
+                        <option value="Malzemeci">Malzemeci</option>
+                      </select>
+                    </label>
+                    <button class="primary" type="submit">Hatırlatıcı Ekle</button>
+                  </form>
+                  <ul class="ai-reminder-list" id="ai-reminder-list"></ul>
+                </article>
               </aside>
             </div>
           </section>
@@ -1003,6 +1032,10 @@
                 <article class="card">
                   <h3>Öneriler</h3>
                   <ul id="assistant-suggestions"></ul>
+                </article>
+                <article class="card">
+                  <h3>Ödeme Takvimi</h3>
+                  <ul id="assistant-payments"></ul>
                 </article>
               </div>
               <div class="assistant-actions">

@@ -176,6 +176,9 @@ const customerTabButtons = document.querySelectorAll("[data-customer-tab]");
 const customerTabPanels = document.querySelectorAll(
   "[data-customer-tab-panel]"
 );
+const aiReminderForm = document.getElementById("ai-reminder-form");
+const aiReminderList = document.getElementById("ai-reminder-list");
+const assistantPaymentsEl = document.getElementById("assistant-payments");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -292,6 +295,100 @@ const applyUserProfile = (profile) => {
   if (userRoleEl) {
     userRoleEl.textContent = profile?.role || "kullanıcı";
   }
+};
+
+const reminderStorageKey = "mtn-payment-reminders";
+
+const loadReminders = () => {
+  try {
+    const raw = localStorage.getItem(reminderStorageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const saveReminders = (items) => {
+  localStorage.setItem(reminderStorageKey, JSON.stringify(items));
+};
+
+const formatReminderDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleDateString("tr-TR");
+};
+
+const getReminderLabel = (reminder) =>
+  `${reminder.category || "Şahsi Ödeme"} • ${formatReminderDate(
+    reminder.dueDate
+  )}`;
+
+const renderReminderList = (targetEl, reminders, emptyMessage) => {
+  if (!targetEl) {
+    return;
+  }
+  targetEl.innerHTML = "";
+  if (!reminders.length) {
+    const li = document.createElement("li");
+    li.textContent = emptyMessage;
+    targetEl.appendChild(li);
+    return;
+  }
+  reminders.forEach((reminder) => {
+    if (targetEl === aiReminderList) {
+      const item = document.createElement("li");
+      item.className = "ai-reminder-item";
+      item.innerHTML = `
+        <strong>${escapeHtml(reminder.title || "Hatırlatma")}</strong>
+        <div class="ai-reminder-meta">
+          <span>${escapeHtml(reminder.category || "Şahsi Ödeme")}</span>
+          <span>${formatReminderDate(reminder.dueDate)}</span>
+        </div>
+        <div class="ai-reminder-actions">
+          <button class="ai-reminder-delete" data-reminder-id="${reminder.id}">
+            Sil
+          </button>
+        </div>
+      `;
+      item
+        .querySelector("[data-reminder-id]")
+        ?.addEventListener("click", () => {
+          const next = loadReminders().filter(
+            (entry) => entry.id !== reminder.id
+          );
+          saveReminders(next);
+          updateReminderUI();
+        });
+      targetEl.appendChild(item);
+      return;
+    }
+    const li = document.createElement("li");
+    li.textContent = `${reminder.title} (${getReminderLabel(reminder)})`;
+    targetEl.appendChild(li);
+  });
+};
+
+const updateReminderUI = () => {
+  const reminders = loadReminders().sort(
+    (a, b) => new Date(a.dueDate) - new Date(b.dueDate)
+  );
+  renderReminderList(
+    aiReminderList,
+    reminders,
+    "Henüz ödeme hatırlatıcısı yok."
+  );
+  renderReminderList(
+    assistantPaymentsEl,
+    reminders,
+    "Ödeme takvimi boş."
+  );
+  return reminders;
 };
 
 const loginAnimationMs = 350;
@@ -1180,6 +1277,10 @@ const renderAssistant = (data) => {
       )})`
     )
   ];
+  const paymentReminders = loadReminders().slice(0, 5).map(
+    (item) => `Ödeme: ${item.title} (${getReminderLabel(item)})`
+  );
+  reminders.push(...paymentReminders);
 
   const suggestions = [];
   if (!currentSettings.enableAutoBackup) {
@@ -2634,6 +2735,30 @@ if (offerSaveButton) {
 
 if (loginForm) {
   loginForm.addEventListener("submit", handleLogin);
+}
+
+if (aiReminderForm) {
+  aiReminderForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const formData = new FormData(aiReminderForm);
+    const payload = Object.fromEntries(formData.entries());
+    if (!payload.title || !payload.dueDate) {
+      setStatus("Hatırlatma başlığı ve ödeme tarihini girin.");
+      return;
+    }
+    const reminders = loadReminders();
+    const reminder = {
+      id: `REM-${Date.now()}-${Math.floor(Math.random() * 900 + 100)}`,
+      title: payload.title.trim(),
+      dueDate: payload.dueDate,
+      category: payload.category || "Şahsi Ödeme"
+    };
+    reminders.push(reminder);
+    saveReminders(reminders);
+    aiReminderForm.reset();
+    updateReminderUI();
+  });
+  updateReminderUI();
 }
 
 if (loginScreen) {
