@@ -9,7 +9,7 @@
   <body>
     <div class="splash" id="splash-screen">
       <div class="splash__content">
-        <img class="splash__logo" src="assets/logo.svg" alt="MTN logo" />
+        <img class="splash__logo" id="splash-logo" src="assets/logo.svg" alt="MTN logo" />
         <h1>MTN Ön Muhasebe</h1>
         <p>Profesyonel ERP deneyimi yükleniyor...</p>
       </div>
@@ -93,8 +93,13 @@
     <div class="login" id="login-screen">
       <div class="login__card">
         <div class="login__header">
-          <h1>Giriş</h1>
-          <span class="login__demo">Demo: mtn / 1453</span>
+          <div class="login__brand">
+            <img class="login__logo" id="login-logo" src="assets/logo.svg" alt="Firma logosu" />
+            <div>
+              <h1>Giriş</h1>
+              <span class="login__demo">Demo: mtn / 1453</span>
+            </div>
+          </div>
         </div>
         <form id="login-form">
           <label class="login__field">

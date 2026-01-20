@@ -187,6 +187,21 @@ body {
   justify-content: space-between;
 }
 
+.login__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6px;
+}
+
 .login__header h1 {
   font-size: 20px;
 }
@@ -618,6 +633,32 @@ body {
   padding: 18px;
   box-shadow: var(--shadow-soft);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panel-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.panel-subnav__btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.panel-subnav__btn--active {
+  background: rgba(27, 92, 255, 0.2);
+  border-color: rgba(27, 92, 255, 0.6);
+  color: #e2e8ff;
+}
+
+.subpanel--hidden {
+  display: none;
 }
 
 .backup-actions {

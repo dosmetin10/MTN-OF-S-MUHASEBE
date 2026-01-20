@@ -213,6 +213,8 @@ const accountsTable = document.getElementById("accounts-table");
 const ledgerTable = document.getElementById("ledger-table");
 const auditLogTable = document.getElementById("audit-log-table");
 const splashScreen = document.getElementById("splash-screen");
+const splashLogo = document.getElementById("splash-logo");
+const loginLogo = document.getElementById("login-logo");
 const offerTabs = document.querySelectorAll("[data-offer-tab]");
 const offerPanels = document.querySelectorAll("[data-offer-tab-panel]");
 const offerTitleInput = document.getElementById("offer-title");
@@ -360,6 +362,12 @@ const applyBranding = (settings) => {
       brandLogo.src = "assets/logo.svg";
       brandLogo.style.display = "block";
     }
+  }
+  if (splashLogo) {
+    splashLogo.src = settings.logoDataUrl || "assets/logo.svg";
+  }
+  if (loginLogo) {
+    loginLogo.src = settings.logoDataUrl || "assets/logo.svg";
   }
   if (topbarLogo) {
     topbarLogo.src = brandLogo?.src || "assets/logo.svg";
@@ -3977,10 +3985,58 @@ const showPanel = (panelId, title) => {
   const target = document.getElementById(panelId);
   if (target) {
     target.classList.add("panel--active");
+    setupPanelSubnav(target);
   }
   if (panelTitleEl) {
     panelTitleEl.textContent = title || panelTitles[panelId] || "Panel";
   }
+};
+
+const activateSubpanel = (panel, subpanelId) => {
+  const modules = panel.querySelectorAll(":scope > .module");
+  modules.forEach((module) => {
+    module.classList.toggle(
+      "subpanel--hidden",
+      module.dataset.subpanelId !== subpanelId
+    );
+  });
+  const buttons = panel.querySelectorAll(".panel-subnav__btn");
+  buttons.forEach((button) => {
+    button.classList.toggle("panel-subnav__btn--active", button.dataset.subpanelId === subpanelId);
+  });
+};
+
+const setupPanelSubnav = (panel) => {
+  const modules = Array.from(panel.querySelectorAll(":scope > .module"));
+  if (modules.length <= 1) {
+    return;
+  }
+  let subnav = panel.querySelector(".panel-subnav");
+  if (!subnav) {
+    subnav = document.createElement("div");
+    subnav.className = "panel-subnav";
+    panel.insertBefore(subnav, modules[0]);
+  }
+  subnav.innerHTML = "";
+  modules.forEach((module, index) => {
+    const titleEl =
+      module.querySelector(".module__header h2") ||
+      module.querySelector(".table-actions h3") ||
+      module.querySelector("h2") ||
+      module.querySelector("h3");
+    const label = titleEl?.textContent?.trim() || `Bölüm ${index + 1}`;
+    const subpanelId =
+      module.dataset.subpanelId || `${panel.id}-section-${index + 1}`;
+    module.dataset.subpanelId = subpanelId;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "panel-subnav__btn";
+    button.textContent = label;
+    button.dataset.subpanelId = subpanelId;
+    button.addEventListener("click", () => activateSubpanel(panel, subpanelId));
+    subnav.appendChild(button);
+  });
+  activateSubpanel(panel, modules[0].dataset.subpanelId);
 };
 
 const activateMenuByPanel = (panelId) => {
@@ -4005,6 +4061,10 @@ menuItems.forEach((item) => {
     showPanel(panelId, title);
   });
 });
+
+if (panels.length) {
+  panels.forEach((panel) => setupPanelSubnav(panel));
+}
 
 menuActionItems.forEach((item) => {
   item.addEventListener("click", (event) => {
