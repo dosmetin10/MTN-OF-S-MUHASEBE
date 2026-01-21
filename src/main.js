@@ -941,12 +941,13 @@ app.whenReady().then(() => {
 
   ipcMain.handle("customers:create", async (_event, payload) => {
     const data = await loadStorage();
-    const { openingDebt, ...rest } = payload;
+    const { openingDebt, openingCredit, ...rest } = payload;
     const normalizedOpeningDebt = normalizeNumber(openingDebt);
+    const normalizedOpeningCredit = normalizeNumber(openingCredit);
     const normalizedName = normalizeSpaces(payload.name || "");
     data.customers = createRecord(data.customers, {
       code: payload.code || generateCode("CAR"),
-      balance: normalizedOpeningDebt,
+      balance: normalizedOpeningDebt - normalizedOpeningCredit,
       normalizedName,
       isActive: true,
       ...rest
@@ -966,6 +967,23 @@ app.whenReady().then(() => {
         debit: normalizedOpeningDebt,
         credit: 0,
         note: "Cari açılış borcu"
+      });
+    }
+    if (normalizedOpeningCredit > 0) {
+      const latestCustomer = data.customers.at(-1);
+      data.customerDebts = createRecord(data.customerDebts, {
+        customerId: latestCustomer?.id || "",
+        customerName: latestCustomer?.name || "",
+        amount: -normalizedOpeningCredit,
+        note: "Açılış alacak",
+        createdAt: payload.createdAt
+      });
+      addLedgerEntry(data, {
+        accountCode: "120",
+        accountName: "ALICILAR",
+        debit: 0,
+        credit: normalizedOpeningCredit,
+        note: "Cari açılış alacak"
       });
     }
     addAuditLog(data, {

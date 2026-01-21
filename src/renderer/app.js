@@ -52,6 +52,9 @@ const customerSearchButton = document.getElementById("customer-search-btn");
 const customerSearchSuggestion = document.getElementById(
   "customer-search-suggestion"
 );
+const customerFilterButtons = document.querySelectorAll(
+  "[data-customer-filter]"
+);
 const customerDetailCard = document.getElementById("customer-detail-card");
 const customerDetailTitle = document.getElementById("customer-detail-title");
 const customerDetailClose = document.getElementById("customer-detail-close");
@@ -328,12 +331,32 @@ let lastManualBackupDir = "";
 let cachedInvoices = [];
 let cachedImportRows = [];
 let editingStockId = "";
+let activeCustomerFilter = "all";
 const activeOfferRows = {
   internal: null,
   industrial: null
 };
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
+const DAYS_IN_MS = 24 * 60 * 60 * 1000;
+
+const getCustomerDueDate = (customer) => {
+  const dueDays = Number(customer?.dueDays || 0);
+  if (!dueDays) {
+    return null;
+  }
+  const lastDebt = cachedCustomerDebts
+    .filter((entry) => entry.customerId === customer.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+  if (!lastDebt?.createdAt) {
+    return null;
+  }
+  const baseDate = new Date(lastDebt.createdAt);
+  if (Number.isNaN(baseDate.getTime())) {
+    return null;
+  }
+  return new Date(baseDate.getTime() + dueDays * DAYS_IN_MS);
+};
 
 // Varsayım: "Şunu mu demek istediniz?" için basit karakter benzerliği yeterlidir.
 const similarityScore = (term, target) => {
@@ -896,7 +919,7 @@ const renderCustomers = (items) => {
   cachedCustomers = items;
   customersTable.innerHTML = "";
   const searchTerm = normalizeText(customerSearchInput?.value);
-  const filtered = searchTerm
+  let filtered = searchTerm
     ? items.filter((item) => {
         const name = normalizeText(item.name);
         const code = normalizeText(item.code);
@@ -908,6 +931,25 @@ const renderCustomers = (items) => {
         );
       })
     : items;
+  if (activeCustomerFilter === "debtors") {
+    filtered = filtered.filter((item) => Number(item.balance || 0) > 0);
+  }
+  if (activeCustomerFilter === "creditors") {
+    filtered = filtered.filter((item) => Number(item.balance || 0) < 0);
+  }
+  if (activeCustomerFilter === "due") {
+    const now = Date.now();
+    const horizon = now + 7 * DAYS_IN_MS;
+    filtered = filtered.filter((item) => {
+      const dueDate = getCustomerDueDate(item);
+      return (
+        Number(item.balance || 0) > 0 &&
+        dueDate &&
+        dueDate.getTime() >= now &&
+        dueDate.getTime() <= horizon
+      );
+    });
+  }
   if (offerCustomerSelect) {
     offerCustomerSelect.innerHTML = "";
     const defaultOption = document.createElement("option");
@@ -931,16 +973,29 @@ const renderCustomers = (items) => {
   }
   filtered.forEach((item) => {
     const isActive = item.isActive !== false;
+    const isSupplier = item.type === "tedarikci";
+    const balanceValue = Number(item.balance || 0);
+    const balanceBadgeClass =
+      balanceValue > 0
+        ? "badge badge--expense"
+        : balanceValue < 0
+          ? "badge badge--income"
+          : "badge";
     const row = document.createElement("tr");
     row.dataset.customerId = item.id || "";
+    row.classList.toggle("row--supplier", isSupplier);
     row.innerHTML = `
       <td>${item.code || "-"}</td>
       <td>${item.name || "-"}</td>
-      <td>${item.type === "tedarikci" ? "Tedarikçi" : "Müşteri"}</td>
+      <td>
+        <span class="badge ${isSupplier ? "badge--supplier" : "badge--info"}">
+          ${isSupplier ? "Tedarikçi" : "Müşteri"}
+        </span>
+      </td>
       <td>${item.phone || "-"}</td>
       <td>${item.taxNumber || "-"}</td>
       <td>${item.email || "-"}</td>
-      <td>${formatCurrency(Number(item.balance) || 0)}</td>
+      <td><span class="${balanceBadgeClass}">${formatCurrency(balanceValue)}</span></td>
       <td>
         <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
           ${isActive ? "Aktif" : "Pasif"}
@@ -2968,6 +3023,21 @@ if (customerSearchButton) {
   customerSearchButton.addEventListener("click", (event) => {
     event.preventDefault();
     handleCustomerSearch();
+  });
+}
+
+if (customerFilterButtons.length) {
+  customerFilterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeCustomerFilter = button.dataset.customerFilter || "all";
+      customerFilterButtons.forEach((btn) =>
+        btn.classList.toggle(
+          "chip--active",
+          btn.dataset.customerFilter === activeCustomerFilter
+        )
+      );
+      renderCustomers(cachedCustomers);
+    });
   });
 }
 

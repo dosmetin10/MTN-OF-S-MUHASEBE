@@ -1131,9 +1131,27 @@ body {
   color: #f05a5a;
 }
 
+.badge--supplier {
+  background: rgba(255, 186, 73, 0.2);
+  color: #a86912;
+}
+
+.badge--info {
+  background: rgba(71, 120, 255, 0.18);
+  color: #4b6dff;
+}
+
 .badge {
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+.row--supplier td {
+  background: rgba(255, 186, 73, 0.08);
+}
+
+.chip-group--filters {
+  margin-bottom: 10px;
 }
 
 .report-actions {
