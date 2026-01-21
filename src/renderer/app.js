@@ -222,6 +222,9 @@ const stockValuationSelect = document.getElementById("stock-valuation");
 const lastAutoBackupEl = document.getElementById("last-auto-backup");
 const settingsStatusEl = document.getElementById("settings-status");
 const resetDataButton = document.getElementById("reset-data");
+const userTableBody = document.getElementById("user-table");
+const userForm = document.getElementById("user-form");
+const userFormError = document.getElementById("user-form-error");
 const firstRunScreen = document.getElementById("first-run-screen");
 const firstRunForm = document.getElementById("first-run-form");
 const logoFileInput = document.getElementById("logo-file");
@@ -327,6 +330,11 @@ const centerStatusEl = document.getElementById("center-status");
 const openingDebtField = document.getElementById("opening-debt-field");
 const openingCreditField = document.getElementById("opening-credit-field");
 
+const ROLE_LABELS = {
+  admin: "Yönetici",
+  accountant: "Muhasebeci"
+};
+
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
     style: "currency",
@@ -366,10 +374,21 @@ const setStatus = (message) => {
 };
 
 let users = [
-  { username: "mtn", password: "1453" },
-  { username: "muhasebe", password: "1453" }
+  {
+    username: "mtn",
+    password: "1453",
+    role: "admin",
+    displayName: "MTN Yönetici"
+  },
+  {
+    username: "muhasebe",
+    password: "1453",
+    role: "accountant",
+    displayName: "Muhasebeci"
+  }
 ];
 let currentSettings = {};
+let currentUser = null;
 let cachedCustomers = [];
 let cachedStocks = [];
 let cachedStockMovements = [];
@@ -391,6 +410,28 @@ const activeOfferRows = {
 
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 const DAYS_IN_MS = 24 * 60 * 60 * 1000;
+const getRoleLabel = (role) => ROLE_LABELS[role] || role || "kullanıcı";
+
+const normalizeUsers = (list = []) =>
+  list
+    .map((user) => {
+      const username = String(user?.username || "").trim();
+      if (!username) {
+        return null;
+      }
+      const inferredRole =
+        user?.role ||
+        (["admin", "mtn"].includes(username.toLowerCase())
+          ? "admin"
+          : "accountant");
+      return {
+        username,
+        password: user?.password || "",
+        role: inferredRole,
+        displayName: user?.displayName || username
+      };
+    })
+    .filter(Boolean);
 
 const getCustomerDueDate = (customer) => {
   const dueDays = Number(customer?.dueDays || 0);
@@ -507,6 +548,7 @@ const applyBranding = (settings) => {
 
 const applyUserProfile = (profile) => {
   const displayName = profile?.displayName || profile?.username || "Kullanıcı";
+  currentUser = profile || null;
   if (userNameEl) {
     userNameEl.textContent = displayName;
   }
@@ -514,8 +556,142 @@ const applyUserProfile = (profile) => {
     dashboardUserEl.textContent = displayName.toUpperCase();
   }
   if (userRoleEl) {
-    userRoleEl.textContent = profile?.role || "kullanıcı";
+    userRoleEl.textContent = getRoleLabel(profile?.role);
   }
+};
+
+const applyRoleAccess = (role) => {
+  const normalizedRole = role || "accountant";
+  document.querySelectorAll("[data-role]").forEach((element) => {
+    const allowedRoles = (element.dataset.role || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const isAllowed = allowedRoles.includes(normalizedRole);
+    element.classList.toggle("is-hidden", !isAllowed);
+  });
+  if (document.querySelector(".panel.panel--active.is-hidden")) {
+    showPanel("dashboard-panel", "Ana Menü");
+    activateMenuByPanel("dashboard-panel");
+  }
+};
+
+const renderUsers = (list = users) => {
+  if (!userTableBody) {
+    return;
+  }
+  const normalizedUsers = normalizeUsers(list);
+  userTableBody.innerHTML = "";
+  if (!normalizedUsers.length) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="4">Henüz kullanıcı yok.</td>`;
+    userTableBody.appendChild(row);
+    return;
+  }
+  const adminCount = normalizedUsers.filter((user) => user.role === "admin")
+    .length;
+  normalizedUsers.forEach((user) => {
+    const row = document.createElement("tr");
+    const isCurrent = user.username === currentUser?.username;
+    const isLastAdmin = user.role === "admin" && adminCount === 1;
+    const statusLabel = isCurrent ? "Oturum açık" : "Aktif";
+    row.innerHTML = `
+      <td>
+        <strong>${escapeHtml(user.displayName)}</strong>
+        <div class="muted">${escapeHtml(user.username)}</div>
+      </td>
+      <td>
+        <select data-user-role data-username="${escapeHtml(user.username)}"${
+          isLastAdmin ? " disabled" : ""
+        }>
+          <option value="admin"${user.role === "admin" ? " selected" : ""}>
+            Yönetici
+          </option>
+          <option value="accountant"${
+            user.role === "accountant" ? " selected" : ""
+          }>
+            Muhasebeci
+          </option>
+        </select>
+      </td>
+      <td>${statusLabel}</td>
+      <td>
+        <button class="ghost" data-user-remove="${escapeHtml(
+          user.username
+        )}" ${isCurrent || isLastAdmin ? "disabled" : ""}>
+          Sil
+        </button>
+      </td>
+    `;
+    userTableBody.appendChild(row);
+  });
+
+  userTableBody.querySelectorAll("[data-user-role]").forEach((select) => {
+    select.addEventListener("change", async (event) => {
+      const target = event.target;
+      const username = target.dataset.username;
+      const nextRole = target.value;
+      const nextUsers = normalizeUsers(users).map((entry) =>
+        entry.username === username ? { ...entry, role: nextRole } : entry
+      );
+      const adminCountNext = nextUsers.filter(
+        (entry) => entry.role === "admin"
+      ).length;
+      if (adminCountNext === 0) {
+        setStatus("En az bir yönetici hesabı olmalı.");
+        target.value = "admin";
+        return;
+      }
+      await persistUsers(nextUsers);
+      setStatus("Kullanıcı rolü güncellendi.");
+    });
+  });
+
+  userTableBody.querySelectorAll("[data-user-remove]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const username = button.dataset.userRemove;
+      const approved = window.confirm(
+        `${username} hesabı silinsin mi?`
+      );
+      if (!approved) {
+        return;
+      }
+      const nextUsers = normalizeUsers(users).filter(
+        (entry) => entry.username !== username
+      );
+      const adminCountNext = nextUsers.filter(
+        (entry) => entry.role === "admin"
+      ).length;
+      if (adminCountNext === 0) {
+        setStatus("En az bir yönetici hesabı olmalı.");
+        return;
+      }
+      await persistUsers(nextUsers);
+      setStatus("Kullanıcı kaldırıldı.");
+    });
+  });
+};
+
+const persistUsers = async (nextUsers) => {
+  if (!window.mtnApp?.saveSettings) {
+    setStatus("Kullanıcı servisleri hazır değil.");
+    return;
+  }
+  const existingSettings = await window.mtnApp.getSettings();
+  const normalizedUsers = normalizeUsers(nextUsers);
+  const nextSettings = { ...existingSettings, users: normalizedUsers };
+  await window.mtnApp.saveSettings(nextSettings);
+  currentSettings = nextSettings;
+  users = normalizedUsers;
+  if (currentUser) {
+    currentUser =
+      normalizedUsers.find(
+        (entry) => entry.username === currentUser.username
+      ) || currentUser;
+    applyUserProfile(currentUser);
+    applyRoleAccess(currentUser?.role);
+  }
+  renderUsers(normalizedUsers);
 };
 
 const reminderStorageKey = "mtn-payment-reminders";
@@ -677,6 +853,7 @@ const handleLogin = (event) => {
     appShell.classList.remove("app--hidden");
     hideLoginScreen();
     applyUserProfile(matchedUser);
+    applyRoleAccess(matchedUser?.role);
     try {
       localStorage.setItem("mtn-last-user", matchedUser.username);
     } catch (error) {
@@ -699,11 +876,51 @@ if (logoutButton) {
   logoutButton.addEventListener("click", () => {
     appShell.classList.add("app--hidden");
     showLoginScreen();
+    applyRoleAccess("accountant");
     try {
       localStorage.removeItem("mtn-last-user");
     } catch (error) {
       // ignore localStorage errors
     }
+  });
+}
+
+if (userForm) {
+  userForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (userFormError) {
+      userFormError.textContent = "";
+    }
+    const formData = new FormData(userForm);
+    const payload = Object.fromEntries(formData.entries());
+    const username = String(payload.username || "").trim();
+    const password = String(payload.password || "").trim();
+    const displayName = String(payload.displayName || "").trim() || username;
+    const role = payload.role || "accountant";
+    if (!username || !password) {
+      if (userFormError) {
+        userFormError.textContent =
+          "Kullanıcı adı ve şifre zorunludur.";
+      }
+      return;
+    }
+    const existing = normalizeUsers(users).find(
+      (entry) => entry.username === username
+    );
+    if (existing) {
+      if (userFormError) {
+        userFormError.textContent =
+          "Bu kullanıcı adı zaten kullanılıyor.";
+      }
+      return;
+    }
+    const nextUsers = normalizeUsers([
+      ...users,
+      { username, password, role, displayName }
+    ]);
+    await persistUsers(nextUsers);
+    userForm.reset();
+    setStatus("Yeni kullanıcı eklendi.");
   });
 }
 
@@ -2422,8 +2639,12 @@ const initApp = async () => {
   currentSettings = settings;
   applyBranding(settings);
   if (settings.users?.length) {
-    users = settings.users;
+    users = normalizeUsers(settings.users);
   }
+  if (!settings.users?.length) {
+    users = normalizeUsers(users);
+  }
+  renderUsers(users);
   if (stockReceiptWarehouseSelect) {
     stockReceiptWarehouseSelect.value =
       settings.defaultWarehouse || "Ana Depo";
@@ -2490,6 +2711,7 @@ const initApp = async () => {
         appShell.classList.remove("app--hidden");
         hideLoginScreen();
         applyUserProfile(matchedUser);
+        applyRoleAccess(matchedUser?.role);
       }
     } catch (error) {
       // ignore localStorage errors

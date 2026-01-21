@@ -723,6 +723,28 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.user-management {
+  display: grid;
+  gap: 14px;
+}
+
+.user-table select {
+  width: 100%;
+  background: rgba(10, 18, 35, 0.9);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--ink);
+  padding: 8px 10px;
+}
+
+.user-form {
+  margin-top: 6px;
+}
+
+.user-form .primary {
+  justify-self: end;
+}
+
 .panel-subnav {
   display: flex;
   flex-wrap: wrap;

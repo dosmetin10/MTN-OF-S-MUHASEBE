@@ -175,8 +175,8 @@
           </button>
         </nav>
         <div class="sidebar__actions">
-          <button class="menu__action" data-panel="settings-panel">Ayarlar</button>
-          <button class="menu__action" id="backup-now-secondary">Yedek Al</button>
+          <button class="menu__action" data-panel="settings-panel" data-role="admin">Ayarlar</button>
+          <button class="menu__action" id="backup-now-secondary" data-role="admin">Yedek Al</button>
           <button class="menu__action menu__action--danger" id="logout-button">Çıkış</button>
         </div>
         <div class="sidebar__footer">
@@ -1535,7 +1535,7 @@
             </section>
           </section>
 
-          <section class="panel" id="settings-panel">
+          <section class="panel" id="settings-panel" data-role="admin">
             <section class="module" id="settings-module">
               <div class="module__header">
                 <h2>Otomatik Yedekleme & Taşıma</h2>
@@ -1590,6 +1590,47 @@
                   </label>
                   <button class="primary" type="submit">Firma Kaydet</button>
                 </form>
+              </div>
+              <div class="table-card user-management">
+                <h3>Kullanıcı Yönetimi</h3>
+                <p class="muted">
+                  Roller: Yönetici tüm ayarlara erişir, Muhasebeci günlük işlemlerle
+                  sınırlıdır.
+                </p>
+                <table class="user-table">
+                  <thead>
+                    <tr>
+                      <th>Kullanıcı</th>
+                      <th>Rol</th>
+                      <th>Durum</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="user-table"></tbody>
+                </table>
+                <form class="form-grid user-form" id="user-form">
+                  <label>
+                    Ad Soyad
+                    <input name="displayName" placeholder="Ali Veli" />
+                  </label>
+                  <label>
+                    Kullanıcı Adı
+                    <input name="username" required placeholder="ali.veli" />
+                  </label>
+                  <label>
+                    Şifre
+                    <input name="password" type="password" required />
+                  </label>
+                  <label>
+                    Rol
+                    <select name="role">
+                      <option value="admin">Yönetici</option>
+                      <option value="accountant" selected>Muhasebeci</option>
+                    </select>
+                  </label>
+                  <button class="primary" type="submit">Kullanıcı Ekle</button>
+                </form>
+                <p class="report-path" id="user-form-error"></p>
               </div>
               <form class="form-grid" id="settings-form">
                 <label>
