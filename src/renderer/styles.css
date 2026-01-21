@@ -745,6 +745,48 @@ body {
   justify-self: end;
 }
 
+.customer-detail-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.customer-detail-search {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.customer-detail-search input {
+  min-width: 220px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 18, 35, 0.9);
+  color: var(--ink);
+}
+
+.customer-detail-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+}
+
+.theme-settings .form-grid {
+  align-items: end;
+}
+
 .panel-subnav {
   display: flex;
   flex-wrap: wrap;

@@ -1036,6 +1036,31 @@ app.whenReady().then(() => {
     return data.customers;
   });
 
+  ipcMain.handle("customers:delete", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId } = payload || {};
+    if (!customerId) {
+      return data;
+    }
+    const removed = data.customers.find((customer) => customer.id === customerId);
+    data.customers = data.customers.filter((customer) => customer.id !== customerId);
+    data.customerDebts = (data.customerDebts || []).filter(
+      (entry) => entry.customerId !== customerId
+    );
+    data.customerJobs = (data.customerJobs || []).filter(
+      (entry) => entry.customerId !== customerId
+    );
+    addAuditLog(data, {
+      module: "customers",
+      action: "delete",
+      message: `Cari silindi: ${removed?.name || "Bilinmeyen"}`
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data;
+  });
+
   ipcMain.handle("customers:toggle-status", async (_event, payload) => {
     const data = await loadStorage();
     const { customerId, isActive } = payload || {};

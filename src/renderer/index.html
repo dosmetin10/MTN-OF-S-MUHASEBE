@@ -444,7 +444,7 @@
                 <button class="primary" type="submit">Cari Kaydet</button>
                 </form>
               </div>
-              <div id="customer-transaction-section">
+              <div id="customer-transaction-section" class="is-hidden">
                 <form class="form-grid" id="customer-transaction-form">
                 <label>
                   Tarih
@@ -486,11 +486,25 @@
                 <button class="primary" type="submit">İşlem Kaydet</button>
                 </form>
               </div>
-              <div id="customer-detail-section">
+              <div id="customer-detail-section" class="is-hidden">
                 <div class="table-card is-hidden" id="customer-detail-card">
                   <div class="table-actions">
                     <h3 id="customer-detail-title">Cari Detay</h3>
-                    <button class="ghost" id="customer-detail-close">✕</button>
+                    <div class="customer-detail-header">
+                      <div class="customer-detail-search">
+                        <input
+                          id="customer-detail-search"
+                          placeholder="Cari ara (kod veya ad)"
+                        />
+                        <button class="ghost" id="customer-detail-search-btn">
+                          Ara
+                        </button>
+                      </div>
+                      <div class="customer-detail-header-actions">
+                        <button class="ghost" id="customer-detail-back">← Cari Listesi</button>
+                        <button class="ghost" id="customer-detail-close">✕</button>
+                      </div>
+                    </div>
                     <button class="ghost" id="customer-detail-supplier-payment">
                       Tedarikçiye Ödeme
                     </button>
@@ -503,6 +517,7 @@
                   </div>
                   <div class="report-actions" id="customer-detail-actions">
                     <button class="ghost" id="customer-detail-edit">✏️ Cari Düzenle</button>
+                    <button class="ghost ghost--danger" id="customer-detail-delete">🗑️ Cari Sil</button>
                     <button class="ghost" id="customer-detail-add-item">📌 İş Kalemi Ekle</button>
                     <button class="ghost" id="customer-detail-add-payment">💳 Tahsilat Ekle</button>
                     <button class="ghost" id="customer-detail-add-stock">📦 Stoktan Malzeme Ekle</button>
@@ -515,12 +530,15 @@
                     <button class="ghost" id="supplier-detail-pay">💳 Borç/Alacak Öde</button>
                     <button class="ghost" id="supplier-detail-invoice">📄 Fiş/Fatura Ekle</button>
                   </div>
+                  <div class="detail-footer-actions">
+                    <button class="primary" id="customer-detail-save">Kaydet ve Listeye Dön</button>
+                  </div>
                 </div>
               </div>
             </section>
 
             <section
-              class="module"
+              class="module is-hidden"
               id="customer-detail-module"
               data-subpanel-label="Cari Ekstre"
             >
@@ -1590,6 +1608,25 @@
                   </label>
                   <button class="primary" type="submit">Firma Kaydet</button>
                 </form>
+              </div>
+              <div class="table-card theme-settings">
+                <h3>Tema Renkleri</h3>
+                <p class="muted">
+                  Yönetici olarak ana renkleri güncelleyebilir ve tüm ekranda
+                  anında uygulayabilirsiniz.
+                </p>
+                <form class="form-grid" id="theme-form">
+                  <label>
+                    Ana Renk
+                    <input name="primary" type="color" id="theme-primary" />
+                  </label>
+                  <label>
+                    Vurgu Rengi
+                    <input name="accent" type="color" id="theme-accent" />
+                  </label>
+                  <button class="primary" type="submit">Temayı Uygula</button>
+                </form>
+                <p class="report-path" id="theme-status"></p>
               </div>
               <div class="table-card user-management">
                 <h3>Kullanıcı Yönetimi</h3>

@@ -52,6 +52,13 @@ const customerSearchButton = document.getElementById("customer-search-btn");
 const customerSearchSuggestion = document.getElementById(
   "customer-search-suggestion"
 );
+const customerListSection = document.getElementById("customer-list-section");
+const customerFormSection = document.getElementById("customer-form-section");
+const customerTransactionSection = document.getElementById(
+  "customer-transaction-section"
+);
+const customerDetailSection = document.getElementById("customer-detail-section");
+const customerDetailModule = document.getElementById("customer-detail-module");
 const customerFilterButtons = document.querySelectorAll(
   "[data-customer-filter]"
 );
@@ -78,6 +85,7 @@ const customerDetailCollect = document.getElementById("customer-detail-collect")
 const customerDetailJob = document.getElementById("customer-detail-job");
 const customerDetailActions = document.getElementById("customer-detail-actions");
 const customerDetailEdit = document.getElementById("customer-detail-edit");
+const customerDetailDelete = document.getElementById("customer-detail-delete");
 const customerDetailAddItem = document.getElementById(
   "customer-detail-add-item"
 );
@@ -94,6 +102,14 @@ const customerDetailDue = document.getElementById("customer-detail-due");
 const customerDetailMethod = document.getElementById("customer-detail-method");
 const customerDetailSupplierActions = document.getElementById(
   "customer-detail-supplier-actions"
+);
+const customerDetailBack = document.getElementById("customer-detail-back");
+const customerDetailSave = document.getElementById("customer-detail-save");
+const customerDetailSearchInput = document.getElementById(
+  "customer-detail-search"
+);
+const customerDetailSearchButton = document.getElementById(
+  "customer-detail-search-btn"
 );
 const supplierDetailAddDebt = document.getElementById(
   "supplier-detail-add-debt"
@@ -246,6 +262,10 @@ const companyBankInput = document.getElementById("company-bank");
 const companyAddressInput = document.getElementById("company-address");
 const footerCompanyName = document.getElementById("footer-company-name");
 const footerCompanyOwner = document.getElementById("footer-company-owner");
+const themeForm = document.getElementById("theme-form");
+const themePrimaryInput = document.getElementById("theme-primary");
+const themeAccentInput = document.getElementById("theme-accent");
+const themeStatusEl = document.getElementById("theme-status");
 const loginPasswordInput = document.getElementById("login-password");
 const loginToggleButton = document.getElementById("login-toggle");
 const logoutButton = document.getElementById("logout-button");
@@ -334,6 +354,10 @@ const ROLE_LABELS = {
   admin: "Yönetici",
   accountant: "Muhasebeci"
 };
+const DEFAULT_THEME = {
+  primary: "#2f6bff",
+  accent: "#ff8a3d"
+};
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -403,6 +427,9 @@ let cachedImportRows = [];
 let editingStockId = "";
 let editingCustomerId = "";
 let activeCustomerFilter = "all";
+let isCustomerDetailMode = false;
+let returnToListAfterSave = false;
+let returnToListAfterAction = "";
 const activeOfferRows = {
   internal: null,
   industrial: null
@@ -411,6 +438,23 @@ const activeOfferRows = {
 const normalizeText = (value) => String(value || "").trim().toLowerCase();
 const DAYS_IN_MS = 24 * 60 * 60 * 1000;
 const getRoleLabel = (role) => ROLE_LABELS[role] || role || "kullanıcı";
+
+const findCustomerByTerm = (term) => {
+  const normalized = normalizeText(term);
+  if (!normalized) {
+    return null;
+  }
+  return cachedCustomers.find((customer) => {
+    const name = normalizeText(customer.name);
+    const code = normalizeText(customer.code);
+    const normalizedName = normalizeText(customer.normalizedName);
+    return (
+      name.includes(normalized) ||
+      code.includes(normalized) ||
+      normalizedName.includes(normalized)
+    );
+  });
+};
 
 const normalizeUsers = (list = []) =>
   list
@@ -546,6 +590,38 @@ const applyBranding = (settings) => {
   }
 };
 
+const shadeColor = (hex, percent) => {
+  const safeHex = String(hex || "").replace("#", "");
+  if (safeHex.length !== 6) {
+    return hex;
+  }
+  const num = parseInt(safeHex, 16);
+  const amt = Math.round(2.55 * percent);
+  const r = Math.min(255, Math.max(0, (num >> 16) + amt));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt));
+  const b = Math.min(255, Math.max(0, (num & 0x00ff) + amt));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, "0")}`;
+};
+
+const applyTheme = (settings) => {
+  const theme = settings.theme || {};
+  const primary = theme.primary || DEFAULT_THEME.primary;
+  const accent = theme.accent || DEFAULT_THEME.accent;
+  const root = document.documentElement;
+  root.style.setProperty("--primary", primary);
+  root.style.setProperty("--primary-dark", shadeColor(primary, -18));
+  root.style.setProperty("--accent-orange", primary);
+  root.style.setProperty("--accent-orange-dark", shadeColor(primary, -18));
+  root.style.setProperty("--accent-warm", accent);
+  root.style.setProperty("--accent-warm-glow", `${accent}59`);
+  if (themePrimaryInput) {
+    themePrimaryInput.value = primary;
+  }
+  if (themeAccentInput) {
+    themeAccentInput.value = accent;
+  }
+};
+
 const applyUserProfile = (profile) => {
   const displayName = profile?.displayName || profile?.username || "Kullanıcı";
   currentUser = profile || null;
@@ -573,6 +649,23 @@ const applyRoleAccess = (role) => {
   if (document.querySelector(".panel.panel--active.is-hidden")) {
     showPanel("dashboard-panel", "Ana Menü");
     activateMenuByPanel("dashboard-panel");
+  }
+};
+
+const setCustomerWorkspace = (mode, options = {}) => {
+  const isDetail = mode === "detail";
+  isCustomerDetailMode = isDetail;
+  customerListSection?.classList.toggle("is-hidden", isDetail);
+  customerDetailSection?.classList.toggle("is-hidden", !isDetail);
+  customerTransactionSection?.classList.toggle("is-hidden", !isDetail);
+  customerDetailModule?.classList.toggle("is-hidden", !isDetail);
+  if (customerFormSection) {
+    const hideForm = isDetail && !options.showForm;
+    customerFormSection.classList.toggle("is-hidden", hideForm);
+  }
+  if (!isDetail) {
+    customerDetailCard?.classList.add("is-hidden");
+    returnToListAfterSave = false;
   }
 };
 
@@ -877,6 +970,7 @@ if (logoutButton) {
     appShell.classList.add("app--hidden");
     showLoginScreen();
     applyRoleAccess("accountant");
+    setCustomerWorkspace("list");
     try {
       localStorage.removeItem("mtn-last-user");
     } catch (error) {
@@ -932,7 +1026,7 @@ if (transactionCustomerSelect) {
 
 if (supplierPaymentAction) {
   supplierPaymentAction.addEventListener("click", () => {
-    showCustomerTab("transaction");
+    setCustomerWorkspace("detail");
     if (transactionCustomerSelect) {
       transactionCustomerSelect.focus();
     }
@@ -942,7 +1036,7 @@ if (supplierPaymentAction) {
 
 if (customerDetailSupplierPayment) {
   customerDetailSupplierPayment.addEventListener("click", () => {
-    showCustomerTab("transaction");
+    setCustomerWorkspace("detail");
     if (transactionCustomerSelect) {
       transactionCustomerSelect.value = detailCustomerSelect?.value || "";
       updateSupplierUI(transactionCustomerSelect.value);
@@ -1457,10 +1551,10 @@ const openCustomerTransaction = (customerId, type) => {
     transactionCustomerSelect.value = customerId;
   }
   if (transactionTypeSelect) {
-    transactionTypeSelect.value = type;
+    transactionTypeSelect.value = type || transactionTypeSelect.value || "tahsilat";
   }
   updateSupplierUI(customerId);
-  showCustomerTab("list");
+  setCustomerWorkspace("detail");
   customerTransactionForm?.scrollIntoView({
     behavior: "smooth",
     block: "start"
@@ -1471,8 +1565,12 @@ const openCustomerDetail = (customer) => {
   if (!customer) {
     return;
   }
+  setCustomerWorkspace("detail");
   if (detailCustomerSelect) {
     detailCustomerSelect.value = customer.id;
+  }
+  if (customerDetailSearchInput) {
+    customerDetailSearchInput.value = customer.name || customer.code || "";
   }
   renderCustomerDetail({
     customers: cachedCustomers,
@@ -1495,6 +1593,9 @@ const populateCustomerForm = (customer) => {
     return;
   }
   editingCustomerId = customer.id || "";
+  if (isCustomerDetailMode) {
+    setCustomerWorkspace("detail", { showForm: true });
+  }
   const fields = customerForm.elements;
   if (fields.code) {
     fields.code.value = customer.code || "";
@@ -2638,6 +2739,7 @@ const initApp = async () => {
   const settings = await window.mtnApp.getSettings();
   currentSettings = settings;
   applyBranding(settings);
+  applyTheme(settings);
   if (settings.users?.length) {
     users = normalizeUsers(settings.users);
   }
@@ -2719,6 +2821,7 @@ const initApp = async () => {
   }
   setTodayDate();
   setAutoCodes();
+  setCustomerWorkspace("list");
 
   if (!settings.hasOnboarded && firstRunScreen) {
     firstRunScreen.classList.remove("first-run--hidden");
@@ -3166,6 +3269,10 @@ if (customerForm) {
       customerForm.reset();
       setAutoCodes();
       setStatus("Cari güncellendi.");
+      if (returnToListAfterSave) {
+        setCustomerWorkspace("list");
+        returnToListAfterSave = false;
+      }
     } else {
       await window.mtnApp.createCustomer(payload);
       const data = await window.mtnApp.getData();
@@ -3175,6 +3282,10 @@ if (customerForm) {
       customerForm.reset();
       setAutoCodes();
       setStatus("Cari kaydedildi.");
+      if (returnToListAfterSave) {
+        setCustomerWorkspace("list");
+        returnToListAfterSave = false;
+      }
     }
   });
 }
@@ -3184,6 +3295,7 @@ if (customerTransactionForm) {
     event.preventDefault();
     if (!window.mtnApp?.createCustomerTransaction) {
       setStatus("Cari işlem servisi hazır değil.");
+      returnToListAfterAction = "";
       return;
     }
     const formData = new FormData(customerTransactionForm);
@@ -3191,6 +3303,7 @@ if (customerTransactionForm) {
     const customerId = transactionCustomerSelect?.value || "";
     if (!customerId) {
       setStatus("Lütfen cari seçin.");
+      returnToListAfterAction = "";
       return;
     }
     const result = await window.mtnApp.createCustomerTransaction({
@@ -3209,6 +3322,10 @@ if (customerTransactionForm) {
     setStatus("Cari işlem kaydedildi.");
     customerTransactionForm.reset();
     setTodayDate();
+    if (returnToListAfterAction === "transaction") {
+      setCustomerWorkspace("list");
+    }
+    returnToListAfterAction = "";
   });
 }
 
@@ -3233,11 +3350,13 @@ if (customerJobForm) {
     event.preventDefault();
     if (!window.mtnApp?.addCustomerJob) {
       reportPathEl.textContent = "İş kalemi servisi hazır değil.";
+      returnToListAfterAction = "";
       return;
     }
     const customerId = detailCustomerSelect?.value || "";
     if (!customerId) {
       reportPathEl.textContent = "Lütfen cari seçin.";
+      returnToListAfterAction = "";
       return;
     }
     updateJobTotal();
@@ -3245,6 +3364,7 @@ if (customerJobForm) {
     const payload = Object.fromEntries(formData.entries());
     if (!payload.title || Number(payload.quantity || 0) <= 0) {
       setStatus("İş kalemi için zorunlu alanları doldurun.");
+      returnToListAfterAction = "";
       return;
     }
     const result = await window.mtnApp.addCustomerJob({
@@ -3265,6 +3385,10 @@ if (customerJobForm) {
     reportPathEl.textContent = "İş kalemi kaydedildi.";
     customerJobForm.reset();
     setTodayDate();
+    if (returnToListAfterAction === "job") {
+      setCustomerWorkspace("list");
+    }
+    returnToListAfterAction = "";
   });
 }
 
@@ -3630,13 +3754,48 @@ if (customerFilterButtons.length) {
 
 if (customerDetailClose) {
   customerDetailClose.addEventListener("click", () => {
-    customerDetailCard?.classList.add("is-hidden");
-    showCustomerTab("list");
+    setCustomerWorkspace("list");
+  });
+}
+
+if (customerDetailBack) {
+  customerDetailBack.addEventListener("click", () => {
+    setCustomerWorkspace("list");
+  });
+}
+
+const handleCustomerDetailSearch = () => {
+  const term = customerDetailSearchInput?.value || "";
+  const match = findCustomerByTerm(term);
+  if (!match) {
+    setStatus("Cari bulunamadı.");
+    return;
+  }
+  openCustomerDetail(match);
+};
+
+if (customerDetailSearchButton) {
+  customerDetailSearchButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    handleCustomerDetailSearch();
+  });
+}
+
+if (customerDetailSearchInput) {
+  customerDetailSearchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      handleCustomerDetailSearch();
+    }
   });
 }
 
 if (customerDetailOffer) {
   customerDetailOffer.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    if (offerCustomerSelect && customerId) {
+      offerCustomerSelect.value = customerId;
+    }
     showPanel("sales-panel", "Teklif");
     activateMenuByPanel("sales-panel");
   });
@@ -3644,8 +3803,7 @@ if (customerDetailOffer) {
 
 if (customerDetailStatement) {
   customerDetailStatement.addEventListener("click", () => {
-    showPanel("customers-panel", "Cari");
-    showCustomerTab("detail");
+    setCustomerWorkspace("detail");
     document.getElementById("customer-detail-module")?.scrollIntoView({
       behavior: "smooth",
       block: "start"
@@ -3655,19 +3813,16 @@ if (customerDetailStatement) {
 
 if (customerDetailCollect) {
   customerDetailCollect.addEventListener("click", () => {
-    showPanel("customers-panel", "Cari");
-    showCustomerTab("list");
-    customerTransactionForm?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
+    const customerId = detailCustomerSelect?.value;
+    if (customerId) {
+      openCustomerTransaction(customerId, "tahsilat");
+    }
   });
 }
 
 if (customerDetailJob) {
   customerDetailJob.addEventListener("click", () => {
-    showPanel("customers-panel", "Cari");
-    showCustomerTab("detail");
+    setCustomerWorkspace("detail");
     customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
@@ -3679,6 +3834,57 @@ if (customerDetailEdit) {
     if (customer) {
       populateCustomerForm(customer);
     }
+  });
+}
+
+if (customerDetailDelete) {
+  customerDetailDelete.addEventListener("click", async () => {
+    const customerId = detailCustomerSelect?.value;
+    if (!customerId || !window.mtnApp?.deleteCustomer) {
+      setStatus("Silme servisi hazır değil.");
+      return;
+    }
+    const approved = window.confirm(
+      "Cari kalıcı olarak silinsin mi? Bu işlem geri alınamaz."
+    );
+    if (!approved) {
+      return;
+    }
+    const result = await window.mtnApp.deleteCustomer({ customerId });
+    renderCustomers(result.customers || []);
+    cachedCustomerDebts = result.customerDebts || [];
+    cachedCustomerJobs = result.customerJobs || [];
+    setCustomerWorkspace("list");
+    setStatus("Cari silindi.");
+  });
+}
+
+if (customerDetailSave) {
+  customerDetailSave.addEventListener("click", () => {
+    if (editingCustomerId && customerForm) {
+      returnToListAfterSave = true;
+      customerForm.requestSubmit();
+      return;
+    }
+    if (customerTransactionForm) {
+      const amount = Number(
+        customerTransactionForm.elements.amount?.value || 0
+      );
+      if (amount > 0) {
+        returnToListAfterAction = "transaction";
+        customerTransactionForm.requestSubmit();
+        return;
+      }
+    }
+    if (customerJobForm) {
+      const title = customerJobForm.elements.title?.value || "";
+      if (title.trim()) {
+        returnToListAfterAction = "job";
+        customerJobForm.requestSubmit();
+        return;
+      }
+    }
+    setCustomerWorkspace("list");
   });
 }
 
@@ -4111,6 +4317,30 @@ if (companyForm) {
   });
 }
 
+if (themeForm) {
+  themeForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!window.mtnApp?.saveSettings) {
+      if (themeStatusEl) {
+        themeStatusEl.textContent = "Tema servisi hazır değil.";
+      }
+      return;
+    }
+    const theme = {
+      primary: themePrimaryInput?.value || DEFAULT_THEME.primary,
+      accent: themeAccentInput?.value || DEFAULT_THEME.accent
+    };
+    const existingSettings = await window.mtnApp.getSettings();
+    const nextSettings = { ...existingSettings, theme };
+    await window.mtnApp.saveSettings(nextSettings);
+    currentSettings = nextSettings;
+    applyTheme(nextSettings);
+    if (themeStatusEl) {
+      themeStatusEl.textContent = "Tema güncellendi.";
+    }
+  });
+}
+
 if (licenseCheckButton) {
   licenseCheckButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -4193,6 +4423,7 @@ if (firstRunForm) {
     await window.mtnApp.saveSettings({ ...existingSettings, ...nextSettings });
     currentSettings = { ...existingSettings, ...nextSettings };
     applyBranding(nextSettings);
+    applyTheme(nextSettings);
     users = nextSettings.users;
     firstRunScreen.classList.add("first-run--hidden");
     loginScreen.style.display = "";
@@ -4405,6 +4636,16 @@ if (detailCustomerSelect) {
   detailCustomerSelect.addEventListener("change", async () => {
     const data = await window.mtnApp.getData();
     renderCustomerDetail(data);
+    const customerId = detailCustomerSelect?.value;
+    const selectedCustomer = (data.customers || []).find(
+      (customer) => customer.id === customerId
+    );
+    if (selectedCustomer && customerDetailTitle) {
+      customerDetailTitle.textContent = `${selectedCustomer.code || ""} ${selectedCustomer.name || ""}`.trim();
+    }
+    if (selectedCustomer) {
+      updateSupplierUI(selectedCustomer.id);
+    }
   });
 }
 
