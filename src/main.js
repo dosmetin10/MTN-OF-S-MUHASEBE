@@ -997,6 +997,45 @@ app.whenReady().then(() => {
     return data.customers;
   });
 
+  ipcMain.handle("customers:update", async (_event, payload) => {
+    const data = await loadStorage();
+    const { customerId, ...rest } = payload || {};
+    if (!customerId) {
+      return data.customers;
+    }
+    data.customers = data.customers.map((customer) => {
+      if (customer.id !== customerId) {
+        return customer;
+      }
+      const normalizedName = normalizeSpaces(rest.name || customer.name || "");
+      return {
+        ...customer,
+        code: rest.code || customer.code,
+        name: rest.name || customer.name,
+        normalizedName,
+        type: rest.type || customer.type,
+        identityNumber: rest.identityNumber || customer.identityNumber,
+        phone: rest.phone || customer.phone,
+        taxNumber: rest.taxNumber || customer.taxNumber,
+        email: rest.email || customer.email,
+        riskLimit: rest.riskLimit || customer.riskLimit,
+        dueDays: rest.dueDays || customer.dueDays,
+        address: rest.address || customer.address,
+        note: rest.note || customer.note,
+        updatedAt: new Date().toISOString()
+      };
+    });
+    addAuditLog(data, {
+      module: "customers",
+      action: "update",
+      message: `Cari güncellendi: ${normalizedName}`
+    });
+    await saveStorage(data);
+    await syncStorageCopies(data);
+    await maybeAutoBackup(data);
+    return data.customers;
+  });
+
   ipcMain.handle("customers:toggle-status", async (_event, payload) => {
     const data = await loadStorage();
     const { customerId, isActive } = payload || {};

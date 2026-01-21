@@ -76,6 +76,32 @@ const customerDetailStatement = document.getElementById(
 );
 const customerDetailCollect = document.getElementById("customer-detail-collect");
 const customerDetailJob = document.getElementById("customer-detail-job");
+const customerDetailActions = document.getElementById("customer-detail-actions");
+const customerDetailEdit = document.getElementById("customer-detail-edit");
+const customerDetailAddItem = document.getElementById(
+  "customer-detail-add-item"
+);
+const customerDetailAddPayment = document.getElementById(
+  "customer-detail-add-payment"
+);
+const customerDetailAddStock = document.getElementById(
+  "customer-detail-add-stock"
+);
+const customerDetailCreateStatement = document.getElementById(
+  "customer-detail-create-statement"
+);
+const customerDetailDue = document.getElementById("customer-detail-due");
+const customerDetailMethod = document.getElementById("customer-detail-method");
+const customerDetailSupplierActions = document.getElementById(
+  "customer-detail-supplier-actions"
+);
+const supplierDetailAddDebt = document.getElementById(
+  "supplier-detail-add-debt"
+);
+const supplierDetailPay = document.getElementById("supplier-detail-pay");
+const supplierDetailInvoice = document.getElementById(
+  "supplier-detail-invoice"
+);
 const stockForm = document.getElementById("stock-form");
 const stockCreatedAtInput = document.getElementById("stock-created-at");
 const stocksTable = document.getElementById("stocks-table");
@@ -348,6 +374,7 @@ let lastManualBackupDir = "";
 let cachedInvoices = [];
 let cachedImportRows = [];
 let editingStockId = "";
+let editingCustomerId = "";
 let activeCustomerFilter = "all";
 const activeOfferRows = {
   internal: null,
@@ -1031,6 +1058,11 @@ const renderCustomers = (items) => {
         : balanceValue < 0
           ? "badge badge--income"
           : "badge";
+    const dueDate = getCustomerDueDate(item);
+    const isDueSoon =
+      balanceValue > 0 &&
+      dueDate &&
+      dueDate.getTime() <= Date.now() + 7 * DAYS_IN_MS;
     const row = document.createElement("tr");
     row.dataset.customerId = item.id || "";
     row.classList.toggle("row--supplier", isSupplier);
@@ -1050,15 +1082,36 @@ const renderCustomers = (items) => {
         <span class="badge ${isActive ? "badge--income" : "badge--expense"}">
           ${isActive ? "Aktif" : "Pasif"}
         </span>
+        ${
+          isDueSoon
+            ? `<span class="badge badge--warning">Vade Yakın</span>`
+            : ""
+        }
       </td>
       <td>
-        <button class="ghost" data-toggle-status="${
-          item.id
-        }" data-active="${isActive ? "true" : "false"}">
-          ${isActive ? "Pasife Al" : "Aktifleştir"}
-        </button>
+        <div class="row-actions">
+          <button class="ghost" data-quick-collect="${item.id}">Tahsilat Yap</button>
+          <button class="ghost" data-quick-pay="${item.id}">Ödeme Yap</button>
+          <button class="ghost" data-edit-customer="${item.id}">Düzenle</button>
+          <button class="ghost" data-toggle-status="${
+            item.id
+          }" data-active="${isActive ? "true" : "false"}">
+            ${isActive ? "Pasife Al" : "Aktifleştir"}
+          </button>
+        </div>
       </td>
     `;
+    row.querySelector("[data-quick-collect]")?.addEventListener("click", () => {
+      openCustomerTransaction(item.id, "tahsilat");
+      setStatus("Tahsilat ekranı hazır.");
+    });
+    row.querySelector("[data-quick-pay]")?.addEventListener("click", () => {
+      openCustomerTransaction(item.id, "odeme");
+      setStatus("Ödeme ekranı hazır.");
+    });
+    row.querySelector("[data-edit-customer]")?.addEventListener("click", () => {
+      populateCustomerForm(item);
+    });
     row.querySelector("[data-toggle-status]")?.addEventListener("click", async () => {
       if (!window.mtnApp?.toggleCustomerStatus) {
         setStatus("Cari servisi hazır değil.");
@@ -1089,6 +1142,12 @@ const renderCustomers = (items) => {
       }
       if (customerDetailTitle) {
         customerDetailTitle.textContent = `${item.code || ""} ${item.name || ""}`.trim();
+      }
+      if (customerDetailActions) {
+        customerDetailActions.classList.toggle("is-hidden", isSupplier);
+      }
+      if (customerDetailSupplierActions) {
+        customerDetailSupplierActions.classList.toggle("is-hidden", !isSupplier);
       }
       const detailModule = document.getElementById("customer-detail-module");
       detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1159,6 +1218,72 @@ const updateSupplierUI = (customerId) => {
   if (customerDetailSupplierPayment) {
     customerDetailSupplierPayment.classList.toggle("is-hidden", !isSupplier);
   }
+  if (customerDetailActions) {
+    customerDetailActions.classList.toggle("is-hidden", isSupplier);
+  }
+  if (customerDetailSupplierActions) {
+    customerDetailSupplierActions.classList.toggle("is-hidden", !isSupplier);
+  }
+};
+
+const openCustomerTransaction = (customerId, type) => {
+  if (transactionCustomerSelect) {
+    transactionCustomerSelect.value = customerId;
+  }
+  if (transactionTypeSelect) {
+    transactionTypeSelect.value = type;
+  }
+  updateSupplierUI(customerId);
+  showCustomerTab("list");
+  customerTransactionForm?.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+};
+
+const populateCustomerForm = (customer) => {
+  if (!customerForm) {
+    return;
+  }
+  editingCustomerId = customer.id || "";
+  const fields = customerForm.elements;
+  if (fields.code) {
+    fields.code.value = customer.code || "";
+  }
+  if (fields.type) {
+    fields.type.value = customer.type || "musteri";
+  }
+  if (fields.name) {
+    fields.name.value = customer.name || "";
+  }
+  if (fields.identityNumber) {
+    fields.identityNumber.value = customer.identityNumber || "";
+  }
+  if (fields.phone) {
+    fields.phone.value = customer.phone || "";
+  }
+  if (fields.taxNumber) {
+    fields.taxNumber.value = customer.taxNumber || "";
+  }
+  if (fields.email) {
+    fields.email.value = customer.email || "";
+  }
+  if (fields.riskLimit) {
+    fields.riskLimit.value = customer.riskLimit || "";
+  }
+  if (fields.dueDays) {
+    fields.dueDays.value = customer.dueDays || "";
+  }
+  if (fields.address) {
+    fields.address.value = customer.address || "";
+  }
+  if (fields.note) {
+    fields.note.value = customer.note || "";
+  }
+  document
+    .getElementById("customer-form-section")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  setStatus("Cari düzenleme modunda.");
 };
 
 const updateStockSuggestions = (items) => {
@@ -1866,6 +1991,9 @@ const renderCustomerDetail = (data) => {
   const customer = (data.customers || []).find(
     (item) => item.id === customerId
   );
+  if (customer?.id) {
+    updateSupplierUI(customer.id);
+  }
   if (customerDetailSupplierPayment) {
     customerDetailSupplierPayment.classList.toggle(
       "is-hidden",
@@ -2725,20 +2853,37 @@ if (customerForm) {
     const payload = Object.fromEntries(formData.entries());
     const normalizedName = normalizeText(payload.name);
     const hasDuplicate = cachedCustomers.some(
-      (customer) => normalizeText(customer.name) === normalizedName
+      (customer) =>
+        normalizeText(customer.name) === normalizedName &&
+        customer.id !== editingCustomerId
     );
     if (hasDuplicate) {
       setStatus("Bu isimde bir cari zaten mevcut. Lütfen kontrol edin.");
       return;
     }
-    await window.mtnApp.createCustomer(payload);
-    const data = await window.mtnApp.getData();
-    renderCustomers(data.customers || []);
-    renderSummary(data);
-    refreshAccountingPanels(data);
-    customerForm.reset();
-    setAutoCodes();
-    setStatus("Cari kaydedildi.");
+    if (editingCustomerId && window.mtnApp?.updateCustomer) {
+      await window.mtnApp.updateCustomer({
+        customerId: editingCustomerId,
+        ...payload
+      });
+      editingCustomerId = "";
+      const data = await window.mtnApp.getData();
+      renderCustomers(data.customers || []);
+      renderSummary(data);
+      refreshAccountingPanels(data);
+      customerForm.reset();
+      setAutoCodes();
+      setStatus("Cari güncellendi.");
+    } else {
+      await window.mtnApp.createCustomer(payload);
+      const data = await window.mtnApp.getData();
+      renderCustomers(data.customers || []);
+      renderSummary(data);
+      refreshAccountingPanels(data);
+      customerForm.reset();
+      setAutoCodes();
+      setStatus("Cari kaydedildi.");
+    }
   });
 }
 
@@ -3232,6 +3377,104 @@ if (customerDetailJob) {
     showPanel("customers-panel", "Cari");
     showCustomerTab("detail");
     customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+if (customerDetailEdit) {
+  customerDetailEdit.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    const customer = cachedCustomers.find((item) => item.id === customerId);
+    if (customer) {
+      populateCustomerForm(customer);
+    }
+  });
+}
+
+if (customerDetailAddItem) {
+  customerDetailAddItem.addEventListener("click", () => {
+    showPanel("customers-panel", "Cari");
+    customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+}
+
+if (customerDetailAddPayment) {
+  customerDetailAddPayment.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    if (customerId) {
+      openCustomerTransaction(customerId, "tahsilat");
+    }
+  });
+}
+
+if (customerDetailAddStock) {
+  customerDetailAddStock.addEventListener("click", () => {
+    showPanel("stock-list-panel", "Malzeme Stok Listesi");
+    activateMenuByPanel("stock-list-panel");
+    setStatus("Stok listesinden malzeme seçebilirsiniz.");
+  });
+}
+
+if (customerDetailCreateStatement) {
+  customerDetailCreateStatement.addEventListener("click", () => {
+    detailReportButton?.click();
+  });
+}
+
+if (customerDetailDue) {
+  customerDetailDue.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    const customer = cachedCustomers.find((item) => item.id === customerId);
+    if (!customer) {
+      return;
+    }
+    const dueDate = getCustomerDueDate(customer);
+    setStatus(
+      dueDate
+        ? `Ödeme vadesi: ${dueDate.toLocaleDateString("tr-TR")}`
+        : "Ödeme vadesi tanımlı değil."
+    );
+  });
+}
+
+if (customerDetailMethod) {
+  customerDetailMethod.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    const lastPayment = cachedCashTransactions
+      .filter((entry) => entry.customerId === customerId)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    setStatus(
+      lastPayment?.paymentMethod
+        ? `Son ödeme şekli: ${lastPayment.paymentMethod}`
+        : "Ödeme şekli bilgisi bulunamadı."
+    );
+  });
+}
+
+if (supplierDetailAddDebt) {
+  supplierDetailAddDebt.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    if (customerId && transactionTypeSelect) {
+      openCustomerTransaction(customerId, "odeme");
+      setStatus("Tedarikçi borç/alacak girişi için ödeme ekranı açıldı.");
+    }
+  });
+}
+
+if (supplierDetailPay) {
+  supplierDetailPay.addEventListener("click", () => {
+    const customerId = detailCustomerSelect?.value;
+    if (customerId) {
+      openCustomerTransaction(customerId, "odeme");
+      setStatus("Tedarikçi ödeme ekranı açıldı.");
+    }
+  });
+}
+
+if (supplierDetailInvoice) {
+  supplierDetailInvoice.addEventListener("click", () => {
+    showPanel("invoices-panel", "Fatura");
+    activateMenuByPanel("invoices-panel");
+    setStatus("Fiş/Fatura ekleme ekranı açıldı.");
   });
 }
 

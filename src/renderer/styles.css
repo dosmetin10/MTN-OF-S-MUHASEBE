@@ -1176,6 +1176,11 @@ body {
   color: #f05a5a;
 }
 
+.badge--warning {
+  background: rgba(255, 196, 87, 0.2);
+  color: #a97114;
+}
+
 .badge--supplier {
   background: rgba(255, 186, 73, 0.2);
   color: #a86912;
@@ -1193,6 +1198,12 @@ body {
 
 .row--supplier td {
   background: rgba(255, 186, 73, 0.08);
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .chip-group--filters {
