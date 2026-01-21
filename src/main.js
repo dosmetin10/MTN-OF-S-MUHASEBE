@@ -250,6 +250,14 @@ const resolveWarehouse = (value, settings) => {
   return settings?.defaultWarehouse || "Ana Depo";
 };
 
+const pruneAuditLogs = (logs) => {
+  const cutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  return (logs || []).filter((entry) => {
+    const createdAt = new Date(entry.createdAt || 0).getTime();
+    return Number.isNaN(createdAt) || createdAt >= cutoff;
+  });
+};
+
 const normalizeData = (data) => ({
   ...getDefaultData(),
   ...data,
@@ -281,12 +289,12 @@ const normalizeData = (data) => ({
   ),
   ledgerEntries: data.ledgerEntries || [],
   unitConversions: data.unitConversions || [],
-  auditLogs: data.auditLogs || [],
+  auditLogs: pruneAuditLogs(data.auditLogs || []),
   proposals: data.proposals || []
 });
 
 const addAuditLog = (data, entry) => {
-  data.auditLogs = createRecord(data.auditLogs, entry);
+  data.auditLogs = pruneAuditLogs(createRecord(data.auditLogs, entry));
 };
 
 const addLedgerEntry = (data, entry) => {

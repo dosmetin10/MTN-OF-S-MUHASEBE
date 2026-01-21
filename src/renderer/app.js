@@ -1528,7 +1528,7 @@ const renderOffers = (items) => {
   sorted.forEach((item) => {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td>${new Date(item.createdAt).toLocaleDateString("tr-TR")}</td>
+      <td>${new Date(item.createdAt).toLocaleString("tr-TR")}</td>
       <td>${item.title || "-"}</td>
       <td>${item.customerName || "Genel"}</td>
       <td>${formatCurrency(Number(item.total || 0))}</td>
@@ -3907,7 +3907,9 @@ const saveProposal = async (type) => {
     vatRate: Number(vatRateInput?.value || 0),
     vatManual: Number(vatManualInput?.value || 0),
     waybillNo: waybillInput?.value || "",
-    createdAt: dateInput?.value || new Date().toISOString().split("T")[0],
+    createdAt: dateInput?.value
+      ? `${dateInput.value}T${new Date().toTimeString().slice(0, 8)}`
+      : new Date().toISOString(),
     pdfPath: report.reportFile
   });
   renderOffers(data.proposals || []);
@@ -4027,6 +4029,7 @@ if (offerRefreshButton) {
   offerRefreshButton.addEventListener("click", async () => {
     const data = await window.mtnApp?.getData?.();
     renderOffers(data?.proposals || []);
+    setStatus("Teklif listesi güncellendi.");
   });
 }
 
