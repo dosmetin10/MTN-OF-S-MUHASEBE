@@ -517,6 +517,33 @@ body {
   transform: translateY(0);
 }
 
+.center-status {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(0.98);
+  min-width: 280px;
+  max-width: 520px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(16, 26, 48, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #eef3ff;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
+  transition: opacity var(--transition), transform var(--transition);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.center-status.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .topbar__exit {
   width: 36px;
   height: 36px;

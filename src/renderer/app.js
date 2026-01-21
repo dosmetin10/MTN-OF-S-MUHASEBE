@@ -323,6 +323,9 @@ const restoreBackupFileInput = document.getElementById("restore-backup-file");
 const restoreBackupButton = document.getElementById("restore-backup");
 const restoreBackupStatus = document.getElementById("restore-backup-status");
 const globalStatusEl = document.getElementById("global-status");
+const centerStatusEl = document.getElementById("center-status");
+const openingDebtField = document.getElementById("opening-debt-field");
+const openingCreditField = document.getElementById("opening-credit-field");
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat("tr-TR", {
@@ -349,11 +352,16 @@ const setStatus = (message) => {
   }
   globalStatusEl.textContent = message;
   globalStatusEl.classList.add("is-visible");
+  if (centerStatusEl) {
+    centerStatusEl.textContent = message;
+    centerStatusEl.classList.add("is-visible");
+  }
   if (statusTimeout) {
     window.clearTimeout(statusTimeout);
   }
   statusTimeout = window.setTimeout(() => {
     globalStatusEl.classList.remove("is-visible");
+    centerStatusEl?.classList.remove("is-visible");
   }, 4500);
 };
 
@@ -1102,14 +1110,15 @@ const renderCustomers = (items) => {
       </td>
     `;
     row.querySelector("[data-quick-collect]")?.addEventListener("click", () => {
-      openCustomerTransaction(item.id, "tahsilat");
-      setStatus("Tahsilat ekranı hazır.");
+      openCustomerDetail(item);
+      setStatus("Cari detay sekmesi açıldı.");
     });
     row.querySelector("[data-quick-pay]")?.addEventListener("click", () => {
-      openCustomerTransaction(item.id, "odeme");
-      setStatus("Ödeme ekranı hazır.");
+      openCustomerDetail(item);
+      setStatus("Cari detay sekmesi açıldı.");
     });
     row.querySelector("[data-edit-customer]")?.addEventListener("click", () => {
+      openCustomerDetail(item);
       populateCustomerForm(item);
     });
     row.querySelector("[data-toggle-status]")?.addEventListener("click", async () => {
@@ -1126,31 +1135,7 @@ const renderCustomers = (items) => {
       setStatus(nextActive ? "Cari aktifleştirildi." : "Cari pasife alındı.");
     });
     row.addEventListener("dblclick", () => {
-      if (detailCustomerSelect && item.id) {
-        detailCustomerSelect.value = item.id;
-      }
-      renderCustomerDetail({
-        customers: cachedCustomers,
-        customerDebts: cachedCustomerDebts,
-        customerJobs: cachedCustomerJobs,
-        cashTransactions: cachedCashTransactions,
-        sales: cachedSales
-      });
-      showCustomerTab("detail");
-      if (customerDetailCard) {
-        customerDetailCard.classList.remove("is-hidden");
-      }
-      if (customerDetailTitle) {
-        customerDetailTitle.textContent = `${item.code || ""} ${item.name || ""}`.trim();
-      }
-      if (customerDetailActions) {
-        customerDetailActions.classList.toggle("is-hidden", isSupplier);
-      }
-      if (customerDetailSupplierActions) {
-        customerDetailSupplierActions.classList.toggle("is-hidden", !isSupplier);
-      }
-      const detailModule = document.getElementById("customer-detail-module");
-      detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
+      openCustomerDetail(item);
     });
     customersTable.appendChild(row);
   });
@@ -1218,11 +1203,25 @@ const updateSupplierUI = (customerId) => {
   if (customerDetailSupplierPayment) {
     customerDetailSupplierPayment.classList.toggle("is-hidden", !isSupplier);
   }
+  if (customerForm?.elements?.type) {
+    customerForm.elements.type.value = isSupplier ? "tedarikci" : "musteri";
+  }
+  enforceOpeningBalanceRules();
   if (customerDetailActions) {
     customerDetailActions.classList.toggle("is-hidden", isSupplier);
   }
   if (customerDetailSupplierActions) {
     customerDetailSupplierActions.classList.toggle("is-hidden", !isSupplier);
+  }
+  if (openingCreditField) {
+    openingCreditField.classList.toggle("is-hidden", isSupplier);
+    const input = openingCreditField.querySelector("input");
+    if (input && isSupplier) {
+      input.value = "0";
+    }
+    if (input) {
+      input.disabled = isSupplier;
+    }
   }
 };
 
@@ -1239,6 +1238,36 @@ const openCustomerTransaction = (customerId, type) => {
     behavior: "smooth",
     block: "start"
   });
+};
+
+const openCustomerDetail = (customer) => {
+  if (!customer) {
+    return;
+  }
+  showPanel("customers-panel", "Cari");
+  activateMenuByPanel("customers-panel");
+  const panel = document.getElementById("customers-panel");
+  if (panel) {
+    activateSubpanel(panel, "cari-detay");
+  }
+  if (detailCustomerSelect) {
+    detailCustomerSelect.value = customer.id;
+  }
+  renderCustomerDetail({
+    customers: cachedCustomers,
+    customerDebts: cachedCustomerDebts,
+    customerJobs: cachedCustomerJobs,
+    cashTransactions: cachedCashTransactions,
+    sales: cachedSales
+  });
+  if (customerDetailCard) {
+    customerDetailCard.classList.remove("is-hidden");
+  }
+  if (customerDetailTitle) {
+    customerDetailTitle.textContent = `${customer.code || ""} ${customer.name || ""}`.trim();
+  }
+  const detailModule = document.getElementById("customer-detail-module");
+  detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const populateCustomerForm = (customer) => {
@@ -1280,10 +1309,44 @@ const populateCustomerForm = (customer) => {
   if (fields.note) {
     fields.note.value = customer.note || "";
   }
+  if (openingDebtField?.querySelector("input")) {
+    openingDebtField.querySelector("input").value = "0";
+  }
+  if (openingCreditField?.querySelector("input")) {
+    openingCreditField.querySelector("input").value = "0";
+  }
   document
     .getElementById("customer-form-section")
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
   setStatus("Cari düzenleme modunda.");
+};
+
+const enforceOpeningBalanceRules = () => {
+  if (!customerForm) {
+    return;
+  }
+  const typeValue = customerForm.elements.type?.value || "musteri";
+  const debtInput = customerForm.elements.openingDebt;
+  const creditInput = customerForm.elements.openingCredit;
+  if (openingCreditField) {
+    openingCreditField.classList.toggle("is-hidden", typeValue !== "tedarikci");
+  }
+  if (creditInput) {
+    creditInput.disabled = typeValue !== "tedarikci";
+    if (typeValue !== "tedarikci") {
+      creditInput.value = "0";
+    }
+  }
+  if (debtInput && Number(debtInput.value || 0) > 0) {
+    if (creditInput) {
+      creditInput.value = "0";
+    }
+  }
+  if (creditInput && Number(creditInput.value || 0) > 0) {
+    if (debtInput) {
+      debtInput.value = "0";
+    }
+  }
 };
 
 const updateStockSuggestions = (items) => {
@@ -2847,6 +2910,10 @@ const generateReport = async (type) => {
 };
 
 if (customerForm) {
+  enforceOpeningBalanceRules();
+  customerForm.elements.type?.addEventListener("change", enforceOpeningBalanceRules);
+  customerForm.elements.openingDebt?.addEventListener("input", enforceOpeningBalanceRules);
+  customerForm.elements.openingCredit?.addEventListener("input", enforceOpeningBalanceRules);
   customerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(customerForm);
@@ -2858,7 +2925,7 @@ if (customerForm) {
         customer.id !== editingCustomerId
     );
     if (hasDuplicate) {
-      setStatus("Bu isimde bir cari zaten mevcut. Lütfen kontrol edin.");
+      setStatus("Bu cari daha önce eklenildi.");
       return;
     }
     if (editingCustomerId && window.mtnApp?.updateCustomer) {
@@ -3402,6 +3469,7 @@ if (customerDetailAddPayment) {
     const customerId = detailCustomerSelect?.value;
     if (customerId) {
       openCustomerTransaction(customerId, "tahsilat");
+      setStatus("Tahsilat ekranı açıldı.");
     }
   });
 }
@@ -3452,11 +3520,13 @@ if (customerDetailMethod) {
 
 if (supplierDetailAddDebt) {
   supplierDetailAddDebt.addEventListener("click", () => {
-    const customerId = detailCustomerSelect?.value;
-    if (customerId && transactionTypeSelect) {
-      openCustomerTransaction(customerId, "odeme");
-      setStatus("Tedarikçi borç/alacak girişi için ödeme ekranı açıldı.");
+    showPanel("stocks-panel", "Stok");
+    activateMenuByPanel("stocks-panel");
+    const panel = document.getElementById("stocks-panel");
+    if (panel) {
+      activateSubpanel(panel, "fis-ekle");
     }
+    setStatus("Alınan malzeme için fiş ekleme ekranı açıldı.");
   });
 }
 

@@ -205,6 +205,7 @@
             </button>
           </div>
         </header>
+        <div class="center-status" id="center-status" aria-live="polite"></div>
         <div class="content__scroll">
           <section class="panel panel--active" id="dashboard-panel">
             <div class="dashboard">
@@ -393,11 +394,11 @@
                   TC / VKN
                   <input name="identityNumber" placeholder="TC / VKN" />
                 </label>
-                <label>
+                <label id="opening-debt-field">
                   Açılış Borç
                   <input name="openingDebt" type="number" min="0" step="0.01" placeholder="0" />
                 </label>
-                <label>
+                <label id="opening-credit-field">
                   Açılış Alacak
                   <input name="openingCredit" type="number" min="0" step="0.01" placeholder="0" />
                 </label>
@@ -489,7 +490,7 @@
                 <div class="table-card is-hidden" id="customer-detail-card">
                   <div class="table-actions">
                     <h3 id="customer-detail-title">Cari Detay</h3>
-                    <button class="ghost" id="customer-detail-close">Kapat</button>
+                    <button class="ghost" id="customer-detail-close">✕</button>
                     <button class="ghost" id="customer-detail-supplier-payment">
                       Tedarikçiye Ödeme
                     </button>
@@ -510,7 +511,7 @@
                     <button class="ghost" id="customer-detail-method">💼 Ödeme Şekli</button>
                   </div>
                   <div class="report-actions is-hidden" id="customer-detail-supplier-actions">
-                    <button class="ghost" id="supplier-detail-add-debt">📌 Borç/Alacak Ekle</button>
+                    <button class="ghost" id="supplier-detail-add-debt">📦 Alınan Malzeme Detayı</button>
                     <button class="ghost" id="supplier-detail-pay">💳 Borç/Alacak Öde</button>
                     <button class="ghost" id="supplier-detail-invoice">📄 Fiş/Fatura Ekle</button>
                   </div>
