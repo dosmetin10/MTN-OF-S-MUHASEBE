@@ -55,6 +55,18 @@ const customerSearchSuggestion = document.getElementById(
 const customerFilterButtons = document.querySelectorAll(
   "[data-customer-filter]"
 );
+const customerFilterAllCount = document.getElementById(
+  "customer-filter-all-count"
+);
+const customerFilterDebtorsCount = document.getElementById(
+  "customer-filter-debtors-count"
+);
+const customerFilterCreditorsCount = document.getElementById(
+  "customer-filter-creditors-count"
+);
+const customerFilterDueCount = document.getElementById(
+  "customer-filter-due-count"
+);
 const customerDetailCard = document.getElementById("customer-detail-card");
 const customerDetailTitle = document.getElementById("customer-detail-title");
 const customerDetailClose = document.getElementById("customer-detail-close");
@@ -949,6 +961,32 @@ const renderCustomers = (items) => {
         dueDate.getTime() <= horizon
       );
     });
+  }
+  if (customerFilterAllCount) {
+    customerFilterAllCount.textContent = items.length;
+  }
+  if (customerFilterDebtorsCount) {
+    customerFilterDebtorsCount.textContent = items.filter(
+      (item) => Number(item.balance || 0) > 0
+    ).length;
+  }
+  if (customerFilterCreditorsCount) {
+    customerFilterCreditorsCount.textContent = items.filter(
+      (item) => Number(item.balance || 0) < 0
+    ).length;
+  }
+  if (customerFilterDueCount) {
+    const now = Date.now();
+    const horizon = now + 7 * DAYS_IN_MS;
+    customerFilterDueCount.textContent = items.filter((item) => {
+      const dueDate = getCustomerDueDate(item);
+      return (
+        Number(item.balance || 0) > 0 &&
+        dueDate &&
+        dueDate.getTime() >= now &&
+        dueDate.getTime() <= horizon
+      );
+    }).length;
   }
   if (offerCustomerSelect) {
     offerCustomerSelect.innerHTML = "";

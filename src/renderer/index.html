@@ -338,10 +338,18 @@
                   <button class="ghost" id="customer-search-btn">Ara</button>
                 </div>
                 <div class="chip-group chip-group--filters" id="customer-filters">
-                  <button class="chip chip--active" data-customer-filter="all">Hepsi</button>
-                  <button class="chip" data-customer-filter="debtors">Borçlular</button>
-                  <button class="chip" data-customer-filter="creditors">Alacaklılar</button>
-                  <button class="chip" data-customer-filter="due">Vadesi Yaklaşan</button>
+                  <button class="chip chip--active" data-customer-filter="all">
+                    Hepsi <span class="chip__count" id="customer-filter-all-count">0</span>
+                  </button>
+                  <button class="chip" data-customer-filter="debtors">
+                    Borçlular <span class="chip__count" id="customer-filter-debtors-count">0</span>
+                  </button>
+                  <button class="chip" data-customer-filter="creditors">
+                    Alacaklılar <span class="chip__count" id="customer-filter-creditors-count">0</span>
+                  </button>
+                  <button class="chip" data-customer-filter="due">
+                    Vadesi Yaklaşan <span class="chip__count" id="customer-filter-due-count">0</span>
+                  </button>
                 </div>
                 <p class="search-hint" id="customer-search-suggestion"></p>
                 <div class="table-card">
