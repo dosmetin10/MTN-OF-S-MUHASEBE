@@ -1213,14 +1213,24 @@ const updateSupplierUI = (customerId) => {
   if (customerDetailSupplierActions) {
     customerDetailSupplierActions.classList.toggle("is-hidden", !isSupplier);
   }
-  if (openingCreditField) {
-    openingCreditField.classList.toggle("is-hidden", isSupplier);
-    const input = openingCreditField.querySelector("input");
+  if (openingDebtField) {
+    openingDebtField.classList.toggle("is-hidden", isSupplier);
+    const input = openingDebtField.querySelector("input");
     if (input && isSupplier) {
       input.value = "0";
     }
     if (input) {
       input.disabled = isSupplier;
+    }
+  }
+  if (openingCreditField) {
+    openingCreditField.classList.toggle("is-hidden", !isSupplier);
+    const input = openingCreditField.querySelector("input");
+    if (input && !isSupplier) {
+      input.value = "0";
+    }
+    if (input) {
+      input.disabled = !isSupplier;
     }
   }
 };
@@ -1244,12 +1254,6 @@ const openCustomerDetail = (customer) => {
   if (!customer) {
     return;
   }
-  showPanel("customers-panel", "Cari");
-  activateMenuByPanel("customers-panel");
-  const panel = document.getElementById("customers-panel");
-  if (panel) {
-    activateSubpanel(panel, "cari-detay");
-  }
   if (detailCustomerSelect) {
     detailCustomerSelect.value = customer.id;
   }
@@ -1266,8 +1270,7 @@ const openCustomerDetail = (customer) => {
   if (customerDetailTitle) {
     customerDetailTitle.textContent = `${customer.code || ""} ${customer.name || ""}`.trim();
   }
-  const detailModule = document.getElementById("customer-detail-module");
-  detailModule?.scrollIntoView({ behavior: "smooth", block: "start" });
+  customerDetailCard?.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const populateCustomerForm = (customer) => {
@@ -1328,23 +1331,23 @@ const enforceOpeningBalanceRules = () => {
   const typeValue = customerForm.elements.type?.value || "musteri";
   const debtInput = customerForm.elements.openingDebt;
   const creditInput = customerForm.elements.openingCredit;
+  const isSupplier = typeValue === "tedarikci";
+  if (openingDebtField) {
+    openingDebtField.classList.toggle("is-hidden", isSupplier);
+  }
   if (openingCreditField) {
-    openingCreditField.classList.toggle("is-hidden", typeValue !== "tedarikci");
+    openingCreditField.classList.toggle("is-hidden", !isSupplier);
+  }
+  if (debtInput) {
+    debtInput.disabled = isSupplier;
+    if (isSupplier) {
+      debtInput.value = "0";
+    }
   }
   if (creditInput) {
-    creditInput.disabled = typeValue !== "tedarikci";
-    if (typeValue !== "tedarikci") {
+    creditInput.disabled = !isSupplier;
+    if (!isSupplier) {
       creditInput.value = "0";
-    }
-  }
-  if (debtInput && Number(debtInput.value || 0) > 0) {
-    if (creditInput) {
-      creditInput.value = "0";
-    }
-  }
-  if (creditInput && Number(creditInput.value || 0) > 0) {
-    if (debtInput) {
-      debtInput.value = "0";
     }
   }
 };
@@ -3459,8 +3462,8 @@ if (customerDetailEdit) {
 
 if (customerDetailAddItem) {
   customerDetailAddItem.addEventListener("click", () => {
-    showPanel("customers-panel", "Cari");
     customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus("İş kalemi ekleme ekranı açıldı.");
   });
 }
 
@@ -3476,9 +3479,8 @@ if (customerDetailAddPayment) {
 
 if (customerDetailAddStock) {
   customerDetailAddStock.addEventListener("click", () => {
-    showPanel("stock-list-panel", "Malzeme Stok Listesi");
-    activateMenuByPanel("stock-list-panel");
-    setStatus("Stok listesinden malzeme seçebilirsiniz.");
+    customerJobForm?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus("Satılan malzemeyi iş kalemi olarak ekleyebilirsiniz.");
   });
 }
 
@@ -3520,13 +3522,8 @@ if (customerDetailMethod) {
 
 if (supplierDetailAddDebt) {
   supplierDetailAddDebt.addEventListener("click", () => {
-    showPanel("stocks-panel", "Stok");
-    activateMenuByPanel("stocks-panel");
-    const panel = document.getElementById("stocks-panel");
-    if (panel) {
-      activateSubpanel(panel, "fis-ekle");
-    }
-    setStatus("Alınan malzeme için fiş ekleme ekranı açıldı.");
+    openCustomerTransaction(detailCustomerSelect?.value, "odeme");
+    setStatus("Alınan malzeme için borç kaydı ekleyebilirsiniz.");
   });
 }
 
@@ -3542,9 +3539,8 @@ if (supplierDetailPay) {
 
 if (supplierDetailInvoice) {
   supplierDetailInvoice.addEventListener("click", () => {
-    showPanel("invoices-panel", "Fatura");
-    activateMenuByPanel("invoices-panel");
-    setStatus("Fiş/Fatura ekleme ekranı açıldı.");
+    openCustomerTransaction(detailCustomerSelect?.value, "odeme");
+    setStatus("Fiş/Fatura bilgisi için ödeme açıklamasını doldurun.");
   });
 }
 
