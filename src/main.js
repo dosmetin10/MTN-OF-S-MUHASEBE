@@ -1490,7 +1490,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle("cash:create", async (_event, payload) => {
     const data = await loadStorage();
-    data.cashTransactions = createRecord(data.cashTransactions, payload);
+    const customerName =
+      payload.customerName ||
+      data.customers.find((customer) => customer.id === payload.customerId)?.name ||
+      "";
+    data.cashTransactions = createRecord(data.cashTransactions, {
+      ...payload,
+      customerName
+    });
     addLedgerEntry(data, {
       accountCode: payload.type === "gider" ? "320" : "100",
       accountName: payload.type === "gider" ? "SATICILAR" : "KASA",

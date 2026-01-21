@@ -151,6 +151,11 @@ const cashStartInput = document.getElementById("cash-start");
 const cashEndInput = document.getElementById("cash-end");
 const cashTypeSelect = document.getElementById("cash-type");
 const cashDateInput = document.getElementById("cash-date");
+const cashTypeButtons = document.querySelectorAll("[data-cash-type]");
+const cashTypeInput = document.getElementById("cash-type-input");
+const cashCustomerSelect = document.getElementById("cash-customer");
+const cashPaymentMethodSelect = document.getElementById("cash-payment-method");
+const cashReceiptToggle = document.getElementById("cash-receipt-toggle");
 const salesTable = document.getElementById("sales-table");
 const reportCustomersButton = document.getElementById("report-customers");
 const reportStocksButton = document.getElementById("report-stocks");
@@ -1009,6 +1014,13 @@ const renderCustomers = (items) => {
     defaultOption.textContent = "Cari Seç";
     detailCustomerSelect.appendChild(defaultOption);
   }
+  if (cashCustomerSelect) {
+    cashCustomerSelect.innerHTML = "";
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = "Cari Seç";
+    cashCustomerSelect.appendChild(defaultOption);
+  }
   filtered.forEach((item) => {
     const isActive = item.isActive !== false;
     const isSupplier = item.type === "tedarikci";
@@ -1110,6 +1122,14 @@ const renderCustomers = (items) => {
         ? `${item.code} - ${item.name || "Cari"}`
         : item.name || "Cari";
       detailCustomerSelect.appendChild(option);
+    }
+    if (cashCustomerSelect) {
+      const option = document.createElement("option");
+      option.value = item.id || item.name || "";
+      option.textContent = item.code
+        ? `${item.code} - ${item.name || "Cari"}`
+        : item.name || "Cari";
+      cashCustomerSelect.appendChild(option);
     }
   });
   if (customerSearchSuggestion) {
@@ -2417,6 +2437,48 @@ const buildInvoiceHtml = (title, rows) => {
   `;
 };
 
+const buildReceiptHtml = ({
+  customerName,
+  amount,
+  paymentMethod,
+  note,
+  createdAt,
+  title
+}) => {
+  const companyName = currentSettings.companyName || "MTN Enerji";
+  const taxOffice = currentSettings.taxOffice || "Vergi Dairesi";
+  const taxNumber = currentSettings.taxNumber || "0000000000";
+  const logoSrc = currentSettings.logoDataUrl || "";
+  const logoHtml = logoSrc
+    ? `<img class="report-logo-img" src="${logoSrc}" alt="Firma logosu" />`
+    : `<div class="report-logo">MTN</div>`;
+  return `
+    <div class="report-frame">
+      <div class="report-header">
+        <div class="report-logo-block">${logoHtml}</div>
+        <div class="report-meta">
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(companyName)}</p>
+          <p>Vergi Dairesi: ${escapeHtml(taxOffice)} • Vergi No: ${escapeHtml(
+            taxNumber
+          )}</p>
+        </div>
+      </div>
+      <table>
+        <tbody>
+          <tr><th>Tarih</th><td>${escapeHtml(
+            new Date(createdAt).toLocaleString("tr-TR")
+          )}</td></tr>
+          <tr><th>Cari</th><td>${escapeHtml(customerName || "-")}</td></tr>
+          <tr><th>Ödeme Türü</th><td>${escapeHtml(paymentMethod || "-")}</td></tr>
+          <tr><th>Tutar</th><td>${escapeHtml(formatCurrency(amount))}</td></tr>
+          <tr><th>Açıklama</th><td>${escapeHtml(note || "-")}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+};
+
 const buildOfferHtml = (title, rows, totals) => {
   const rowHtml = rows
     .map(
@@ -2995,13 +3057,45 @@ if (cashForm) {
     event.preventDefault();
     const formData = new FormData(cashForm);
     const payload = Object.fromEntries(formData.entries());
+    const customerOption = cashCustomerSelect?.selectedOptions?.[0];
+    payload.customerName = customerOption?.textContent || "";
+    payload.paymentMethod = payload.paymentMethod || cashPaymentMethodSelect?.value || "";
+    payload.type = payload.type || cashTypeInput?.value || "gelir";
     await window.mtnApp.createCash(payload);
+    if (payload.type === "gelir" && cashReceiptToggle?.checked) {
+      const html = buildReceiptHtml({
+        customerName: payload.customerName,
+        amount: Number(payload.amount || 0),
+        paymentMethod: payload.paymentMethod,
+        note: payload.note,
+        createdAt: payload.createdAt || new Date().toISOString(),
+        title: "Tahsilat Makbuzu"
+      });
+      const result = await window.mtnApp?.generateReport?.({
+        title: "Tahsilat-Makbuz",
+        html
+      });
+      if (result?.reportFile) {
+        await window.mtnApp?.openFile?.(result.reportFile);
+        setStatus("Tahsilat makbuzu oluşturuldu.");
+      }
+    }
     const data = await window.mtnApp.getData();
     renderCash(data.cashTransactions || []);
     renderSummary(data);
     refreshAccountingPanels(data);
+    setStatus("Kasa işlemi kaydedildi.");
     cashForm.reset();
     setTodayDate();
+    if (cashTypeInput) {
+      cashTypeInput.value = "gelir";
+    }
+    cashTypeButtons.forEach((button) => {
+      button.classList.toggle(
+        "toggle-button--active",
+        button.dataset.cashType === "gelir"
+      );
+    });
   });
 }
 
@@ -3045,6 +3139,24 @@ if (cashStartInput) {
     input?.addEventListener("input", async () => {
       const data = await window.mtnApp.getData();
       renderCash(data.cashTransactions || []);
+    });
+  });
+}
+
+if (cashTypeButtons.length && cashTypeInput) {
+  cashTypeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextType = button.dataset.cashType || "gelir";
+      cashTypeInput.value = nextType;
+      cashTypeButtons.forEach((btn) =>
+        btn.classList.toggle(
+          "toggle-button--active",
+          btn.dataset.cashType === nextType
+        )
+      );
+      if (cashReceiptToggle) {
+        cashReceiptToggle.checked = nextType === "gelir" && cashReceiptToggle.checked;
+      }
     });
   });
 }

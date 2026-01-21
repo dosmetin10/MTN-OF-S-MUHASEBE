@@ -1345,16 +1345,42 @@
                   Tarih
                   <input name="createdAt" type="date" id="cash-date" readonly />
                 </label>
+                <div class="full-width">
+                  <span class="label">İşlem Türü</span>
+                  <div class="toggle-group" id="cash-type-buttons">
+                    <button class="toggle-button toggle-button--active" type="button" data-cash-type="gelir">
+                      Tahsilat Yap
+                    </button>
+                    <button class="toggle-button" type="button" data-cash-type="gider">
+                      Borç Ödeme
+                    </button>
+                  </div>
+                  <input type="hidden" name="type" id="cash-type-input" value="gelir" />
+                </div>
                 <label>
-                  İşlem Türü
-                  <select name="type">
-                    <option value="gelir">Gelir</option>
-                    <option value="gider">Gider</option>
+                  Cari
+                  <select name="customerId" id="cash-customer">
+                    <option value="">Cari Seç</option>
+                  </select>
+                </label>
+                <label>
+                  Ödeme Türü
+                  <select name="paymentMethod" id="cash-payment-method">
+                    <option value="Nakit">Nakit</option>
+                    <option value="EFT">EFT</option>
+                    <option value="Havale">Havale</option>
+                    <option value="Çek">Çek</option>
+                    <option value="Kart">Kart</option>
+                    <option value="Senet">Senet</option>
                   </select>
                 </label>
                 <label>
                   Tutar
                   <input name="amount" type="number" min="0" step="0.01" />
+                </label>
+                <label class="full-width checkbox">
+                  <input type="checkbox" id="cash-receipt-toggle" />
+                  Tahsilat sonrası makbuz oluştur
                 </label>
                 <label class="full-width">
                   Açıklama
