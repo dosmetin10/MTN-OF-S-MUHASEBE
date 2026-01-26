@@ -241,6 +241,35 @@ button:hover {
   background: #1e40af;
 }
 
+.ghost {
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.ghost:hover {
+  background: #cbd5f5;
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+}
+
+.pill.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pill.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .summary {
   display: flex;
   flex-wrap: wrap;
@@ -276,7 +305,7 @@ button:hover {
 }
 
 .table-cari {
-  grid-template-columns: 1.5fr 0.9fr 0.9fr 0.9fr 1fr;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr 0.8fr 1fr 0.7fr 0.6fr;
 }
 
 .table-move {
@@ -289,6 +318,59 @@ button:hover {
 
 .table-invoice {
   grid-template-columns: 0.9fr 1.2fr 1.2fr 0.7fr 0.8fr;
+}
+
+.table-offer {
+  grid-template-columns: 1fr 1.4fr 1.1fr 0.8fr 0.9fr 1.1fr 1.2fr 0.8fr;
+}
+
+.table-detail {
+  grid-template-columns: 0.8fr 1.2fr 0.7fr 0.8fr 0.8fr 0.6fr;
+}
+
+.table-payment {
+  grid-template-columns: 0.7fr 0.8fr 1.4fr;
+}
+
+.table-head.table-offer,
+.table-head.table-detail,
+.table-head.table-payment {
+  background: #e0f2fe;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offer-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.offer-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.offer-search input {
+  min-width: 220px;
+}
+
+.detail-card {
+  grid-column: 1 / -1;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.detail-section h3 {
+  margin: 0;
+  font-size: 16px;
 }
 
 .roadmap ol {

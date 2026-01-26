@@ -25,8 +25,16 @@ const emptyMovementForm = {
 
 const emptyCashForm = {
   type: "income",
+  cariId: "",
   amount: "",
   note: ""
+};
+
+const emptyOfferForm = {
+  title: "",
+  cariId: "",
+  amount: "",
+  date: ""
 };
 
 const emptyInvoiceForm = {
@@ -47,6 +55,13 @@ const formatDate = (value) => {
   }
   return new Date(value).toLocaleDateString("tr-TR");
 };
+
+const formatMoney = (value) =>
+  new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "TRY",
+    minimumFractionDigits: 2
+  }).format(Number(value || 0));
 
 export default function App() {
   // simple hash-based routing (e.g. #/stok, #/cari)
@@ -71,7 +86,8 @@ export default function App() {
     movement: "hareket",
     hareket: "hareket",
     cash: "kasa",
-    kasa: "kasa"
+    kasa: "kasa",
+    teklif: "teklif"
   };
   const activeModule = hashModule ? (mapModule[hashModule] || hashModule) : null;
 
@@ -91,16 +107,23 @@ export default function App() {
   const [cariForm, setCariForm] = useState(emptyCariForm);
   const [movementForm, setMovementForm] = useState(emptyMovementForm);
   const [cashForm, setCashForm] = useState(emptyCashForm);
+  const [offerForm, setOfferForm] = useState(emptyOfferForm);
   const [invoiceForm, setInvoiceForm] = useState(emptyInvoiceForm);
   const [stockItems, setStockItems] = useState([]);
   const [cariItems, setCariItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [cashEntries, setCashEntries] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [offers, setOffers] = useState([]);
+  const [offerSearch, setOfferSearch] = useState("");
+  const [selectedCariId, setSelectedCariId] = useState("");
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
 
   const nextStockCode = formatCode("MLZ", stockItems.length + 1);
   const nextCariCode = formatCode("CARI", cariItems.length + 1);
   const nextInvoiceCode = formatCode("FTR", invoices.length + 1);
+  const nextOfferCode = formatCode("TKLF", offers.length + 1);
+  const nextIrsaliyeCode = formatCode("IRSL", offers.length + 1);
 
   const totalStockValue = useMemo(() => {
     return stockItems.reduce(
@@ -141,6 +164,11 @@ export default function App() {
   const handleCashChange = (event) => {
     const { name, value } = event.target;
     setCashForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleOfferChange = (event) => {
+    const { name, value } = event.target;
+    setOfferForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleInvoiceChange = (event) => {
@@ -197,7 +225,8 @@ export default function App() {
       email: cariForm.email.trim(),
       address: cariForm.address.trim(),
       balance: Number(cariForm.balance),
-      dueDate: cariForm.dueDate
+      dueDate: cariForm.dueDate,
+      isActive: true
     };
 
     if (!nextCari.name) {
@@ -272,6 +301,7 @@ export default function App() {
     const invoice = {
       id: crypto.randomUUID(),
       code: nextInvoiceCode,
+      cariId: selectedCari.id,
       cariName: selectedCari.name,
       cariCode: selectedCari.code,
       itemName: selectedItem.name,
@@ -307,9 +337,12 @@ export default function App() {
 
   const handleCashSubmit = (event) => {
     event.preventDefault();
+    const selectedCari = cariItems.find((cari) => cari.id === cashForm.cariId);
     const entry = {
       id: crypto.randomUUID(),
       type: cashForm.type,
+      cariId: cashForm.cariId,
+      cariName: selectedCari?.name || "",
       amount: Number(cashForm.amount),
       note: cashForm.note.trim()
     };
@@ -321,6 +354,85 @@ export default function App() {
     setCashEntries((prev) => [entry, ...prev]);
     setCashForm(emptyCashForm);
   };
+
+  const handleOfferSubmit = (event) => {
+    event.preventDefault();
+    const selectedCari = cariItems.find((cari) => cari.id === offerForm.cariId);
+    const createdAt = offerForm.date || new Date().toISOString();
+    const offer = {
+      id: crypto.randomUUID(),
+      code: nextOfferCode,
+      irsaliyeCode: nextIrsaliyeCode,
+      createdAt,
+      title: offerForm.title.trim(),
+      amount: Number(offerForm.amount),
+      cariId: selectedCari?.id || "",
+      cariName: selectedCari?.name || "Genel",
+      status: selectedCari ? "Atandı" : "Atanmadı"
+    };
+
+    if (!offer.title) {
+      return;
+    }
+
+    setOffers((prev) => [offer, ...prev]);
+    setOfferForm(emptyOfferForm);
+  };
+
+  const handleOfferAssign = (offerId, cariId) => {
+    const selectedCari = cariItems.find((cari) => cari.id === cariId);
+    setOffers((prev) =>
+      prev.map((offer) =>
+        offer.id === offerId
+          ? {
+              ...offer,
+              cariId,
+              cariName: selectedCari?.name || "Genel",
+              status: selectedCari ? "Atandı" : "Atanmadı"
+            }
+          : offer
+      )
+    );
+  };
+
+  const toggleCariStatus = (id) => {
+    setCariItems((prev) =>
+      prev.map((cari) =>
+        cari.id === id ? { ...cari, isActive: !cari.isActive } : cari
+      )
+    );
+  };
+
+  const saveInvoiceEdit = (id, field, value) => {
+    setInvoices((prev) =>
+      prev.map((inv) => {
+        if (inv.id !== id) return inv;
+        const updated = { ...inv, [field]: value };
+        return { ...updated, total: updated.quantity * updated.price };
+      })
+    );
+    setEditingInvoiceId(null);
+  };
+
+  const filteredOffers = useMemo(() => {
+    const term = offerSearch.trim().toLowerCase();
+    if (!term) return offers;
+    return offers.filter((offer) => {
+      return (
+        offer.title.toLowerCase().includes(term) ||
+        offer.cariName.toLowerCase().includes(term) ||
+        offer.code.toLowerCase().includes(term)
+      );
+    });
+  }, [offerSearch, offers]);
+
+  const selectedCari = cariItems.find((cari) => cari.id === selectedCariId);
+  const selectedCariInvoices = invoices.filter(
+    (invoice) => invoice.cariId === selectedCariId
+  );
+  const selectedCariPayments = cashEntries.filter(
+    (entry) => entry.cariId === selectedCariId
+  );
 
   return (
     <div className="shell">
@@ -337,6 +449,7 @@ export default function App() {
           <a className="nav-item" href="#/stok">Stok Yönetimi</a>
           <a className="nav-item" href="#/cari">Cari Kartlar</a>
           <a className="nav-item" href="#/fatura">Faturalar</a>
+          <a className="nav-item" href="#/teklif">Tekliflerim</a>
           <a className="nav-item" href="#/hareket">Stok Hareketleri</a>
           <a className="nav-item" href="#/kasa">Gelir / Gider</a>
         </nav>
@@ -480,9 +593,9 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="eyebrow">MTN OFS · Muhasebe & Stok</p>
-            <h1>İşletme Yönetim Paneli</h1>
+            <h1>Kurumsal Ön Muhasebe Yönetimi</h1>
             <p className="subtitle">
-              Stok, cari ve finans hareketlerini tek ekrandan yönetin.
+              Teklif, stok, cari ve finans süreçlerini tek panelden yönetin.
             </p>
           </div>
           <div className="status">
@@ -739,6 +852,8 @@ export default function App() {
                   <span>Bakiye</span>
                   <span>Vade</span>
                   <span>Telefon</span>
+                  <span>Durum</span>
+                  <span>Detay</span>
                 </div>
                 {cariItems.map((cari) => (
                   <div key={cari.id} className="table-row table-cari">
@@ -765,11 +880,122 @@ export default function App() {
                         <span onDoubleClick={() => startEditCari(cari.id)}>{cari.phone || "-"}</span>
                       )}
                     </span>
+                    <span>
+                      <button
+                        type="button"
+                        className={cari.isActive ? "pill active" : "pill inactive"}
+                        onClick={() => toggleCariStatus(cari.id)}
+                      >
+                        {cari.isActive ? "Aktif" : "Pasif"}
+                      </button>
+                    </span>
+                    <span>
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => setSelectedCariId(cari.id)}
+                      >
+                        Detay
+                      </button>
+                    </span>
                   </div>
                 ))}
               </div>
             )}
           </div>
+
+          {selectedCari && (
+            <div className="card detail-card">
+              <h2>Cari Detayları</h2>
+              <div className="summary">
+                <span>Firma: {selectedCari.name}</span>
+                <span>Kod: {selectedCari.code}</span>
+                <span>Bakiye: {formatMoney(selectedCari.balance)}</span>
+                <span>Durum: {selectedCari.isActive ? "Aktif" : "Pasif"}</span>
+                <span>Vade: {formatDate(selectedCari.dueDate)}</span>
+              </div>
+
+              <div className="detail-grid">
+                <div className="detail-section">
+                  <h3>İş Kalemleri</h3>
+                  {selectedCariInvoices.length === 0 ? (
+                    <p className="empty">İş kalemi bulunamadı.</p>
+                  ) : (
+                    <div className="table">
+                      <div className="table-row table-head table-detail">
+                        <span>Fatura</span>
+                        <span>Ürün</span>
+                        <span>Miktar</span>
+                        <span>Birim Fiyat</span>
+                        <span>Tutar</span>
+                        <span>İşlem</span>
+                      </div>
+                      {selectedCariInvoices.map((invoice) => (
+                        <div key={invoice.id} className="table-row table-detail">
+                          <span>{invoice.code}</span>
+                          <span>{invoice.itemName}</span>
+                          <span>
+                            {editingInvoiceId === invoice.id ? (
+                              <input
+                                type="number"
+                                defaultValue={invoice.quantity}
+                                onBlur={(e) => saveInvoiceEdit(invoice.id, "quantity", Number(e.target.value || 0))}
+                              />
+                            ) : (
+                              invoice.quantity
+                            )}
+                          </span>
+                          <span>
+                            {editingInvoiceId === invoice.id ? (
+                              <input
+                                type="number"
+                                defaultValue={invoice.price}
+                                onBlur={(e) => saveInvoiceEdit(invoice.id, "price", Number(e.target.value || 0))}
+                              />
+                            ) : (
+                              formatMoney(invoice.price)
+                            )}
+                          </span>
+                          <span>{formatMoney(invoice.total)}</span>
+                          <span>
+                            <button
+                              type="button"
+                              className="ghost"
+                              onClick={() => setEditingInvoiceId(invoice.id)}
+                            >
+                              Düzelt
+                            </button>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="detail-section">
+                  <h3>Ödemeler</h3>
+                  {selectedCariPayments.length === 0 ? (
+                    <p className="empty">Ödeme kaydı bulunamadı.</p>
+                  ) : (
+                    <div className="table">
+                      <div className="table-row table-head table-payment">
+                        <span>Tür</span>
+                        <span>Tutar</span>
+                        <span>Açıklama</span>
+                      </div>
+                      {selectedCariPayments.map((entry) => (
+                        <div key={entry.id} className="table-row table-payment">
+                          <span>{entry.type === "income" ? "Gelir" : "Gider"}</span>
+                          <span>{formatMoney(entry.amount)}</span>
+                          <span>{entry.note || "-"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
         )}
 
@@ -987,6 +1213,21 @@ export default function App() {
                 </select>
               </label>
               <label>
+                Cari (opsiyonel)
+                <select
+                  name="cariId"
+                  value={cashForm.cariId}
+                  onChange={handleCashChange}
+                >
+                  <option value="">Seçiniz</option>
+                  {cariItems.map((cari) => (
+                    <option key={cari.id} value={cari.id}>
+                      {cari.code} · {cari.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 Tutar (₺)
                 <input
                   type="number"
@@ -1037,6 +1278,145 @@ export default function App() {
                     <span>{entry.type === "income" ? "Gelir" : "Gider"}</span>
                     <span>₺{entry.amount.toLocaleString("tr-TR")}</span>
                     <span>{entry.note || "-"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+        )}
+
+        {activeModule === "teklif" && (
+        <section className="grid">
+          <div className="card">
+            <h2>Teklif Oluştur</h2>
+            <p className="helper">
+              Teklif ve irsaliye numarası otomatik atanır.
+            </p>
+            <form className="form" onSubmit={handleOfferSubmit}>
+              <label>
+                Teklif kodu
+                <input name="code" value={nextOfferCode} readOnly />
+              </label>
+              <label>
+                İrsaliye numarası
+                <input name="irsaliye" value={nextIrsaliyeCode} readOnly />
+              </label>
+              <label>
+                Teklif başlığı
+                <input
+                  name="title"
+                  value={offerForm.title}
+                  onChange={handleOfferChange}
+                  placeholder="Örn. İç Tesisat Teklif"
+                  required
+                />
+              </label>
+              <label>
+                Cari seç
+                <select
+                  name="cariId"
+                  value={offerForm.cariId}
+                  onChange={handleOfferChange}
+                >
+                  <option value="">Genel</option>
+                  {cariItems.map((cari) => (
+                    <option key={cari.id} value={cari.id}>
+                      {cari.code} · {cari.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Teklif tutarı (₺)
+                <input
+                  type="number"
+                  name="amount"
+                  value={offerForm.amount}
+                  onChange={handleOfferChange}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                />
+              </label>
+              <label>
+                Tarih
+                <input
+                  type="datetime-local"
+                  name="date"
+                  value={offerForm.date}
+                  onChange={handleOfferChange}
+                />
+              </label>
+              <button type="submit">Teklif Kaydet</button>
+            </form>
+          </div>
+
+          <div className="card">
+            <div className="offer-header">
+              <div>
+                <h2>Tekliflerim</h2>
+                <p className="helper">
+                  Toplam teklif tutarı: {formatMoney(
+                    offers.reduce((sum, offer) => sum + offer.amount, 0)
+                  )}
+                </p>
+              </div>
+              <div className="offer-search">
+                <input
+                  value={offerSearch}
+                  onChange={(event) => setOfferSearch(event.target.value)}
+                  placeholder="Teklif ara..."
+                />
+                <button type="button">Ara</button>
+              </div>
+            </div>
+            {filteredOffers.length === 0 ? (
+              <p className="empty">Henüz teklif oluşturulmadı.</p>
+            ) : (
+              <div className="table">
+                <div className="table-row table-head table-offer">
+                  <span>Tarih</span>
+                  <span>Teklif</span>
+                  <span>Cari</span>
+                  <span>Tutar</span>
+                  <span>PDF</span>
+                  <span>Cariye</span>
+                  <span>Durum</span>
+                  <span>İrs No</span>
+                </div>
+                {filteredOffers.map((offer) => (
+                  <div key={offer.id} className="table-row table-offer">
+                    <span>{formatDate(offer.createdAt)}</span>
+                    <span>{offer.title}</span>
+                    <span>{offer.cariName}</span>
+                    <span>{formatMoney(offer.amount)}</span>
+                    <span>
+                      <button type="button" className="ghost">
+                        Kurumsal PDF
+                      </button>
+                    </span>
+                    <span>
+                      <select
+                        value={offer.cariId}
+                        onChange={(event) =>
+                          handleOfferAssign(offer.id, event.target.value)
+                        }
+                      >
+                        <option value="">Genel</option>
+                        {cariItems.map((cari) => (
+                          <option key={cari.id} value={cari.id}>
+                            {cari.name}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                    <span>
+                      {offer.cariId
+                        ? `Atandı: ${offer.cariName}`
+                        : "Atanmadı"}
+                    </span>
+                    <span>{offer.irsaliyeCode}</span>
                   </div>
                 ))}
               </div>
