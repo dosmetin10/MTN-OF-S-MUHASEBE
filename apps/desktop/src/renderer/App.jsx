@@ -91,15 +91,6 @@ export default function App() {
   };
   const activeModule = hashModule ? (mapModule[hashModule] || hashModule) : null;
 
-  const openModule = (name) => {
-    const moduleName = mapModule[name] || name;
-    if (window && window.electronAPI && window.electronAPI.openModule) {
-      window.electronAPI.openModule(moduleName);
-    } else {
-      console.warn("IPC unavailable, cannot open module window", moduleName);
-    }
-  };
-  
   // Edit states for simple inline editing in grids
   const [editingStockId, setEditingStockId] = useState(null);
   const [editingCariId, setEditingCariId] = useState(null);
@@ -342,7 +333,6 @@ export default function App() {
       id: crypto.randomUUID(),
       type: cashForm.type,
       cariId: cashForm.cariId,
-      cariName: selectedCari?.name || "",
       amount: Number(cashForm.amount),
       note: cashForm.note.trim()
     };
@@ -367,8 +357,7 @@ export default function App() {
       title: offerForm.title.trim(),
       amount: Number(offerForm.amount),
       cariId: selectedCari?.id || "",
-      cariName: selectedCari?.name || "Genel",
-      status: selectedCari ? "Atandı" : "Atanmadı"
+      cariName: selectedCari?.name || "Genel"
     };
 
     if (!offer.title) {
@@ -387,8 +376,7 @@ export default function App() {
           ? {
               ...offer,
               cariId,
-              cariName: selectedCari?.name || "Genel",
-              status: selectedCari ? "Atandı" : "Atanmadı"
+              cariName: selectedCari?.name || "Genel"
             }
           : offer
       )
